@@ -36,6 +36,7 @@ export type PillboxPlanCard = {
   statusText: string;
   nextDoseAt?: string | null;
   nextMedicationId?: string | null;
+  canMarkNow: boolean;
 };
 
 export type PillboxSummaryStat = {
@@ -202,6 +203,7 @@ export function buildPillboxPlanCardsFromSummaries(input: {
         statusText: buildSummaryStatusText(status, input.locale),
         nextDoseAt: summary.nextDoseAt,
         nextMedicationId: summary.nextMedicationId,
+        canMarkNow: canMarkPlanIntake(summary, now),
       };
     });
 }
@@ -420,6 +422,20 @@ function buildSummaryStatusText(status: PillboxPlanStatus, locale: MobileLocale)
     return localizePillboxStatus("paused", locale);
   }
   return localizePillboxStatus("active", locale);
+}
+
+function canMarkPlanIntake(summary: MobilePillboxPlanSummary, now: Date) {
+  if (!summary.nextMedicationId || !summary.nextDoseAt) {
+    return false;
+  }
+  if (summary.status === "paused" || summary.status === "completed" || summary.status === "archived") {
+    return false;
+  }
+  const scheduledAt = new Date(summary.nextDoseAt);
+  if (Number.isNaN(scheduledAt.getTime())) {
+    return false;
+  }
+  return scheduledAt.getTime() <= now.getTime();
 }
 
 function isSameDay(value: string | null, now: Date) {

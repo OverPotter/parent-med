@@ -16,6 +16,7 @@ function makeSummary(
     id: "plan-1",
     title: "Для мамы",
     status: "active",
+    subjectAccountId: null,
     memberAccountIds: ["member-1"],
     activeMedicationCount: 2,
     nextDoseAt: "2026-05-15T09:30:00.000Z",
@@ -37,6 +38,7 @@ function makePlan(
     familyId: "family-1",
     title: "Для мамы",
     status: "active",
+    subjectAccountId: null,
     memberAccountIds: ["member-1"],
     medications: [
       {

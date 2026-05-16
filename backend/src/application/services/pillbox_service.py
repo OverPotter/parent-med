@@ -152,6 +152,8 @@ class PillboxService:
     ) -> bool:
         if dto.title != existing.title:
             return False
+        if dto.subject_account_id != existing.subject_account_id:
+            return False
         if list(dto.member_account_ids) != list(existing.member_account_ids):
             return False
         existing_medications = sorted(existing.medications, key=lambda item: item.position)
@@ -303,6 +305,7 @@ class PillboxService:
             id=entity.id,
             title=entity.title,
             status=effective_status,
+            subject_account_id=entity.subject_account_id,
             member_account_ids=list(entity.member_account_ids),
             active_medication_count=len(entity.medications),
             next_dose_at=next_dose_at,
@@ -322,6 +325,7 @@ class PillboxService:
             family_id=entity.family_id,
             title=entity.title,
             status=self._get_effective_status(entity),
+            subject_account_id=entity.subject_account_id,
             member_account_ids=list(entity.member_account_ids),
             medications=[self._to_medication_response(item) for item in entity.medications],
             created_at=entity.created_at,
@@ -356,6 +360,28 @@ class PillboxService:
         if ineligible:
             raise ValidationError("Нельзя выбрать получателей без доступа к приёмам")
         return normalized_member_ids
+
+    async def _require_subject_account_in_family(
+        self,
+        subject_account_id: UUID | None,
+        current_family_id: UUID,
+    ) -> UUID | None:
+        if subject_account_id is None:
+            return None
+        family_accounts = await self._account_repo.list_by_family_id(current_family_id)
+        family_account_ids = {account.id for account in family_accounts}
+        if subject_account_id not in family_account_ids:
+            raise ValidationError("Получатель плана должен быть из текущей семьи")
+        return subject_account_id
+
+    def _can_account_log_dose(self, plan: PillboxPlan, account_id: UUID) -> bool:
+        allowed_actor_ids = {
+            plan.created_by_account_id,
+            *plan.member_account_ids,
+        }
+        if plan.subject_account_id is not None:
+            allowed_actor_ids.add(plan.subject_account_id)
+        return account_id in allowed_actor_ids
 
     async def _validate_household_medicine(
         self, household_medicine_id: UUID, current_family_id: UUID
@@ -422,12 +448,17 @@ class PillboxService:
         existing: PillboxPlan | None,
         title: str,
         status: str,
+        subject_account_id: UUID | None,
         member_account_ids: list[UUID],
         medications: list[PillboxMedicationWriteDto],
         current_account_id: UUID,
         current_family_id: UUID,
     ) -> PillboxPlan:
         normalized_title = title.strip() or "Новый план"
+        normalized_subject_account_id = await self._require_subject_account_in_family(
+            subject_account_id,
+            current_family_id,
+        )
         normalized_member_account_ids = await self._require_member_ids_in_family(
             member_account_ids,
             current_family_id,
@@ -453,6 +484,11 @@ class PillboxService:
             family_id=current_family_id,
             title=normalized_title,
             status=status,
+            subject_account_id=(
+                normalized_subject_account_id
+                if normalized_subject_account_id is not None
+                else (existing.subject_account_id if existing else current_account_id)
+            ),
             member_account_ids=normalized_member_account_ids,
             created_by_account_id=(
                 existing.created_by_account_id if existing else current_account_id
@@ -795,6 +831,7 @@ class PillboxService:
             existing=None,
             title=dto.title,
             status="active",
+            subject_account_id=dto.subject_account_id,
             member_account_ids=list(dto.member_account_ids),
             medications=list(dto.medications),
             current_account_id=current_account_id,
@@ -825,6 +862,7 @@ class PillboxService:
             existing=existing,
             title=dto.title,
             status=next_status,
+            subject_account_id=dto.subject_account_id,
             member_account_ids=list(dto.member_account_ids),
             medications=list(dto.medications),
             current_account_id=current_account_id,
@@ -861,6 +899,8 @@ class PillboxService:
         ensure_module_access(current_account, "pillbox", "act")
         plan = await self._get_plan_for_family(plan_id, current_account.family_id)
         await self._ensure_plan_mutation_allowed(plan, current_account)
+        if not self._can_account_log_dose(plan, current_account_id):
+            raise ForbiddenError("Нет права отмечать приёмы по этому плану")
         medication = next((item for item in plan.medications if item.id == medication_id), None)
         if not medication:
             raise NotFoundError("Лекарство внутри плана не найдено", resource="pillbox_medication")

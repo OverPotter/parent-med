@@ -28,6 +28,7 @@ export type MobilePillboxMedicationWrite = {
 
 export type MobilePillboxPlanWrite = {
   title: string;
+  subjectAccountId?: string | null;
   memberAccountIds: string[];
   medications: MobilePillboxMedicationWrite[];
   status?: "active" | "paused" | "archived";
@@ -52,6 +53,7 @@ export type MobilePillboxPlan = {
   familyId: string;
   title: string;
   status: "active" | "paused" | "completed" | "archived";
+  subjectAccountId: string | null;
   memberAccountIds: string[];
   medications: MobilePillboxMedication[];
   createdAt: string;
@@ -64,6 +66,7 @@ export type MobilePillboxPlanSummary = {
   id: string;
   title: string;
   status: "active" | "paused" | "completed" | "archived";
+  subjectAccountId: string | null;
   memberAccountIds: string[];
   activeMedicationCount: number;
   nextDoseAt: string | null;
@@ -122,6 +125,7 @@ type RawMobilePillboxPlan = {
   family_id: string;
   title: string;
   status: MobilePillboxPlan["status"];
+  subject_account_id: string | null;
   member_account_ids: string[];
   medications: RawMobilePillboxMedication[];
   created_at: string;
@@ -132,6 +136,7 @@ type RawMobilePillboxPlanSummary = {
   id: string;
   title: string;
   status: MobilePillboxPlanSummary["status"];
+  subject_account_id: string | null;
   member_account_ids: string[];
   active_medication_count: number;
   next_dose_at: string | null;
@@ -212,6 +217,7 @@ function toMobilePillboxPlan(raw: RawMobilePillboxPlan): MobilePillboxPlan {
     familyId: raw.family_id,
     title: raw.title,
     status: raw.status,
+    subjectAccountId: raw.subject_account_id ?? null,
     memberAccountIds: raw.member_account_ids ?? [],
     medications: (raw.medications ?? []).map(toMobilePillboxMedication),
     createdAt: raw.created_at,
@@ -226,6 +232,7 @@ function toMobilePillboxPlanSummary(
     id: raw.id,
     title: raw.title,
     status: raw.status,
+    subjectAccountId: raw.subject_account_id ?? null,
     memberAccountIds: raw.member_account_ids ?? [],
     activeMedicationCount: raw.active_medication_count,
     nextDoseAt: raw.next_dose_at ?? null,
@@ -241,6 +248,7 @@ function toMobilePillboxPlanSummary(
 function toWritePayload(payload: MobilePillboxPlanWrite) {
   return {
     title: payload.title,
+    subject_account_id: payload.subjectAccountId ?? null,
     member_account_ids: payload.memberAccountIds,
     medications: payload.medications.map((item) => ({
       id: item.id ?? null,
@@ -290,6 +298,7 @@ function toMobilePillboxHistorySummary(
 export function toMobilePillboxPlanWrite(plan: MobilePillboxPlan): MobilePillboxPlanWrite {
   return {
     title: plan.title,
+    subjectAccountId: plan.subjectAccountId,
     memberAccountIds: plan.memberAccountIds,
     medications: plan.medications.map((item) => ({
       id: item.id,

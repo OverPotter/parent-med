@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import uuid4
 
 import pytest
@@ -123,7 +123,7 @@ class StubPillboxRepository:
 
 @pytest.mark.asyncio
 async def test_list_members_for_account_returns_admin_first() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -167,7 +167,7 @@ async def test_list_members_for_account_returns_admin_first() -> None:
 
 @pytest.mark.asyncio
 async def test_family_owner_role_cannot_be_demoted() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -203,7 +203,7 @@ async def test_family_owner_role_cannot_be_demoted() -> None:
 
 @pytest.mark.asyncio
 async def test_delete_member_revokes_sessions() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -262,7 +262,7 @@ async def test_delete_member_revokes_sessions() -> None:
 
 @pytest.mark.asyncio
 async def test_delete_member_removes_member_from_all_recipient_lists() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -353,6 +353,7 @@ async def test_delete_member_removes_member_from_all_recipient_lists() -> None:
         family_id=family.id,
         title="Курс",
         status="active",
+        subject_account_id=removed_member.id,
         member_account_ids=[removed_member.id, other_member.id],
         created_by_account_id=owner.id,
         created_at=datetime(2026, 3, 20, 12, 0, tzinfo=UTC),
@@ -409,11 +410,12 @@ async def test_delete_member_removes_member_from_all_recipient_lists() -> None:
     assert updated_episode_plan.member_account_ids == [other_member.id]
     updated_pillbox_plan = next(item for item in pillbox_repo.plans if item.id == pillbox_plan.id)
     assert updated_pillbox_plan.member_account_ids == [other_member.id]
+    assert updated_pillbox_plan.subject_account_id is None
 
 
 @pytest.mark.asyncio
 async def test_admin_cannot_delete_family_owner() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -460,7 +462,7 @@ async def test_admin_cannot_delete_family_owner() -> None:
 
 @pytest.mark.asyncio
 async def test_admin_can_update_member_access_policy_only() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -524,7 +526,7 @@ async def test_admin_can_update_member_access_policy_only() -> None:
 
 @pytest.mark.asyncio
 async def test_admin_cannot_change_member_role() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -586,7 +588,7 @@ async def test_admin_cannot_change_member_role() -> None:
 
 @pytest.mark.asyncio
 async def test_admin_cannot_manage_other_admin() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -650,7 +652,7 @@ async def test_admin_cannot_manage_other_admin() -> None:
 
 @pytest.mark.asyncio
 async def test_admin_cannot_manage_self() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -700,7 +702,7 @@ async def test_admin_cannot_manage_self() -> None:
 
 @pytest.mark.asyncio
 async def test_admin_cannot_delete_other_admin() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -760,8 +762,114 @@ async def test_admin_cannot_delete_other_admin() -> None:
 
 
 @pytest.mark.asyncio
+async def test_free_family_cannot_update_member_access_or_roles() -> None:
+    family = Family(
+        id=uuid4(),
+        name="Моя семья",
+        owner_account_id=uuid4(),
+        plan_code="plus",
+        subscription_status="trialing",
+        subscription_expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    owner = Account(
+        id=family.owner_account_id,
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="owner",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    member = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="member",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, member]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ForbiddenError, match="только в Plus"):
+        await service.update_member_for_account(
+            member_account_id=member.id,
+            dto=FamilyMemberUpdateDto(access_policy=FamilyAccessPolicyUpdateDto(cabinet_access="view")),
+            current_account_id=owner.id,
+            current_family_id=family.id,
+            current_family_role="owner",
+        )
+
+
+@pytest.mark.asyncio
+async def test_free_family_cannot_delete_member() -> None:
+    family = Family(
+        id=uuid4(),
+        name="Моя семья",
+        owner_account_id=uuid4(),
+        plan_code="free",
+        subscription_status="inactive",
+    )
+    owner = Account(
+        id=family.owner_account_id,
+        email="mom@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Мама",
+        family_role="owner",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 8, 0, tzinfo=UTC),
+    )
+    member = Account(
+        id=uuid4(),
+        email="dad@example.com",
+        password_hash="hash",
+        family_id=family.id,
+        display_name="Папа",
+        family_role="member",
+        push_before_reminder_minutes=10,
+        cabinet_notify_10_days=True,
+        cabinet_notify_7_days=True,
+        cabinet_notify_3_days=True,
+        cabinet_notify_1_day=True,
+        created_at=datetime(2026, 3, 20, 9, 0, tzinfo=UTC),
+    )
+    service = FamilyService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner, member]),
+        session_repo=StubAccountSessionRepository(),
+    )
+
+    with pytest.raises(ForbiddenError, match="только в Plus"):
+        await service.delete_member_for_account(
+            member_account_id=member.id,
+            current_account_id=owner.id,
+            current_family_id=family.id,
+            current_family_role="owner",
+        )
+
+
+@pytest.mark.asyncio
 async def test_member_can_update_own_profile() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     adult = Account(
         id=uuid4(),
         email="dad@example.com",
@@ -801,7 +909,7 @@ async def test_member_can_update_own_profile() -> None:
 
 @pytest.mark.asyncio
 async def test_update_family_saves_cabinet_recipients() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -846,7 +954,7 @@ async def test_update_family_saves_cabinet_recipients() -> None:
 
 @pytest.mark.asyncio
 async def test_update_family_rejects_foreign_cabinet_recipient() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -1111,7 +1219,7 @@ async def test_family_response_marks_plus_subscription_as_premium() -> None:
 
 @pytest.mark.asyncio
 async def test_update_member_rejects_pillbox_push_without_action_access() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",
@@ -1165,7 +1273,7 @@ async def test_update_member_rejects_pillbox_push_without_action_access() -> Non
 
 @pytest.mark.asyncio
 async def test_update_member_rejects_pillbox_edit_without_children_edit_access() -> None:
-    family = Family(id=uuid4(), name="Моя семья")
+    family = Family(id=uuid4(), name="Моя семья", plan_code="plus", subscription_status="active")
     owner = Account(
         id=uuid4(),
         email="mom@example.com",

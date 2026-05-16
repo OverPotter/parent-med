@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, date, datetime, time, timedelta
 from uuid import uuid4
 
@@ -242,6 +243,7 @@ class StubPillboxRepository:
                 family_id=plan.family_id,
                 title=plan.title,
                 status=plan.status,
+                subject_account_id=plan.subject_account_id,
                 member_account_ids=plan.member_account_ids,
                 created_by_account_id=plan.created_by_account_id,
                 created_at=plan.created_at,
@@ -1313,6 +1315,7 @@ async def test_pillbox_log_dose_allows_act_access() -> None:
     medication_id = uuid4()
     scheduled_for = datetime(2026, 4, 20, 5, 0, tzinfo=UTC)
     now = datetime(2026, 4, 19, 8, 0, tzinfo=UTC)
+    actor_id = uuid4()
     service = PillboxService(
         pillbox_repo=StubPillboxRepository(
             [
@@ -1321,7 +1324,7 @@ async def test_pillbox_log_dose_allows_act_access() -> None:
                     family_id=family_id,
                     title="Курс",
                     status="active",
-                    member_account_ids=[],
+                    member_account_ids=[actor_id],
                     created_by_account_id=uuid4(),
                     created_at=now,
                     updated_at=now,
@@ -1355,6 +1358,7 @@ async def test_pillbox_log_dose_allows_act_access() -> None:
         family_id=family_id,
         access_policy=FamilyAccessPolicyDto(pillbox_access="act"),
     )
+    account = replace(account, id=actor_id)
 
     summary = await service.log_dose(
         plan_id=plan_id,
@@ -1375,6 +1379,7 @@ async def test_pillbox_log_dose_allows_short_pre_due_grace(monkeypatch: pytest.M
     medication_id = uuid4()
     scheduled_for = datetime(2026, 4, 20, 8, 0, 0, tzinfo=UTC)
     now = datetime(2026, 4, 19, 8, 0, tzinfo=UTC)
+    actor_id = uuid4()
 
     class FrozenDateTime(datetime):
         @classmethod
@@ -1394,7 +1399,7 @@ async def test_pillbox_log_dose_allows_short_pre_due_grace(monkeypatch: pytest.M
                     family_id=family_id,
                     title="Курс",
                     status="active",
-                    member_account_ids=[],
+                    member_account_ids=[actor_id],
                     created_by_account_id=uuid4(),
                     created_at=now,
                     updated_at=now,
@@ -1428,6 +1433,7 @@ async def test_pillbox_log_dose_allows_short_pre_due_grace(monkeypatch: pytest.M
         family_id=family_id,
         access_policy=FamilyAccessPolicyDto(pillbox_access="act"),
     )
+    account = replace(account, id=actor_id)
 
     summary = await service.log_dose(
         plan_id=plan_id,
@@ -1448,6 +1454,7 @@ async def test_pillbox_log_dose_rejects_view_only_access() -> None:
     medication_id = uuid4()
     scheduled_for = datetime(2026, 4, 20, 5, 0, tzinfo=UTC)
     now = datetime(2026, 4, 19, 8, 0, tzinfo=UTC)
+    actor_id = uuid4()
     service = PillboxService(
         pillbox_repo=StubPillboxRepository(
             [
@@ -1456,7 +1463,7 @@ async def test_pillbox_log_dose_rejects_view_only_access() -> None:
                     family_id=family_id,
                     title="Курс",
                     status="active",
-                    member_account_ids=[],
+                    member_account_ids=[actor_id],
                     created_by_account_id=uuid4(),
                     created_at=now,
                     updated_at=now,
@@ -1490,8 +1497,147 @@ async def test_pillbox_log_dose_rejects_view_only_access() -> None:
         family_id=family_id,
         access_policy=FamilyAccessPolicyDto(pillbox_access="view"),
     )
+    account = replace(account, id=actor_id)
 
     with pytest.raises(ForbiddenError, match="приёмам"):
+        await service.log_dose(
+            plan_id=plan_id,
+            medication_id=medication_id,
+            dto=PillboxDoseLogCreateDto(scheduled_for=scheduled_for, source="manual"),
+            current_account_id=account.id,
+            current_account_display_name=account.display_name,
+            current_account=account,
+        )
+
+
+@pytest.mark.asyncio
+async def test_pillbox_log_dose_allows_creator_subject_and_recipient() -> None:
+    family_id = uuid4()
+    plan_id = uuid4()
+    medication_id = uuid4()
+    creator_id = uuid4()
+    subject_id = uuid4()
+    recipient_id = uuid4()
+    scheduled_for = datetime(2026, 4, 20, 5, 0, tzinfo=UTC)
+    now = datetime(2026, 4, 19, 8, 0, tzinfo=UTC)
+
+    def make_service() -> PillboxService:
+        return PillboxService(
+            pillbox_repo=StubPillboxRepository(
+                [
+                    PillboxPlan(
+                        id=plan_id,
+                        family_id=family_id,
+                        title="Курс",
+                        status="active",
+                        subject_account_id=subject_id,
+                        member_account_ids=[recipient_id],
+                        created_by_account_id=creator_id,
+                        created_at=now,
+                        updated_at=now,
+                        medications=[
+                            PillboxMedication(
+                                id=medication_id,
+                                plan_id=plan_id,
+                                household_medicine_id=None,
+                                custom_medicine_name="Ибупрофен",
+                                dose_amount="5 мл",
+                                meal_rule="after_meal",
+                                repeat_days=[1],
+                                times=[time(8, 0)],
+                                course_mode="continuous",
+                                course_start_date=None,
+                                course_end_date=None,
+                                position=0,
+                                created_at=now,
+                                updated_at=now,
+                            )
+                        ],
+                        dose_logs=[],
+                    )
+                ]
+            ),
+            account_repo=StubAccountRepository(family_id),
+            household_repo=StubHouseholdMedicineRepository([]),
+            family_repo=StubFamilyRepository(family_id),
+        )
+
+    for actor_id in (creator_id, subject_id, recipient_id):
+        account = build_account(
+            family_id=family_id,
+            access_policy=FamilyAccessPolicyDto(pillbox_access="act"),
+        )
+        account = replace(account, id=actor_id)
+
+        summary = await make_service().log_dose(
+            plan_id=plan_id,
+            medication_id=medication_id,
+            dto=PillboxDoseLogCreateDto(scheduled_for=scheduled_for, source="manual"),
+            current_account_id=account.id,
+            current_account_display_name=account.display_name,
+            current_account=account,
+        )
+
+        assert summary.id == plan_id
+
+
+@pytest.mark.asyncio
+async def test_pillbox_log_dose_rejects_family_member_outside_allowed_actor_set() -> None:
+    family_id = uuid4()
+    plan_id = uuid4()
+    medication_id = uuid4()
+    creator_id = uuid4()
+    subject_id = uuid4()
+    recipient_id = uuid4()
+    outsider_id = uuid4()
+    scheduled_for = datetime(2026, 4, 20, 5, 0, tzinfo=UTC)
+    now = datetime(2026, 4, 19, 8, 0, tzinfo=UTC)
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository(
+            [
+                PillboxPlan(
+                    id=plan_id,
+                    family_id=family_id,
+                    title="Курс",
+                    status="active",
+                    subject_account_id=subject_id,
+                    member_account_ids=[recipient_id],
+                    created_by_account_id=creator_id,
+                    created_at=now,
+                    updated_at=now,
+                    medications=[
+                        PillboxMedication(
+                            id=medication_id,
+                            plan_id=plan_id,
+                            household_medicine_id=None,
+                            custom_medicine_name="Ибупрофен",
+                            dose_amount="5 мл",
+                            meal_rule="after_meal",
+                            repeat_days=[1],
+                            times=[time(8, 0)],
+                            course_mode="continuous",
+                            course_start_date=None,
+                            course_end_date=None,
+                            position=0,
+                            created_at=now,
+                            updated_at=now,
+                        )
+                    ],
+                    dose_logs=[],
+                )
+            ]
+        ),
+        account_repo=StubAccountRepository(family_id),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(pillbox_access="act"),
+    )
+    account = replace(account, id=outsider_id)
+
+    with pytest.raises(ForbiddenError, match="Нет права отмечать"):
         await service.log_dose(
             plan_id=plan_id,
             medication_id=medication_id,

@@ -1,7 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
-import { Animated, PanResponder, Pressable, Text, View } from "react-native";
+import { Animated, Image, PanResponder, Pressable, Text, View } from "react-native";
+import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import type { MobilePillboxPlan } from "../api/mobilePillboxPlansApi";
+import { pillboxCoreIcons } from "../assets/core";
+import { pillboxMealIcons } from "../assets/meal";
+import { pillboxTimeIcons } from "../assets/time";
 import type { PillboxPlanCard } from "../model/pillboxHomeScreen";
+import {
+  localizePillboxCourse,
+  localizePillboxFallback,
+  localizePillboxMealRule,
+  localizePillboxRepeatDays,
+} from "../model/pillboxLocalization";
 import {
   isPillboxStatusAlert,
   resolvePillboxStatusTone,
@@ -11,23 +22,44 @@ import { pillboxHomeScreenStyles as styles } from "./pillboxHomeScreenStyles";
 const SWIPE_DELETE_ACTION_WIDTH = 92;
 
 export function SwipeablePillboxPlanCard({
+  locale,
   item,
   isOpen,
+  isExpanded,
+  isLoadingExpanded,
+  expandedPlan,
   deleting,
+  updating,
+  taking,
   onOpenSwipe,
   onCloseSwipe,
-  onOpenPlan,
+  onToggleExpand,
+  onOpenMedicine,
+  onOpenRecipients,
+  onMarkIntake,
   onDelete,
 }: {
+  locale: MobileLocale;
   item: PillboxPlanCard;
   isOpen: boolean;
+  isExpanded: boolean;
+  isLoadingExpanded: boolean;
+  expandedPlan: MobilePillboxPlan | null;
   deleting: boolean;
+  updating: boolean;
+  taking: boolean;
   onOpenSwipe: () => void;
   onCloseSwipe: () => void;
-  onOpenPlan: () => void;
+  onToggleExpand: () => void;
+  onOpenMedicine: (medicineId: string) => void;
+  onOpenRecipients: () => void;
+  onMarkIntake: () => void;
   onDelete: () => void;
 }) {
   const translateX = useRef(new Animated.Value(0)).current;
+  const swipeEnabled = !isExpanded;
+  const swipeEnabledRef = useRef(swipeEnabled);
+  swipeEnabledRef.current = swipeEnabled;
 
   const animateTo = (value: number, onComplete?: () => void) => {
     Animated.spring(translateX, {
@@ -49,6 +81,7 @@ export function SwipeablePillboxPlanCard({
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) =>
+        swipeEnabledRef.current &&
         Math.abs(gestureState.dx) > Math.abs(gestureState.dy) &&
         gestureState.dx < -12,
       onPanResponderGrant: () => {
@@ -100,28 +133,30 @@ export function SwipeablePillboxPlanCard({
 
   return (
     <View style={styles.swipePlanCardWrap}>
-      <View style={styles.swipeDeleteActionWrap}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Удалить план ${item.title}`}
-          onPress={onDelete}
-          disabled={deleting}
-          style={({ pressed }) => [
-            styles.swipeDeleteAction,
-            pressed ? styles.swipeDeleteActionPressed : null,
-            deleting ? styles.swipeDeleteActionDisabled : null,
-          ]}
-        >
-          <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
-          <Text style={styles.swipeDeleteActionText}>
-            {deleting ? "..." : "Удалить"}
-          </Text>
-        </Pressable>
-      </View>
+      {!isExpanded ? (
+        <View style={styles.swipeDeleteActionWrap}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Удалить план ${item.title}`}
+            onPress={onDelete}
+            disabled={deleting}
+            style={({ pressed }) => [
+              styles.swipeDeleteAction,
+              pressed ? styles.swipeDeleteActionPressed : null,
+              deleting ? styles.swipeDeleteActionDisabled : null,
+            ]}
+          >
+            <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+            <Text style={styles.swipeDeleteActionText}>
+              {deleting ? "..." : "Удалить"}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <Animated.View
         style={[styles.swipeCardAnimatedLayer, { transform: [{ translateX }] }]}
-        {...panResponder.panHandlers}
+        {...(swipeEnabled ? panResponder.panHandlers : {})}
       >
         <Pressable
           onPress={() => {
@@ -129,9 +164,13 @@ export function SwipeablePillboxPlanCard({
               animateTo(0, onCloseSwipe);
               return;
             }
-            onOpenPlan();
+            onToggleExpand();
           }}
-          style={({ pressed }) => [styles.planCard, pressed ? styles.buttonPressed : null]}
+          style={({ pressed }) => [
+            styles.planCard,
+            isExpanded ? styles.planCardExpanded : null,
+            pressed ? styles.buttonPressed : null,
+          ]}
         >
           <View style={styles.planAvatar}>
             <Text style={styles.planAvatarText}>{item.avatarText}</Text>
@@ -166,10 +205,145 @@ export function SwipeablePillboxPlanCard({
                 {item.statusText}
               </Text>
             </View>
-            <Text style={styles.chevron}>›</Text>
+            <Text style={[styles.chevron, isExpanded ? styles.chevronExpanded : null]}>
+              ›
+            </Text>
           </View>
         </Pressable>
+
+        {isExpanded ? (
+          <View style={styles.planExpandedSection}>
+            {isLoadingExpanded ? (
+              <Text style={styles.planExpandedLoading}>
+                {locale === "ru" ? "Загружаем лекарства..." : "Loading medicines..."}
+              </Text>
+            ) : expandedPlan ? (
+              <View style={styles.planExpandedMedicineList}>
+                {expandedPlan.medications.map((medicine) => (
+                  <Pressable
+                    key={medicine.id}
+                    onPress={() => onOpenMedicine(medicine.id)}
+                    style={({ pressed }) => [
+                      styles.planExpandedMedicineCard,
+                      pressed ? styles.buttonPressed : null,
+                    ]}
+                  >
+                    <View style={styles.planExpandedMedicineTitleRow}>
+                      <Image
+                        source={pillboxCoreIcons.medicineName}
+                        style={styles.planExpandedMetaIcon}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.planExpandedMedicineTitle}>
+                        {[
+                          medicine.customMedicineName?.trim() ||
+                            localizePillboxFallback("untitled", locale),
+                          medicine.doseAmount.trim(),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </Text>
+                    </View>
+                    <View style={styles.planExpandedMetaItem}>
+                      <Image
+                        source={resolveMealIcon(medicine.mealRule)}
+                        style={styles.planExpandedMetaIcon}
+                        resizeMode="contain"
+                      />
+                      <Text numberOfLines={1} style={styles.planExpandedMedicineSummary}>
+                        {`${localizePillboxMealRule(medicine.mealRule, locale)} · ${localizePillboxRepeatDays(
+                          medicine.repeatDays,
+                          locale,
+                        )}`}
+                      </Text>
+                    </View>
+                    <View style={styles.planExpandedMetaItem}>
+                      <Image
+                        source={pillboxTimeIcons.chip}
+                        style={styles.planExpandedMetaIcon}
+                        resizeMode="contain"
+                      />
+                      <Text
+                        numberOfLines={1}
+                        style={styles.planExpandedMedicineCourse}
+                      >
+                        {`${medicine.times.join(", ") || localizePillboxFallback("noTime", locale)} · ${localizePillboxCourse(
+                          medicine.courseMode,
+                          medicine.courseEndDate,
+                          locale,
+                        )}`}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.planExpandedLoading}>
+                {locale === "ru"
+                  ? "Не получилось загрузить план."
+                  : "Could not load the plan."}
+              </Text>
+            )}
+
+            <View style={styles.planExpandedActions}>
+              {item.canMarkNow ? (
+                <Pressable
+                  onPress={onMarkIntake}
+                  disabled={taking}
+                  style={({ pressed }) => [
+                    styles.planExpandedPrimaryAction,
+                    pressed ? styles.buttonPressed : null,
+                    taking ? styles.planExpandedActionDisabled : null,
+                  ]}
+                >
+                  <Text style={styles.planExpandedPrimaryActionText}>
+                    {taking
+                      ? locale === "ru"
+                        ? "Сохраняем..."
+                        : "Saving..."
+                      : locale === "ru"
+                        ? "Отметить приём"
+                        : "Mark intake"}
+                  </Text>
+                </Pressable>
+              ) : null}
+
+              <Pressable
+                onPress={onOpenRecipients}
+                disabled={updating}
+                style={({ pressed }) => [
+                  styles.planExpandedSecondaryAction,
+                  pressed ? styles.buttonPressed : null,
+                  updating ? styles.planExpandedActionDisabled : null,
+                ]}
+              >
+                <Text style={styles.planExpandedSecondaryActionText}>
+                  {updating
+                    ? locale === "ru"
+                      ? "Сохраняем..."
+                      : "Saving..."
+                    : locale === "ru"
+                      ? "Получатели"
+                      : "Recipients"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </Animated.View>
     </View>
   );
+}
+
+function resolveMealIcon(mealRule: "before_meal" | "with_meal" | "after_meal" | "not_matter") {
+  if (mealRule === "before_meal") {
+    return pillboxMealIcons.beforeFood;
+  }
+  if (mealRule === "with_meal") {
+    return pillboxMealIcons.withFood;
+  }
+  if (mealRule === "after_meal") {
+    return pillboxMealIcons.afterFood;
+  }
+  return pillboxMealIcons.notMatter;
 }

@@ -97,9 +97,9 @@ export const pillboxPlanOnboardingListStyleParts = {
   },
   addMedicinePlusText: {
     color: "#FFFFFF",
-    fontSize: 24,
-    lineHeight: 24,
-    fontWeight: "500",
+    fontSize: 18,
+    lineHeight: 18,
+    fontWeight: "400",
     fontFamily: journalTypography.display,
   },
   addMedicineLabel: {
@@ -125,6 +125,7 @@ export const pillboxPlanOnboardingListStyleParts = {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    backgroundColor: tokens.colors.surfacePrimary,
   },
   medicineRowPressable: {
     flex: 1,

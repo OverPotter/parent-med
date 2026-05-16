@@ -21,6 +21,7 @@ export interface PillboxMedicationWrite {
 
 export interface PillboxPlanWrite {
   title: string;
+  subjectAccountId?: string | null;
   memberAccountIds: string[];
   medications: PillboxMedicationWrite[];
   status?: PillboxPlanWritableStatus;
@@ -30,6 +31,7 @@ export interface PillboxPlanSummary {
   id: string;
   title: string;
   status: PillboxPlanStatus;
+  subjectAccountId: string | null;
   memberAccountIds: string[];
   activeMedicationCount: number;
   nextDoseAt: string | null;
@@ -60,6 +62,7 @@ export interface PillboxPlan {
   familyId: string;
   title: string;
   status: PillboxPlanStatus;
+  subjectAccountId: string | null;
   memberAccountIds: string[];
   medications: PillboxMedication[];
   createdAt: string;

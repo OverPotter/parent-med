@@ -3,6 +3,7 @@ import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { pillboxCoreIcons } from "../assets/core";
 import { pillboxMealIcons } from "../assets/meal";
 import { pillboxTimeIcons } from "../assets/time";
+import { getPillboxWeekdayLabels } from "../model/pillboxLocalization";
 import type { PillboxDraftMedicine } from "../model/pillboxPlanOnboarding";
 import {
   Field,
@@ -13,6 +14,7 @@ import { pillboxPlanOnboardingStyles as styles } from "./pillboxPlanOnboardingSt
 export function PillboxMedicineEditorStepSection({
   locale,
   participantTitle,
+  title,
   medicineDraft,
   onChangeName,
   onChangeDose,
@@ -25,6 +27,7 @@ export function PillboxMedicineEditorStepSection({
 }: {
   locale: MobileLocale;
   participantTitle: string;
+  title?: string;
   medicineDraft: PillboxDraftMedicine;
   onChangeName: (value: string) => void;
   onChangeDose: (value: string) => void;
@@ -35,15 +38,13 @@ export function PillboxMedicineEditorStepSection({
   onToggleWeekday: (day: string) => void;
   onSelectMealRelation: (mealRelation: PillboxDraftMedicine["mealRelation"]) => void;
 }) {
-  const weekdayLabels = locale === "ru"
-    ? WEEKDAY_LABELS_RU
-    : WEEKDAY_LABELS_EN;
+  const weekdayLabels = getPillboxWeekdayLabels(locale);
   const mealOptions = buildMealOptions(locale);
   return (
     <>
       <View style={styles.editorHeader}>
         <Text style={styles.editorTitle}>
-          {locale === "ru" ? "Добавить лекарство" : "Add medicine"}
+          {title ?? (locale === "ru" ? "Добавить лекарство" : "Add medicine")}
         </Text>
         <Text style={styles.editorMeta}>{participantTitle}</Text>
       </View>
@@ -328,9 +329,6 @@ export function PillboxMedicineEditorStepSection({
 }
 
 const WEEKDAY_OPTIONS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
-const WEEKDAY_LABELS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
-const WEEKDAY_LABELS_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-
 function buildMealOptions(locale: MobileLocale): Array<{
   id: PillboxDraftMedicine["mealRelation"];
   label: string;

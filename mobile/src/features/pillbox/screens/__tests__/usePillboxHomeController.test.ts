@@ -1,6 +1,5 @@
 import React from "react";
 import TestRenderer, { act } from "react-test-renderer";
-import { Alert } from "react-native";
 import type { MobileFamilyMember } from "../../../family/api/familyMembersApi";
 import {
   deleteMobilePillboxPlan,
@@ -21,6 +20,7 @@ jest.mock("../../api/mobilePillboxPlansApi", () => ({
   takeMobilePillboxDose: jest.fn(),
   toMobilePillboxPlanWrite: jest.fn((plan) => ({
     title: plan.title,
+    subjectAccountId: plan.subjectAccountId,
     memberAccountIds: plan.memberAccountIds,
     medications: plan.medications,
     status: plan.status,
@@ -59,6 +59,7 @@ function makeSummary(
     id: "plan-1",
     title: "Для мамы",
     status: "active",
+    subjectAccountId: "acc-2",
     memberAccountIds: ["acc-1"],
     activeMedicationCount: 1,
     nextDoseAt: "2026-05-15T09:30:00.000Z",
@@ -80,6 +81,7 @@ function makePlan(
     familyId: "family-1",
     title: "Для мамы",
     status: "active",
+    subjectAccountId: "acc-2",
     memberAccountIds: ["acc-2"],
     medications: [
       {
@@ -124,15 +126,18 @@ let latestController: ReturnType<typeof usePillboxHomeController> | null = null;
 
 function Probe({
   familyMembers,
+  isOverlayActive = false,
   onTabBarModeChange,
 }: {
   familyMembers: MobileFamilyMember[];
+  isOverlayActive?: boolean;
   onTabBarModeChange?: jest.Mock;
 }) {
   latestController = usePillboxHomeController({
     accessToken: "token",
     currentAccountId: "acc-1",
     familyMembers,
+    isOverlayActive,
     locale: "ru",
     onTabBarModeChange,
   });
@@ -189,8 +194,24 @@ describe("usePillboxHomeController", () => {
     expect(onTabBarModeChange).toHaveBeenCalledWith("foreground");
   });
 
+  it("hides tab bar while local overlay is active", async () => {
+    const onTabBarModeChange = jest.fn();
+    mockedListPlans.mockResolvedValue([makeSummary()]);
+
+    await act(async () => {
+      TestRenderer.create(
+        React.createElement(Probe, {
+          familyMembers: [makeFamilyMember("acc-1", "Мила")],
+          isOverlayActive: true,
+          onTabBarModeChange,
+        }),
+      );
+    });
+
+    expect(onTabBarModeChange).toHaveBeenCalledWith("hidden");
+  });
+
   it("confirms plan deletion before calling delete api", async () => {
-    const alertSpy = jest.spyOn(Alert, "alert").mockImplementation(jest.fn());
     mockedListPlans.mockResolvedValue([
       makeSummary(),
       makeSummary({ id: "plan-2", title: "Для папы" }),
@@ -208,12 +229,10 @@ describe("usePillboxHomeController", () => {
       latestController?.handleDeletePlan("plan-1");
     });
 
-    const [, , buttons] = alertSpy.mock.calls[0] ?? [];
-    const confirmButton = buttons?.[1];
-    expect(confirmButton?.text).toBe("Удалить");
+    expect(latestController?.pendingDeletePlanId).toBe("plan-1");
 
     await act(async () => {
-      confirmButton?.onPress?.();
+      latestController?.handleConfirmDeletePlan();
       await Promise.resolve();
     });
 
@@ -222,8 +241,7 @@ describe("usePillboxHomeController", () => {
       planId: "plan-1",
     });
     expect(latestController?.displayedPlans.map((item) => item.id)).toEqual(["plan-2"]);
-
-    alertSpy.mockRestore();
+    expect(latestController?.pendingDeletePlanId).toBeNull();
   });
 
   it("normalizes empty recipients back to the current account", async () => {
@@ -241,12 +259,12 @@ describe("usePillboxHomeController", () => {
     });
 
     await act(async () => {
-      latestController?.handleOpenPlan("plan-1");
+      latestController?.handleToggleExpandedPlan("plan-1");
       await Promise.resolve();
     });
 
     await act(async () => {
-      latestController?.handleSavePlanRecipients([]);
+      latestController?.handleSavePlanRecipients("plan-1", []);
       await Promise.resolve();
     });
 
@@ -257,6 +275,49 @@ describe("usePillboxHomeController", () => {
       plan: expect.objectContaining({
         memberAccountIds: ["acc-1"],
       }),
+    });
+  });
+
+  it("reloads summaries and expanded plan after marking intake", async () => {
+    mockedListPlans.mockResolvedValue([makeSummary()]);
+    mockedGetPlan.mockResolvedValue(makePlan());
+    mockedTakeDose.mockResolvedValue(
+      makeSummary({
+        nextDoseAt: null,
+        nextMedicationId: null,
+        nextMedicationTitle: null,
+      }),
+    );
+
+    await act(async () => {
+      TestRenderer.create(
+        React.createElement(Probe, {
+          familyMembers: [makeFamilyMember("acc-1", "Мила")],
+        }),
+      );
+    });
+
+    await act(async () => {
+      latestController?.handleToggleExpandedPlan("plan-1");
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      latestController?.handleMarkIntake("plan-1", "med-1", "2026-05-15T09:30:00.000Z");
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mockedTakeDose).toHaveBeenCalledWith({
+      accessToken: "token",
+      planId: "plan-1",
+      medicationId: "med-1",
+      scheduledFor: "2026-05-15T09:30:00.000Z",
+    });
+    expect(mockedListPlans).toHaveBeenCalledTimes(2);
+    expect(mockedGetPlan).toHaveBeenCalledWith({
+      accessToken: "token",
+      planId: "plan-1",
     });
   });
 });

@@ -112,6 +112,7 @@ export function usePillboxPlanOnboardingController({
   const canSaveMedicine = Boolean(
     medicineDraft?.name.trim() &&
       medicineDraft?.dose.trim() &&
+      medicineDraft.times.length > 0 &&
       (medicineDraft.intakeMode !== "course" || medicineDraft.courseDurationDays),
   );
 
@@ -174,6 +175,13 @@ export function usePillboxPlanOnboardingController({
     setMedicineDraft(null);
     setEditingMedicineId(null);
     setStep("list");
+  };
+
+  const handleRemoveMedicine = (medicineId: string) => {
+    setDraft((current) => ({
+      ...current,
+      medicines: current.medicines.filter((item) => item.id !== medicineId),
+    }));
   };
 
   const handleCompletePlan = () => {
@@ -402,6 +410,7 @@ export function usePillboxPlanOnboardingController({
     handleRequestClose,
     handleOpenMedicineEditor,
     handleSaveMedicine,
+    handleRemoveMedicine,
     handleCompletePlan,
     handleOpenTimePicker,
     handleConfirmTime,

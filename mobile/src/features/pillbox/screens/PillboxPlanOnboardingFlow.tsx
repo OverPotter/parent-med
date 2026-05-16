@@ -99,6 +99,7 @@ export function PillboxPlanOnboardingFlow({
     handleRequestClose,
     handleOpenMedicineEditor,
     handleSaveMedicine,
+    handleRemoveMedicine,
     handleCompletePlan,
     handleOpenTimePicker,
     handleConfirmTime,
@@ -188,6 +189,7 @@ export function PillboxPlanOnboardingFlow({
               medicines={draft.medicines}
               onAddMedicine={() => handleOpenMedicineEditor()}
               onOpenMedicine={handleOpenMedicineEditor}
+              onRemoveMedicine={handleRemoveMedicine}
             />
           ) : null}
 
@@ -259,7 +261,28 @@ export function PillboxPlanOnboardingFlow({
           ) : null}
           {step === "medicine" ? (
             <PrimaryButton
-              label={locale === "ru" ? "Сохранить лекарство" : "Save medicine"}
+              label={
+                !medicineDraft?.name.trim()
+                  ? locale === "ru"
+                    ? "Укажите препарат"
+                    : "Enter medicine"
+                  : !medicineDraft.dose.trim()
+                    ? locale === "ru"
+                      ? "Укажите дозу"
+                      : "Enter dose"
+                    : medicineDraft.times.length === 0
+                      ? locale === "ru"
+                        ? "Добавьте хотя бы одно время приёма"
+                        : "Add at least one intake time"
+                      : medicineDraft.intakeMode === "course" &&
+                          !medicineDraft.courseDurationDays
+                        ? locale === "ru"
+                          ? "Выберите срок курса"
+                          : "Choose course duration"
+                        : locale === "ru"
+                          ? "Сохранить лекарство"
+                          : "Save medicine"
+              }
               disabled={!canSaveMedicine}
               onPress={handleSaveMedicine}
             />

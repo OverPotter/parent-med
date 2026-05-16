@@ -28,6 +28,10 @@ class PillboxPlanCreateDto(BaseModel):
     """Создание семейного плана таблетницы."""
 
     title: str = Field(..., description="Название плана")
+    subject_account_id: UUID | None = Field(
+        None,
+        description="Для кого этот план",
+    )
     member_account_ids: list[UUID] = Field(
         default_factory=list,
         description="Кому идут напоминания",
@@ -41,6 +45,10 @@ class PillboxPlanUpdateDto(BaseModel):
     """Обновление семейного плана таблетницы целиком."""
 
     title: str = Field(..., description="Название плана")
+    subject_account_id: UUID | None = Field(
+        None,
+        description="Для кого этот план",
+    )
     member_account_ids: list[UUID] = Field(
         default_factory=list,
         description="Кому идут напоминания",
@@ -73,6 +81,7 @@ class PillboxPlanSummaryDto(ResponseBase):
     id: UUID
     title: str
     status: str
+    subject_account_id: UUID | None
     member_account_ids: list[UUID]
     active_medication_count: int
     next_dose_at: datetime | None
@@ -91,6 +100,7 @@ class PillboxPlanResponseDto(ResponseBase):
     family_id: UUID
     title: str
     status: str
+    subject_account_id: UUID | None
     member_account_ids: list[UUID]
     medications: list[PillboxMedicationResponseDto]
     created_at: datetime

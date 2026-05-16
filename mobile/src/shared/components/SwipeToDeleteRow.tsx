@@ -189,7 +189,8 @@ function clamp(value: number, min: number, max: number) {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: "100%",
+    alignSelf: "stretch",
     overflow: "hidden",
     position: "relative",
   },
@@ -211,11 +212,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   contentWrap: {
-    flex: 1,
     width: "100%",
     zIndex: 1,
   },
   pressable: {
     width: "100%",
+    backgroundColor: "#FFFFFF",
   },
 });

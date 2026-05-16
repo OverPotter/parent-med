@@ -12,7 +12,11 @@ from src.application.dto.family import (
     FamilyUpdateDto,
 )
 from src.application.dto.family_access import FamilyAccessPolicyDto
-from src.application.services.subscription_policy import has_billing_ownership_context
+from src.application.services.subscription_policy import (
+    has_billing_ownership_context,
+    is_premium_active,
+    resolve_family_plan_policy,
+)
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.account import Account, copy_account
 from src.domain.entities.account_identity import (
@@ -41,9 +45,6 @@ from src.domain.repositories.pillbox_repository import PillboxRepository
 class FamilyService:
     """Сервис CRUD для семей."""
 
-    PREMIUM_PLAN_CODES = {"plus", "pro"}
-    ACTIVE_SUBSCRIPTION_STATUSES = {"trialing", "active", "grace"}
-
     def __init__(
         self,
         family_repo: FamilyRepository,
@@ -63,10 +64,7 @@ class FamilyService:
         self._pillbox_repo = pillbox_repo
 
     def _is_premium_active(self, entity: Family) -> bool:
-        return (
-            entity.plan_code in self.PREMIUM_PLAN_CODES
-            and entity.subscription_status in self.ACTIVE_SUBSCRIPTION_STATUSES
-        )
+        return is_premium_active(entity)
 
     def _to_response(self, entity: Family) -> FamilyResponseDto:
         return FamilyResponseDto(
@@ -150,6 +148,16 @@ class FamilyService:
     def _ensure_family_owner(self, family: Family | None, account_id: UUID) -> None:
         if not self._is_family_owner(family, account_id):
             raise ForbiddenError("Только владелец семьи может выполнять это действие")
+
+    def _ensure_member_management_allowed(self, family: Family | None) -> None:
+        if family is None:
+            raise NotFoundError("Семья не найдена", resource="family")
+        if resolve_family_plan_policy(family).can_manage_member_roles:
+            return
+        raise ForbiddenError(
+            "Управление ролями и доступами участников доступно только в Plus.",
+            code="FAMILY_MEMBER_MANAGEMENT_REQUIRES_PLUS",
+        )
 
     def _ensure_can_manage_target_member(
         self,
@@ -255,11 +263,19 @@ class FamilyService:
         if self._pillbox_repo is not None:
             pillbox_plans = await self._pillbox_repo.list_by_family_id(family.id)
             for plan in pillbox_plans:
-                if member_account_id not in plan.member_account_ids:
+                if (
+                    member_account_id not in plan.member_account_ids
+                    and plan.subject_account_id != member_account_id
+                ):
                     continue
                 await self._pillbox_repo.update(
                     replace(
                         plan,
+                        subject_account_id=(
+                            None
+                            if plan.subject_account_id == member_account_id
+                            else plan.subject_account_id
+                        ),
                         member_account_ids=[
                             account_id
                             for account_id in plan.member_account_ids
@@ -313,6 +329,7 @@ class FamilyService:
             raise NotFoundError("Участник семьи не найден", resource="account")
 
         family = await self._repo.get_by_id(current_family_id)
+        self._ensure_member_management_allowed(family)
         self._ensure_can_manage_target_member(
             family,
             current_account_id=current_account_id,
@@ -363,6 +380,7 @@ class FamilyService:
                 code="SELF_MEMBER_DELETE_FORBIDDEN",
             )
         family = await self._repo.get_by_id(current_family_id)
+        self._ensure_member_management_allowed(family)
         self._ensure_can_manage_target_member(
             family,
             current_account_id=current_account_id,

@@ -221,8 +221,8 @@ export const pillboxPlanOnboardingEditorStyleParts = {
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#F1E9FF",
-    borderColor: "#CDBAF2",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#E2D9D2",
   },
   courseSegmentedItemActive: {
     backgroundColor: "#E2D6FF",
@@ -241,7 +241,7 @@ export const pillboxPlanOnboardingEditorStyleParts = {
     color: "#172033",
   },
   courseSegmentValue: {
-    color: "#7A6C9A",
+    color: "#8A94A6",
     fontSize: 12,
     lineHeight: 15,
     fontWeight: "500",
@@ -251,7 +251,7 @@ export const pillboxPlanOnboardingEditorStyleParts = {
     color: "#6A55A8",
   },
   courseSegmentChevron: {
-    color: "#9688B7",
+    color: "#A0A8B5",
     fontSize: 18,
     lineHeight: 18,
     fontWeight: "500",

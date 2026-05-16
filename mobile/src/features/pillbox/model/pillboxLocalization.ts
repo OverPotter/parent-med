@@ -218,3 +218,36 @@ export function localizePillboxStatus(
   });
 }
 
+export function getPillboxWeekdayLabels(locale: MobileLocale) {
+  if (locale === "ru") {
+    return ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
+  }
+  if (locale === "de") {
+    return ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
+  }
+  if (locale === "pl") {
+    return ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"] as const;
+  }
+  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+}
+
+export function localizePillboxRepeatDays(
+  repeatDays: number[],
+  locale: MobileLocale,
+) {
+  const normalized = [...new Set(repeatDays)].sort((left, right) => left - right);
+  if (normalized.length === 0 || normalized.length === 7) {
+    return t(locale, {
+      ru: "Каждый день",
+      en: "Every day",
+      de: "Jeden Tag",
+      pl: "Codziennie",
+    });
+  }
+
+  const labels = getPillboxWeekdayLabels(locale);
+  return normalized
+    .map((day) => labels[day - 1])
+    .filter(Boolean)
+    .join(", ");
+}

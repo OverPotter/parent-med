@@ -1,5 +1,8 @@
-import { Image, Pressable, Text, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useState } from "react";
+import { Alert, Image, Pressable, Text, View } from "react-native";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import { SwipeToDeleteRow } from "../../../shared/components/SwipeToDeleteRow";
 import { resolveMedicineFormIcon } from "../../medicine-cabinet/model/medicineCabinetOverviewModel";
 import {
   formatMedicineSummary,
@@ -13,12 +16,15 @@ export function PillboxMedicineListStepSection({
   medicines,
   onAddMedicine,
   onOpenMedicine,
+  onRemoveMedicine,
 }: {
   locale: MobileLocale;
   medicines: PillboxDraftMedicine[];
   onAddMedicine: () => void;
   onOpenMedicine: (medicine: PillboxDraftMedicine) => void;
+  onRemoveMedicine: (medicineId: string) => void;
 }) {
+  const [openMedicineId, setOpenMedicineId] = useState<string | null>(null);
   const title = locale === "ru" ? "Что будем принимать?" : "What will we take?";
   const subtitle =
     locale === "ru"
@@ -32,6 +38,32 @@ export function PillboxMedicineListStepSection({
     locale === "ru"
       ? "Сначала добавьте первое лекарство, и оно появится в этом списке."
       : "Add the first medicine and it will appear in this list.";
+  const deleteDialogTitle =
+    locale === "ru" ? "Удалить лекарство?" : "Delete medicine?";
+  const deleteDialogMessage = (medicineName: string) =>
+    locale === "ru"
+      ? `Карточка «${medicineName}» исчезнет из этого плана.`
+      : `"${medicineName}" will be removed from this plan.`;
+  const cancelLabel = locale === "ru" ? "Отмена" : "Cancel";
+  const deleteLabel = locale === "ru" ? "Удалить" : "Delete";
+
+  const handleRequestDeleteMedicine = (medicine: PillboxDraftMedicine) => {
+    Alert.alert(deleteDialogTitle, deleteDialogMessage(medicine.name), [
+      {
+        text: cancelLabel,
+        style: "cancel",
+        onPress: () => setOpenMedicineId(null),
+      },
+      {
+        text: deleteLabel,
+        style: "destructive",
+        onPress: () => {
+          setOpenMedicineId(null);
+          onRemoveMedicine(medicine.id);
+        },
+      },
+    ]);
+  };
   return (
     <>
       <Hero title={title} subtitle={subtitle} />
@@ -52,22 +84,30 @@ export function PillboxMedicineListStepSection({
               >
                 <Text style={styles.addMedicineLabel}>{addLabel}</Text>
                 <View style={styles.addMedicinePlusWrap}>
-                  <Text style={styles.addMedicinePlusText}>+</Text>
+                  <Feather
+                    name="plus"
+                    size={18}
+                    color={styles.addMedicinePlusText.color}
+                  />
                 </View>
               </Pressable>
               {medicines.map((medicine, index) => (
-                <View
+                <SwipeToDeleteRow
                   key={medicine.id}
-                  style={[
-                    styles.medicineRow,
-                    index === medicines.length - 1 ? styles.medicineRowLast : null,
-                  ]}
+                  onDelete={() => handleRequestDeleteMedicine(medicine)}
+                  onPress={() => onOpenMedicine(medicine)}
+                  isOpen={openMedicineId === medicine.id}
+                  onOpenChange={(isOpen) =>
+                    setOpenMedicineId(isOpen ? medicine.id : null)
+                  }
+                  deleteLabel={deleteLabel}
+                  actionWidth={94}
+                  borderRadius={0}
                 >
-                  <Pressable
-                    onPress={() => onOpenMedicine(medicine)}
-                    style={({ pressed }) => [
-                      styles.medicineRowPressable,
-                      pressed ? styles.backLinkPressed : null,
+                  <View
+                    style={[
+                      styles.medicineRow,
+                      index === medicines.length - 1 ? styles.medicineRowLast : null,
                     ]}
                   >
                     <View
@@ -89,8 +129,8 @@ export function PillboxMedicineListStepSection({
                       </Text>
                     </View>
                     <Text style={styles.chevronText}>›</Text>
-                  </Pressable>
-                </View>
+                  </View>
+                </SwipeToDeleteRow>
               ))}
             </View>
           </>
@@ -105,7 +145,11 @@ export function PillboxMedicineListStepSection({
             >
               <Text style={styles.addMedicineLabel}>{addLabel}</Text>
               <View style={styles.addMedicinePlusWrap}>
-                <Text style={styles.addMedicinePlusText}>+</Text>
+                <Feather
+                  name="plus"
+                  size={18}
+                  color={styles.addMedicinePlusText.color}
+                />
               </View>
             </Pressable>
             <View style={styles.medicineEmptyState}>

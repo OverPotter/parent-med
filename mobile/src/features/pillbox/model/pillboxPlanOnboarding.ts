@@ -30,6 +30,8 @@ export type PillboxPlanDraft = {
   medicines: PillboxDraftMedicine[];
 };
 
+let medicineDraftSequence = 0;
+
 export function buildParticipantOptions(
   familyMembers: MobileFamilyMember[],
 ): PillboxParticipantOption[] {
@@ -62,7 +64,7 @@ export function createInitialPlanDraft(): PillboxPlanDraft {
 
 export function createEmptyMedicineDraft(): PillboxDraftMedicine {
   return {
-    id: `medicine_${Date.now()}`,
+    id: createMedicineDraftId(),
     name: "",
     dose: "",
     times: [],
@@ -71,6 +73,11 @@ export function createEmptyMedicineDraft(): PillboxDraftMedicine {
     mealRelation: "after_food",
     weekdays: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
   };
+}
+
+function createMedicineDraftId() {
+  medicineDraftSequence += 1;
+  return `medicine_${Date.now()}_${medicineDraftSequence}`;
 }
 
 export function formatMedicineSummary(medicine: PillboxDraftMedicine): string {
@@ -173,6 +180,7 @@ export function buildPillboxCreatePlanPayload(input: {
 
   return {
     title: buildPillboxPlanTitle(input.participantTitle),
+    subjectAccountId: input.draft.participantId,
     memberAccountIds: input.recipientIds,
     medications: input.draft.medicines.map((medicine, index) => {
       const courseDurationDays =
