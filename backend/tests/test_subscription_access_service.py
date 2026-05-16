@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -236,3 +236,31 @@ async def test_admin_gets_member_management_but_not_invite_rights() -> None:
     assert result.can_manage_subscription is False
     assert result.can_manage_member_roles is True
     assert result.can_invite_members is False
+
+
+@pytest.mark.asyncio
+async def test_expired_trial_is_not_treated_as_premium() -> None:
+    family_id = uuid4()
+    owner = _build_account(family_id=family_id, family_role="owner", email="mom@example.com")
+    family = Family(
+        id=family_id,
+        name="Family",
+        owner_account_id=owner.id,
+        billing_account_id=owner.id,
+        plan_code="plus",
+        subscription_status="trialing",
+        subscription_expires_at=datetime.now(UTC) - timedelta(minutes=1),
+    )
+    service = SubscriptionAccessService(
+        family_repo=StubFamilyRepository(family),
+        account_repo=StubAccountRepository([owner]),
+        child_repo=StubChildRepository([]),
+        pillbox_repo=StubPillboxRepository([]),
+    )
+
+    result = await service.get_for_account(_build_authenticated_account(owner))
+
+    assert result.subscription_status == "trialing"
+    assert result.premium_active is False
+    assert result.has_plus_access is False
+    assert result.can_manage_member_roles is False

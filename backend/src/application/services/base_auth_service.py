@@ -19,6 +19,7 @@ from src.application.dto.auth import (
 )
 from src.application.dto.family import FamilyResponseDto
 from src.application.dto.family_access import FamilyAccessPolicyDto
+from src.application.services.subscription_policy import is_premium_active
 from src.domain.entities.account import Account
 from src.domain.entities.account_identity import needs_profile_completion, resolve_display_name
 from src.domain.entities.family import Family
@@ -31,9 +32,6 @@ from src.domain.repositories.family_repository import FamilyRepository
 
 class BaseAuthService(ABC):
     """Базовый auth-сервис с общими мапперами и контрактом."""
-
-    PREMIUM_PLAN_CODES = {"plus", "pro"}
-    ACTIVE_SUBSCRIPTION_STATUSES = {"trialing", "active", "grace"}
 
     def __init__(
         self,
@@ -48,10 +46,7 @@ class BaseAuthService(ABC):
         self._family_invite_repo = family_invite_repo
 
     def _is_family_premium_active(self, entity: Family) -> bool:
-        return (
-            entity.plan_code in self.PREMIUM_PLAN_CODES
-            and entity.subscription_status in self.ACTIVE_SUBSCRIPTION_STATUSES
-        )
+        return is_premium_active(entity)
 
     def _account_to_response(self, entity: Account) -> AccountResponseDto:
         return AccountResponseDto(

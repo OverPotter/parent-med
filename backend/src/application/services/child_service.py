@@ -12,6 +12,7 @@ from src.application.services.access_control import (
     filter_child_ids,
     get_child_for_account,
 )
+from src.application.services.child_plan_access import ensure_child_plan_mutation_allowed
 from src.application.services.subscription_policy import resolve_family_plan_policy
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
@@ -283,6 +284,7 @@ class ChildService:
         if entity.family_id != current_account.family_id:
             raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
         ensure_child_edit_access(current_account, entity.id)
+        await ensure_child_plan_mutation_allowed(self._family_repo, current_account, entity.id)
         return await self.update(id, dto)
 
     async def delete(self, id: UUID) -> None:
@@ -298,4 +300,5 @@ class ChildService:
         if entity.family_id != current_account.family_id:
             raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
         ensure_children_admin_access(current_account)
+        await ensure_child_plan_mutation_allowed(self._family_repo, current_account, entity.id)
         await self._repo.delete(id)

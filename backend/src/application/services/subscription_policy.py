@@ -1,6 +1,7 @@
 """Pure subscription policy helpers shared across services."""
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from src.domain.entities.family import Family
 
@@ -25,10 +26,17 @@ NON_BILLING_CONTEXT_STATUSES = {"inactive", "expired"}
 
 
 def is_premium_active(family: Family) -> bool:
-    return (
-        family.plan_code in PREMIUM_PLAN_CODES
-        and family.subscription_status in ACTIVE_SUBSCRIPTION_STATUSES
-    )
+    if family.plan_code not in PREMIUM_PLAN_CODES:
+        return False
+    if family.subscription_status not in ACTIVE_SUBSCRIPTION_STATUSES:
+        return False
+
+    expires_at = family.subscription_expires_at
+    if expires_at is None:
+        return True
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    return expires_at > datetime.now(UTC)
 
 
 def has_billing_ownership_context(family: Family) -> bool:
