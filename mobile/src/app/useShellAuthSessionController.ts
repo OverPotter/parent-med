@@ -19,6 +19,7 @@ import {
   type MobileLocale,
 } from "../shared/i18n/mobileI18n";
 import { deleteStoredNativePushSubscription } from "../shared/push/nativePushSync";
+import { syncRevenueCatSessionState } from "../shared/billing/revenueCatSessionSync";
 
 export function useShellAuthSessionController({
   authSession,
@@ -49,6 +50,11 @@ export function useShellAuthSessionController({
 
   const handleAuthenticated = useCallback(
     async (session: MobileAuthSession) => {
+      try {
+        await syncRevenueCatSessionState(session);
+      } catch {
+        // Auth remains authoritative even if RevenueCat/bootstrap sync lags behind.
+      }
       await applyAuthenticatedSession(session);
     },
     [applyAuthenticatedSession],
@@ -74,6 +80,12 @@ export function useShellAuthSessionController({
       }
     }
 
+    try {
+      await syncRevenueCatSessionState(null);
+    } catch {
+      // Local logout still completes if RevenueCat logout fails.
+    }
+
     await clearStoredAuthSession();
     setAuthSession(null);
   }, [authSession, setAuthSession]);
@@ -87,6 +99,12 @@ export function useShellAuthSessionController({
       } catch {
         // Local account cleanup still continues if push cleanup fails.
       }
+    }
+
+    try {
+      await syncRevenueCatSessionState(null);
+    } catch {
+      // Local cleanup still completes if RevenueCat logout fails.
     }
 
     await clearStoredAuthSession();
@@ -235,6 +253,12 @@ export function useShellAuthSessionController({
 
         if (cancelled) {
           return;
+        }
+
+        try {
+          await syncRevenueCatSessionState(refreshedSession);
+        } catch {
+          // Session restore remains authoritative even if RevenueCat sync lags behind.
         }
 
         await applyAuthenticatedSession(

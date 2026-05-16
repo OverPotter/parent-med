@@ -9,6 +9,14 @@ cd mobile
 npm run ios
 ```
 
+## Config
+
+- `app.config.ts` reads the same public keys as the legacy frontend (`VITE_*`) and also accepts `EXPO_PUBLIC_*` mirrors.
+- iOS associated domains are derived from `VITE_APP_SITE_URL` / `VITE_MARKETING_SITE_URL` with production fallbacks.
+- `APP_ENV=mobile-dev` loads `mobile/.env.mobile-dev` and `mobile/.env.mobile-dev.local`.
+- `APP_ENV=mobile-prod` loads `mobile/.env.mobile-prod` and `mobile/.env.mobile-prod.local`.
+- Keep `mobile/.env.example` only as a key reference. The active profiles are `.env.mobile-*`.
+
 ## Scope
 
 - iPhone only

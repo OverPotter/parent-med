@@ -10,3 +10,4 @@ export { NotificationsSettingsCard } from "./SettingsNotificationsCard";
 export { SecuritySettingsCard } from "./SettingsSecurityCard";
 export { LiveActivitiesSettingsCard } from "./SettingsLiveActivitiesCard";
 export { DangerZoneCard } from "./SettingsDangerZoneCard";
+export { SettingsRevenueCatDebugCard } from "./SettingsRevenueCatDebugCard";

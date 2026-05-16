@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
-  Alert,
   Animated,
   Image,
   ImageBackground,
@@ -18,67 +17,30 @@ import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import {
-  type MobileFamilyAccessSummary,
-  type MobileFamilySettingsSummary,
-  type MobilePushConfig,
-  type MobilePushPreferences,
-  updatePushPreferences,
-} from "../api/settingsApi";
-import {
-  executeSettingsDeletion,
-  patchSettingsPushPreferences,
-  saveMedicationIntervalUnitPreference,
-  saveSettingsPassword,
-  saveSettingsPreferredLanguage,
-  saveSettingsRecoveryCode,
-} from "../model/settingsScreenActions";
-import {
   buildSettingsScreenContent,
   mapSubscriptionPlanLabel,
   mapSubscriptionStatusLabel,
 } from "../model/settingsScreen";
 import {
-  buildCabinetReminderPatch,
-  buildOptimisticMasterPushPreferences,
-  getCachedSettingsBundle,
-  getPasswordInlineHint,
-  loadSettingsBundle,
-  patchCachedSettingsBundle,
-  validatePasswordForm,
-} from "../model/settingsScreenLogic";
-import {
-  defaultFamilyAccess,
-  defaultFamilySummary,
-  defaultPushConfig,
-  defaultPushPreferences,
-  emptyPasswordForm,
-  formatSubscriptionExpiresAt,
-  getSelectedCabinetDays,
-  isPushMasterEnabled,
-  resolvePasswordSaveError,
-  type PasswordFormState,
-} from "../model/settingsScreenHelpers";
-import { resolveSettingsOwnershipPolicy } from "../model/settingsOwnershipPolicy";
-import { openSystemSubscriptionManagement } from "../model/settingsSubscriptionActions";
-import {
-  openNativeNotificationSettings,
-  type NativePushPermissionStatus,
-} from "../../../shared/push/nativePushNotifications";
-import { syncNativePushSubscription } from "../../../shared/push/nativePushSync";
+  type MobileFamilyAccessSummary,
+  type MobilePushPreferences,
+} from "../api/settingsApi";
+import { SubscriptionPaywallSheet } from "../../subscription/screens/SubscriptionPaywallSheet";
 import { settingsScreenAssets } from "../assets";
 import {
-  ChoiceRow,
   DangerZoneCard,
   ExpandableChoiceRow,
   LiveActivitiesSettingsCard,
   NotificationsSettingsCard,
   SecuritySettingsCard,
   SettingsSection,
+  SettingsRevenueCatDebugCard,
   SubscriptionManagementCard,
 } from "./SettingsScreenParts";
 import { styles } from "./settingsScreenStyles";
 import type { MedicationIntervalUnit } from "../session/mobileSettingsPreferencesStorage";
 import { useStoredMedicationIntervalUnit } from "../session/useStoredMedicationIntervalUnit";
+import { useSettingsScreenController } from "../model/useSettingsScreenController";
 
 type SettingsScreenProps = {
   visible: boolean;
@@ -88,6 +50,8 @@ type SettingsScreenProps = {
   onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
   onPushPreferencesChanged?: (preferences: MobilePushPreferences) => void;
   onFamilyAccessChanged?: (familyAccess: MobileFamilyAccessSummary) => void;
+  onOpenTermsOfUse?: () => void;
+  onOpenPrivacyPolicy?: () => void;
 };
 
 const settingsModuleIcons = {
@@ -113,55 +77,21 @@ export function SettingsScreen({
   onUpdatePreferredLanguage,
   onPushPreferencesChanged,
   onFamilyAccessChanged,
+  onOpenTermsOfUse,
+  onOpenPrivacyPolicy,
 }: SettingsScreenProps) {
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
   const content = buildSettingsScreenContent(locale);
   const { width } = useWindowDimensions();
   const scrollViewRef = useRef<ScrollView | null>(null);
-  const manageSubscriptionPendingRef = useRef(false);
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
     enabled: visible,
     width,
     onBack,
   });
-
-  const [pushPreferences, setPushPreferences] = useState<MobilePushPreferences>(
-    defaultPushPreferences,
-  );
-  const [pushConfig, setPushConfig] =
-    useState<MobilePushConfig>(defaultPushConfig);
-  const [familySummary, setFamilySummary] =
-    useState<MobileFamilySettingsSummary>(defaultFamilySummary);
-  const [familyAccess, setFamilyAccess] =
-    useState<MobileFamilyAccessSummary>(defaultFamilyAccess);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSavingPush, setIsSavingPush] = useState(false);
-  const [isSavingLanguage, setIsSavingLanguage] = useState(false);
-  const [isSavingPassword, setIsSavingPassword] = useState(false);
-  const [isSavingRecoveryCode, setIsSavingRecoveryCode] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [devicePushPermissionStatus, setDevicePushPermissionStatus] =
-    useState<NativePushPermissionStatus>("undetermined");
-  const [passwordExpanded, setPasswordExpanded] = useState(false);
-  const [recoveryCodeExpanded, setRecoveryCodeExpanded] = useState(false);
-  const [subscriptionExpanded, setSubscriptionExpanded] = useState(false);
-  const [languageExpanded, setLanguageExpanded] = useState(false);
-  const [medicationIntervalExpanded, setMedicationIntervalExpanded] =
-    useState(false);
   const { medicationIntervalUnit, setMedicationIntervalUnit } =
     useStoredMedicationIntervalUnit();
-  const [passwordForm, setPasswordForm] =
-    useState<PasswordFormState>(emptyPasswordForm);
-  const [passwordSubmitError, setPasswordSubmitError] = useState<string | null>(
-    null,
-  );
-  const [recoveryCode, setRecoveryCode] = useState("");
-  const [hasRecoveryCode, setHasRecoveryCode] = useState(
-    Boolean(session?.account.hasRecoveryCode),
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const scrollSettingsToBottom = () => {
     requestAnimationFrame(() => {
@@ -174,435 +104,69 @@ export function SettingsScreen({
     });
   };
 
-  useEffect(() => {
-    setHasRecoveryCode(Boolean(session?.account.hasRecoveryCode));
-  }, [session?.account.hasRecoveryCode]);
+  const {
+    error,
+    familyAccess,
+    hasRecoveryCode,
+    isDeleting,
+    isLoading,
+    isSavingPush,
+    languageExpanded,
+    medicationIntervalExpanded,
+    notificationsPermissionHint,
+    ownershipPolicy,
+    passwordExpanded,
+    passwordForm,
+    passwordInlineHint,
+    paywallVisible,
+    pushConfig,
+    pushMasterEnabled,
+    pushPreferences,
+    recoveryCode,
+    recoveryCodeExpanded,
+    selectedCabinetDays,
+    subscriptionExpanded,
+    subscriptionExpiresAtLabel,
+    success,
+    confirmDelete,
+    handleCabinetReminderDaysSelect,
+    handleLanguageSelect,
+    handleManageSubscription,
+    handleMasterPushToggle,
+    handleMedicationIntervalUnitSelect,
+    handleSavePassword,
+    handleSaveRecoveryCode,
+    handleSendTestPush,
+    patchPushPreferences,
+    refreshSettingsAfterBilling,
+    resetTransientMessages,
+    setError,
+    setLanguageExpanded,
+    setMedicationIntervalExpanded,
+    setPasswordExpanded,
+    setPasswordForm,
+    setPaywallVisible,
+    setRecoveryCode,
+    setRecoveryCodeExpanded,
+    setSubscriptionExpanded,
+  } = useSettingsScreenController({
+    visible,
+    session,
+    locale,
+    content,
+    medicationIntervalUnit,
+    setMedicationIntervalUnit,
+    onSessionDeleted,
+    onUpdatePreferredLanguage,
+    onPushPreferencesChanged,
+    onFamilyAccessChanged,
+  });
 
   useEffect(() => {
     if (passwordExpanded) {
       scrollSettingsToBottom();
     }
   }, [passwordExpanded]);
-
-  useEffect(() => {
-    if (!visible || !session) {
-      return;
-    }
-
-    const activeSession = session;
-    const cachedBundle = getCachedSettingsBundle(activeSession.accessToken);
-    let cancelled = false;
-
-    if (cachedBundle) {
-      setPushPreferences(cachedBundle.pushPreferences);
-      setPushConfig(cachedBundle.pushConfig);
-      setFamilySummary(cachedBundle.familySummary);
-      setFamilyAccess(cachedBundle.familyAccess);
-      setIsLoading(false);
-    }
-
-    async function loadSettings() {
-      setIsLoading(!cachedBundle);
-      setError(null);
-
-      try {
-        const {
-          pushPreferences: nextPushPreferences,
-          pushConfig: nextPushConfig,
-          familySummary: nextFamilySummary,
-          familyAccess: nextFamilyAccess,
-        } = await loadSettingsBundle(activeSession);
-
-        if (cancelled) {
-          return;
-        }
-
-        setPushPreferences(nextPushPreferences);
-        setPushConfig(nextPushConfig);
-        setFamilySummary(nextFamilySummary);
-        setFamilyAccess(nextFamilyAccess);
-        onPushPreferencesChanged?.(nextPushPreferences);
-        onFamilyAccessChanged?.(nextFamilyAccess);
-      } catch {
-        if (!cancelled && !cachedBundle) {
-          setError(content.saveErrorLabel);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void loadSettings();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    content.saveErrorLabel,
-    onFamilyAccessChanged,
-    onPushPreferencesChanged,
-    session,
-    visible,
-  ]);
-
-  useEffect(() => {
-    if (!visible || !session) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void syncNativePushSubscription({
-      accessToken: session.accessToken,
-      promptIfNeeded: false,
-    })
-      .then((result) => {
-        if (cancelled) {
-          return;
-        }
-
-        if ("permissionStatus" in result) {
-          setDevicePushPermissionStatus(result.permissionStatus);
-          return;
-        }
-
-        setDevicePushPermissionStatus("undetermined");
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setDevicePushPermissionStatus("undetermined");
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [session?.accessToken, visible]);
-
-  const ownershipPolicy = resolveSettingsOwnershipPolicy({
-    content,
-    session,
-    familySummary,
-    familyAccess,
-  });
-  const pushMasterEnabled = isPushMasterEnabled(pushPreferences);
-  const notificationsPermissionHint =
-    pushConfig.enabled && devicePushPermissionStatus === "denied"
-      ? content.notificationsPermissionDeniedHint
-      : null;
-
-  const selectedCabinetDays = useMemo(
-    () => getSelectedCabinetDays(pushPreferences),
-    [
-      pushPreferences.cabinetNotify10Days,
-      pushPreferences.cabinetNotify3Days,
-      pushPreferences.cabinetNotify7Days,
-    ],
-  );
-
-  const resetTransientMessages = () => {
-    setError(null);
-    setSuccess(null);
-    setPasswordSubmitError(null);
-  };
-
-  const passwordInlineHint = getPasswordInlineHint(
-    passwordForm,
-    content.passwordsMismatch,
-    passwordSubmitError,
-  );
-
-  const handleMedicationIntervalUnitSelect = async (
-    nextUnit: MedicationIntervalUnit,
-  ) => {
-    const result = await saveMedicationIntervalUnitPreference({
-      nextUnit,
-      currentUnit: medicationIntervalUnit,
-      saveErrorLabel: content.saveErrorLabel,
-    });
-
-    if (result.blocked) {
-      setMedicationIntervalExpanded(false);
-      return;
-    }
-
-    setMedicationIntervalUnit(nextUnit);
-    setMedicationIntervalExpanded(false);
-    resetTransientMessages();
-
-    if (result.submitError) {
-      setError(result.submitError);
-    }
-  };
-
-  const handleLanguageSelect = async (nextLocale: MobileLocale) => {
-    const result = await saveSettingsPreferredLanguage({
-      isSavingLanguage,
-      nextLocale,
-      currentLocale: locale,
-      onUpdatePreferredLanguage,
-      saveErrorLabel: content.saveErrorLabel,
-    });
-
-    if (result.blocked) {
-      setLanguageExpanded(false);
-      return;
-    }
-
-    setIsSavingLanguage(true);
-    resetTransientMessages();
-
-    if (result.success) {
-      setLanguageExpanded(false);
-      setIsSavingLanguage(false);
-      return;
-    }
-
-    setError(result.submitError ?? content.saveErrorLabel);
-    setIsSavingLanguage(false);
-  };
-
-  const patchPushPreferences = async (
-    patch: Partial<MobilePushPreferences>,
-    optimistic?: MobilePushPreferences,
-  ) => {
-    const previous = pushPreferences;
-    const nextOptimistic = optimistic ?? {
-      ...pushPreferences,
-      ...patch,
-    };
-
-    const result = await patchSettingsPushPreferences({
-      session,
-      isSavingPush,
-      patch,
-      previous,
-      optimistic: nextOptimistic,
-      saveErrorLabel: content.saveErrorLabel,
-    });
-
-    if (result.blocked) {
-      return;
-    }
-
-    setPushPreferences(nextOptimistic);
-    setIsSavingPush(true);
-    resetTransientMessages();
-
-    if (result.nextPreferences) {
-      setPushPreferences(result.nextPreferences);
-      patchCachedSettingsBundle(session?.accessToken ?? null, {
-        pushPreferences: result.nextPreferences,
-      });
-      onPushPreferencesChanged?.(result.nextPreferences);
-      setIsSavingPush(false);
-      return;
-    }
-
-    setPushPreferences(result.revertPreferences ?? previous);
-    setError(result.submitError ?? content.saveErrorLabel);
-    setIsSavingPush(false);
-  };
-
-  const handleMasterPushToggle = async (enabled: boolean) => {
-    if (enabled) {
-      if (!session?.accessToken) {
-        return;
-      }
-
-      setIsSavingPush(true);
-      resetTransientMessages();
-
-      try {
-        const syncResult = await syncNativePushSubscription({
-          accessToken: session.accessToken,
-          promptIfNeeded: true,
-        });
-
-        if (syncResult.status !== "enabled") {
-          if ("permissionStatus" in syncResult) {
-            setDevicePushPermissionStatus(syncResult.permissionStatus);
-          }
-
-          if (
-            syncResult.status === "permission_denied" &&
-            syncResult.permissionStatus === "denied"
-          ) {
-            Alert.alert(
-              content.notificationsPermissionPromptTitle,
-              content.notificationsPermissionPromptBody,
-              [
-                {
-                  text: content.cancelActionLabel,
-                  style: "cancel",
-                },
-                {
-                  text: content.notificationsOpenSettingsLabel,
-                  onPress: () => {
-                    void openNativeNotificationSettings();
-                  },
-                },
-              ],
-            );
-          }
-
-          setError(content.saveErrorLabel);
-          setIsSavingPush(false);
-          return;
-        }
-
-        setDevicePushPermissionStatus(syncResult.permissionStatus);
-      } catch {
-        setError(content.saveErrorLabel);
-        setIsSavingPush(false);
-        return;
-      }
-
-      setIsSavingPush(false);
-    }
-
-    const optimistic = buildOptimisticMasterPushPreferences(
-      pushPreferences,
-      enabled,
-    );
-
-    await patchPushPreferences(
-      {
-        childrenEnabled: enabled,
-        pillboxEnabled: enabled,
-        cabinetNotify10Days: optimistic.cabinetNotify10Days,
-        cabinetNotify7Days: optimistic.cabinetNotify7Days,
-        cabinetNotify3Days: optimistic.cabinetNotify3Days,
-      },
-      optimistic,
-    );
-  };
-
-  const handleCabinetReminderDaysSelect = async (days: 10 | 7 | 3) => {
-    await patchPushPreferences(buildCabinetReminderPatch(days));
-  };
-
-  const handleSavePassword = async () => {
-    const result = await saveSettingsPassword({
-      session,
-      isSavingPassword,
-      passwordForm,
-      locale,
-      content,
-    });
-
-    if (result.blocked) {
-      return;
-    }
-
-    if (result.validationError) {
-      setError(result.validationError);
-      return;
-    }
-
-    setIsSavingPassword(true);
-    resetTransientMessages();
-
-    if (result.nextPasswordForm) {
-      setPasswordForm(result.nextPasswordForm);
-      setPasswordExpanded(false);
-      setSuccess(result.successMessage ?? null);
-      setIsSavingPassword(false);
-      return;
-    }
-
-    setPasswordSubmitError(result.submitError ?? content.saveErrorLabel);
-    setIsSavingPassword(false);
-  };
-
-  const handleSaveRecoveryCode = async () => {
-    const result = await saveSettingsRecoveryCode({
-      session,
-      isSavingRecoveryCode,
-      recoveryCode,
-      content,
-    });
-
-    if (result.blocked) {
-      return;
-    }
-
-    if (result.validationError) {
-      setError(result.validationError);
-      return;
-    }
-
-    setIsSavingRecoveryCode(true);
-    resetTransientMessages();
-
-    if (typeof result.nextRecoveryCode === "string") {
-      setRecoveryCode(result.nextRecoveryCode);
-      setRecoveryCodeExpanded(false);
-      setHasRecoveryCode(Boolean(result.hasRecoveryCode));
-      setSuccess(result.successMessage ?? null);
-      setIsSavingRecoveryCode(false);
-      return;
-    }
-
-    setError(result.submitError ?? content.saveErrorLabel);
-    setIsSavingRecoveryCode(false);
-  };
-
-  const confirmDelete = () => {
-    if (!session || isDeleting) {
-      return;
-    }
-
-    if (ownershipPolicy.deletionBlocked) {
-      Alert.alert(
-        ownershipPolicy.blockedDeleteTitle,
-        ownershipPolicy.blockedDeleteMessage,
-        [
-          {
-            text: content.cancelActionLabel,
-            style: "cancel",
-          },
-        ],
-      );
-      return;
-    }
-
-    Alert.alert(
-      ownershipPolicy.confirmDeleteTitle,
-      ownershipPolicy.confirmDeleteMessage,
-      [
-        {
-          text: content.cancelActionLabel,
-          style: "cancel",
-        },
-        {
-          text: content.confirmDeleteAction,
-          style: "destructive",
-          onPress: () => {
-            void handleDelete();
-          },
-        },
-      ],
-    );
-  };
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    resetTransientMessages();
-
-    try {
-      await executeSettingsDeletion({
-        session,
-        usesFamilyDeleteEndpoint: ownershipPolicy.usesFamilyDeleteEndpoint,
-      });
-      await onSessionDeleted();
-    } catch {
-      setError(content.saveErrorLabel);
-      setIsDeleting(false);
-    }
-  };
 
   const subscriptionPlanLabel = mapSubscriptionPlanLabel(
     content,
@@ -612,29 +176,9 @@ export function SettingsScreen({
     content,
     familyAccess.subscriptionStatus,
   );
-  const subscriptionExpiresAtLabel = formatSubscriptionExpiresAt(
-    locale,
-    familySummary.subscriptionExpiresAt,
-  );
   const familyMembersCount = String(
     familyAccess.currentAdultsCount + familyAccess.currentChildrenCount,
   );
-  const handleManageSubscription = async () => {
-    if (manageSubscriptionPendingRef.current) {
-      return;
-    }
-
-    manageSubscriptionPendingRef.current = true;
-    try {
-      await openSystemSubscriptionManagement();
-    } catch {
-      setError(content.saveErrorLabel);
-    } finally {
-      setTimeout(() => {
-        manageSubscriptionPendingRef.current = false;
-      }, 900);
-    }
-  };
 
   return (
     <Animated.View
@@ -943,6 +487,121 @@ export function SettingsScreen({
               </SettingsSection>
             ) : null}
 
+            {__DEV__ ? (
+              <SettingsSection
+                title={content.debugSectionTitle}
+                hint={content.debugSectionHint}
+                textPrimaryColor={surfaceTheme.textPrimaryColor}
+                textSecondaryColor={surfaceTheme.textSecondaryColor}
+              >
+                <View
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: surfaceTheme.cardBackgroundColor,
+                      borderColor: surfaceTheme.cardBorderColor,
+                    },
+                  ]}
+                >
+                  <Pressable
+                    onPress={() => {
+                      void handleSendTestPush();
+                    }}
+                    style={({ pressed }) => [
+                      styles.settingRow,
+                      pressed ? styles.rowPressed : null,
+                    ]}
+                  >
+                    <View style={styles.rowCopy}>
+                      <Text
+                        style={[
+                          styles.rowTitle,
+                          { color: surfaceTheme.textPrimaryColor },
+                        ]}
+                      >
+                        {content.debugTestPushLabel}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.rowHint,
+                          { color: surfaceTheme.textSecondaryColor },
+                        ]}
+                      >
+                        {content.debugTestPushHint}
+                      </Text>
+                    </View>
+                  </Pressable>
+
+                  <View style={styles.rowDivider} />
+
+                  <Pressable
+                    onPress={() => {
+                      setPaywallVisible(true);
+                    }}
+                    style={({ pressed }) => [
+                      styles.settingRow,
+                      pressed ? styles.rowPressed : null,
+                    ]}
+                  >
+                    <View style={styles.rowCopy}>
+                      <Text
+                        style={[
+                          styles.rowTitle,
+                          { color: surfaceTheme.textPrimaryColor },
+                        ]}
+                      >
+                        {content.debugOpenPaywallLabel}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.rowHint,
+                          { color: surfaceTheme.textSecondaryColor },
+                        ]}
+                      >
+                        {content.debugOpenPaywallHint}
+                      </Text>
+                    </View>
+                  </Pressable>
+
+                </View>
+
+                <SettingsRevenueCatDebugCard
+                  session={session}
+                  copy={{
+                    title: content.debugRevenueCatTitle,
+                    hint: content.debugRevenueCatHint,
+                    sandboxOnly: content.debugRevenueCatSandboxOnly,
+                    openPaywall: content.debugOpenPaywallLabel,
+                    configure: content.debugRevenueCatConfigureLabel,
+                    offerings: content.debugRevenueCatOfferingsLabel,
+                    buyMonthly: content.debugRevenueCatBuyMonthlyLabel,
+                    buyAnnual: content.debugRevenueCatBuyAnnualLabel,
+                    restore: content.debugRevenueCatRestoreLabel,
+                    snapshot: content.debugRevenueCatSnapshotLabel,
+                    resetToFree: content.debugRevenueCatResetToFreeLabel,
+                    working: content.debugRevenueCatWorkingLabel,
+                    ready: content.debugRevenueCatReadyLabel,
+                    noResult: content.debugRevenueCatNoResultLabel,
+                    apiKeyPresent: content.debugRevenueCatApiKeyPresentLabel,
+                    apiKeyMissing: content.debugRevenueCatApiKeyMissingLabel,
+                    entitlement: content.debugRevenueCatEntitlementLabel,
+                    syncEnabled: content.debugRevenueCatSyncEnabledLabel,
+                    syncDisabled: content.debugRevenueCatSyncDisabledLabel,
+                    accountMissing: content.debugRevenueCatAccountMissingLabel,
+                    packageMissing: content.debugRevenueCatPackageMissingLabel,
+                  }}
+                  textPrimaryColor={surfaceTheme.textPrimaryColor}
+                  textSecondaryColor={surfaceTheme.textSecondaryColor}
+                  cardBackgroundColor={surfaceTheme.cardBackgroundColor}
+                  cardBorderColor={surfaceTheme.cardBorderColor}
+                  onOpenPaywall={() => {
+                    setPaywallVisible(true);
+                  }}
+                  onBillingChanged={refreshSettingsAfterBilling}
+                />
+              </SettingsSection>
+            ) : null}
+
             <SettingsSection
               title={content.securitySectionTitle}
               hint={content.securitySectionHint}
@@ -1029,6 +688,15 @@ export function SettingsScreen({
           </ScrollView>
         </View>
       </ImageBackground>
+      <SubscriptionPaywallSheet
+        visible={visible && paywallVisible}
+        session={session}
+        onClose={() => setPaywallVisible(false)}
+        onPurchased={refreshSettingsAfterBilling}
+        onError={(message) => setError(message)}
+        onOpenTermsOfUse={onOpenTermsOfUse}
+        onOpenPrivacyPolicy={onOpenPrivacyPolicy}
+      />
     </Animated.View>
   );
 }

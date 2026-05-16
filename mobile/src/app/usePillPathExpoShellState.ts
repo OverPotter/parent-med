@@ -3,40 +3,28 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { type MobileAuthSession } from "../features/auth/api/authApi";
 import { type AnalyticsEpisodeCard } from "../features/analytics/model/analyticsScreen";
 import { prefetchAnalyticsScreenData } from "../features/analytics/screens/useAnalyticsScreenState";
-import {
-  createMobileChild,
-  deleteMobileChild,
-  updateMobileChild,
-} from "../features/children/api/childrenApi";
-import { createMobileHeightEntry } from "../features/growth/api/heightEntriesApi";
 import { type MobileBottomTabKey } from "../shared/components/mobileBottomTabModel";
 import {
   buildChildrenCardsFromApi,
   buildChildrenScreenContent,
 } from "../features/children/model/childrenRedesign";
 import { type IllnessQuickActionKind } from "../features/illness/model/illnessObservation";
-import {
-  hasActiveIllnessObservation,
-  resolveActiveIllnessChildId,
-} from "../features/illness/model/illnessObservationState";
+import { resolveActiveIllnessChildId } from "../features/illness/model/illnessObservationState";
 import { useIllnessFlowController } from "../features/illness/model/useIllnessFlowController";
 import { type JournalEntryKind } from "../features/journal/model/journalEntryScreen";
 import {
   applyPreferredLanguageToSession,
   updatePreferredLanguage,
 } from "../features/settings/api/settingsApi";
+import { buildSettingsScreenContent } from "../features/settings/model/settingsScreen";
 import { useLiveActivitiesSync } from "../features/live-activities/useLiveActivitiesSync";
-import { createMobileWeightEntry } from "../features/weight/api/weightEntriesApi";
 import { useMobileI18n, type MobileLocale } from "../shared/i18n/mobileI18n";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
-import type { PostAuthOnboardingStep } from "./postAuthOnboardingModel";
-import { resolvePostAuthOnboardingStep } from "./postAuthOnboardingModel";
-import {
-  markDisplayNameOnboardingSkipped,
-  markRecoveryCodeOnboardingSkipped,
-  readPostAuthOnboardingSkips,
-} from "./postAuthOnboardingStorage";
+import { buildPushBannerState } from "./pushBannerModel";
+import { buildRootTabItems, shouldShowJournalRootTab } from "./shellRootTabsModel";
+import { usePostAuthOnboardingController } from "./usePostAuthOnboardingController";
 import { useShellAuthSessionController } from "./useShellAuthSessionController";
+import { useShellChildCrudController } from "./useShellChildCrudController";
 import { useCareSessionController } from "./useCareSessionController";
 import { useLiveActivitySettingsController } from "./useLiveActivitySettingsController";
 import { openChildrenRoot, openIllnessJournalRoot } from "./shellNavigation";
@@ -46,6 +34,7 @@ import { usePushNotificationNavigation } from "./usePushNotificationNavigation";
 import { usePushSubscriptionSync } from "./usePushSubscriptionSync";
 import { useShellUtilityNavigationController } from "./useShellUtilityNavigationController";
 import { useLiveActivityNavigation } from "./useLiveActivityNavigation";
+import { openNativeNotificationSettings } from "../shared/push/nativePushNotifications";
 import {
   isRootModuleScreen,
   resolvePostAuthLandingScreen,
@@ -61,6 +50,7 @@ export function usePillPathExpoShellState() {
     () => buildChildrenScreenContent(locale),
     [locale],
   );
+  const settingsContent = useMemo(() => buildSettingsScreenContent(locale), [locale]);
   const fallbackChildrenCards = childrenScreenContent.cards;
   const [authSession, setAuthSession] = useState<MobileAuthSession | null>(
     null,
@@ -83,12 +73,6 @@ export function usePillPathExpoShellState() {
   const [illnessActionReturnScreen, setIllnessActionReturnScreen] = useState<
     "illnessJournal" | "illnessReminders"
   >("illnessJournal");
-  const [skippedDisplayNameOnboarding, setSkippedDisplayNameOnboarding] =
-    useState(false);
-  const [skippedRecoveryCodeOnboarding, setSkippedRecoveryCodeOnboarding] =
-    useState(false);
-  const [forcedPostAuthOnboardingStep, setForcedPostAuthOnboardingStep] =
-    useState<PostAuthOnboardingStep>(null);
   const {
     activeFeedingRecordsByCardId,
     activeIllnessObservationsByChildId,
@@ -100,6 +84,7 @@ export function usePillPathExpoShellState() {
     familyRoutinesCount,
     isShellBootstrapping,
     latestChildMetricsByCardId,
+    pushPreferences,
     liveActivityPreferences,
     loadChildren,
     refreshFamilyMembers: handleRefreshFamilyMembers,
@@ -110,6 +95,7 @@ export function usePillPathExpoShellState() {
     setCanUseLiveActivities,
     setFamilyRoutinesCount,
     setLatestChildMetricsByCardId,
+    setPushPreferences,
     setLiveActivityPreferences,
   } = useShellFamilyState({
     authSession,
@@ -118,7 +104,7 @@ export function usePillPathExpoShellState() {
   const {
     handleFamilyAccessChanged,
     handleIsIllnessLiveActivityEnabled,
-    handlePushPreferencesChanged,
+    handlePushPreferencesChanged: handleLiveActivityPushPreferencesChanged,
     handleToggleIllnessLiveActivity,
     illnessLiveActivityPreferenceVersion,
   } = useLiveActivitySettingsController({
@@ -127,6 +113,16 @@ export function usePillPathExpoShellState() {
     setFamilyRoutinesCount,
     setLiveActivityPreferences,
   });
+
+  const handlePushPreferencesChanged = useCallback(
+    (preferences: Parameters<
+      typeof handleLiveActivityPushPreferencesChanged
+    >[0]) => {
+      setPushPreferences(preferences);
+      handleLiveActivityPushPreferencesChanged(preferences);
+    },
+    [handleLiveActivityPushPreferencesChanged, setPushPreferences],
+  );
 
   const childrenCards = useMemo(() => {
     if (!authSession) {
@@ -191,7 +187,23 @@ export function usePillPathExpoShellState() {
     onOpenIllnessJournal: handleOpenIllnessJournalRoot,
   });
 
-  usePushSubscriptionSync(authSession);
+  const pushSubscriptionState = usePushSubscriptionSync(authSession, {
+    permissionPromptTitle: settingsContent.notificationsPermissionPromptTitle,
+    permissionPromptBody: settingsContent.notificationsPermissionPromptBody,
+    openSettingsLabel: settingsContent.notificationsOpenSettingsLabel,
+    cancelLabel: settingsContent.cancelActionLabel,
+  });
+  const pushBannerState = useMemo(
+    () =>
+      buildPushBannerState({
+        activeRootTab,
+        locale,
+        pushPreferences,
+        pushSubscriptionState,
+        settingsContent,
+      }),
+    [activeRootTab, locale, pushPreferences, pushSubscriptionState, settingsContent],
+  );
 
   const {
     handleFeedingPress,
@@ -286,31 +298,21 @@ export function usePillPathExpoShellState() {
 
   const shouldShowJournalTab = useMemo(
     () =>
-      hasActiveIllnessObservation(activeIllnessObservationsByChildId) ||
-      activeRootTab === "journal" ||
-      activeScreen === "illnessJournal" ||
-      activeScreen === "illnessReminders" ||
-      activeScreen === "illnessActionPlaceholder",
+      shouldShowJournalRootTab({
+        activeIllnessObservationsByChildId,
+        activeRootTab,
+        activeScreen,
+      }),
     [activeIllnessObservationsByChildId, activeRootTab, activeScreen],
   );
   const rootTabItems = useMemo(
-    () => {
-      const baseTabs = buildChildrenScreenContent(locale, activeRootTab).tabs;
-      const journalTab = {
-        key: "journal" as const,
-        label: copy.childProfile.journalTitle,
-        active: activeRootTab === "journal",
-      };
-
-      const tabsWithoutMore = baseTabs.filter((tab) => tab.key !== "more");
-      const moreTab = baseTabs.find((tab) => tab.key === "more");
-
-      return [
-        ...(shouldShowJournalTab ? [journalTab] : []),
-        ...tabsWithoutMore,
-        ...(moreTab ? [moreTab] : []),
-      ];
-    },
+    () =>
+      buildRootTabItems({
+        locale,
+        activeRootTab,
+        shouldShowJournalTab,
+        journalLabel: copy.childProfile.journalTitle,
+      }),
     [activeRootTab, copy.childProfile.journalTitle, locale, shouldShowJournalTab],
   );
   const {
@@ -333,90 +335,17 @@ export function usePillPathExpoShellState() {
     },
     [applyAuthenticated],
   );
-  useEffect(() => {
-    if (!authSession?.account.id) {
-      setSkippedDisplayNameOnboarding(false);
-      setSkippedRecoveryCodeOnboarding(false);
-      setForcedPostAuthOnboardingStep(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    void readPostAuthOnboardingSkips(authSession.account.id).then((result) => {
-      if (cancelled) {
-        return;
-      }
-
-      setSkippedDisplayNameOnboarding(result.skippedDisplayName);
-      setSkippedRecoveryCodeOnboarding(result.skippedRecoveryCode);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authSession?.account.id]);
-
-  const resolvedPostAuthOnboardingStep = useMemo(
-    () =>
-      resolvePostAuthOnboardingStep({
-        session: authSession,
-        skippedDisplayName: skippedDisplayNameOnboarding,
-        skippedRecoveryCode: skippedRecoveryCodeOnboarding,
-      }),
-    [
-      authSession,
-      skippedDisplayNameOnboarding,
-      skippedRecoveryCodeOnboarding,
-    ],
-  );
-  const postAuthOnboardingStep =
-    forcedPostAuthOnboardingStep ?? resolvedPostAuthOnboardingStep;
-  const handleSkipDisplayNameOnboarding = useCallback(async () => {
-    if (!authSession?.account.id) {
-      return;
-    }
-
-    if (forcedPostAuthOnboardingStep) {
-      setForcedPostAuthOnboardingStep("recovery-code");
-      return;
-    }
-
-    await markDisplayNameOnboardingSkipped(authSession.account.id);
-    setSkippedDisplayNameOnboarding(true);
-  }, [authSession?.account.id, forcedPostAuthOnboardingStep]);
-  const handleSkipRecoveryCodeOnboarding = useCallback(async () => {
-    if (!authSession?.account.id) {
-      return;
-    }
-
-    if (forcedPostAuthOnboardingStep) {
-      setForcedPostAuthOnboardingStep(null);
-      return;
-    }
-
-    await markRecoveryCodeOnboardingSkipped(authSession.account.id);
-    setSkippedRecoveryCodeOnboarding(true);
-  }, [authSession?.account.id, forcedPostAuthOnboardingStep]);
-  const handleSavePostAuthDisplayName = useCallback(
-    async (patch: {
-      displayName: string;
-      relationshipLabel: string | null;
-      phone: string | null;
-    }) => {
-      await handleUpdateAuthSession(patch);
-      if (forcedPostAuthOnboardingStep) {
-        setForcedPostAuthOnboardingStep("recovery-code");
-      }
-    },
-    [forcedPostAuthOnboardingStep, handleUpdateAuthSession],
-  );
-  const handleSavePostAuthRecoveryCode = useCallback(async () => {
-    await handleMarkRecoveryCodeConfigured();
-    if (forcedPostAuthOnboardingStep) {
-      setForcedPostAuthOnboardingStep(null);
-    }
-  }, [forcedPostAuthOnboardingStep, handleMarkRecoveryCodeConfigured]);
+  const {
+    postAuthOnboardingStep,
+    handleSkipDisplayNameOnboarding,
+    handleSkipRecoveryCodeOnboarding,
+    handleSavePostAuthDisplayName,
+    handleSavePostAuthRecoveryCode,
+  } = usePostAuthOnboardingController({
+    authSession,
+    handleUpdateAuthSession,
+    handleMarkRecoveryCodeConfigured,
+  });
   const {
     handleCloseAnalytics,
     handleCloseAnalyticsEpisode,
@@ -552,107 +481,19 @@ export function usePillPathExpoShellState() {
   const handleCloseChildCreate = useCallback(() => {
     setActiveScreen("children");
   }, []);
-
-  const handleSubmitChildCreate = useCallback(
-    async (payload: {
-      name: string;
-      birthDate: string | null;
-      avatarKey: string | null;
-      gender: string | null;
-      babyModeEnabled: boolean;
-      weightKg: number | null;
-      heightCm: number | null;
-      allergies: string | null;
-      notes: string | null;
-    }) => {
-      if (!authSession) {
-        return;
-      }
-
-      const created = await createMobileChild(authSession, {
-        name: payload.name,
-        birthDate: payload.birthDate,
-        avatarKey: payload.avatarKey,
-        gender: payload.gender,
-        babyModeEnabled: payload.babyModeEnabled,
-        allergies: payload.allergies,
-        notes: payload.notes,
-      });
-
-      if (payload.weightKg && payload.weightKg > 0) {
-        await createMobileWeightEntry(authSession, {
-          childId: created.id,
-          valueKg: payload.weightKg,
-        });
-      }
-
-      if (payload.heightCm && payload.heightCm > 0) {
-        await createMobileHeightEntry(authSession, {
-          childId: created.id,
-          valueCm: payload.heightCm,
-        });
-      }
-
-      const nextChildren = await loadChildren(authSession, {
-        ignoreErrors: true,
-      });
-      setSelectedChildId(created.id);
-
-      if (!nextChildren || nextChildren.length === 0) {
-        setChildren([created]);
-        setLatestChildMetricsByCardId((current) => ({
-          ...current,
-          [created.id]: {
-            weightKg: payload.weightKg ?? null,
-            heightCm: payload.heightCm ?? null,
-          },
-        }));
-      }
-
-      setActiveScreen("children");
-    },
-    [authSession, loadChildren],
-  );
-
-  const handleSubmitChildProfileEdit = useCallback(
-    async (payload: {
-      name: string;
-      birthDate: string | null;
-      avatarKey: string | null;
-      gender: string | null;
-      babyModeEnabled: boolean;
-      allergies: string | null;
-      notes: string | null;
-    }) => {
-      if (!authSession || !selectedChildId) {
-        return;
-      }
-
-      await updateMobileChild(authSession, selectedChildId, {
-        name: payload.name,
-        birthDate: payload.birthDate,
-        avatarKey: payload.avatarKey,
-        gender: payload.gender,
-        babyModeEnabled: payload.babyModeEnabled,
-        allergies: payload.allergies,
-        notes: payload.notes,
-      });
-
-      await loadChildren(authSession, { ignoreErrors: true });
-      setActiveScreen("childProfile");
-    },
-    [authSession, loadChildren, selectedChildId],
-  );
-
-  const handleDeleteSelectedChild = useCallback(async () => {
-    if (!authSession || !selectedChildId) {
-      return;
-    }
-
-    await deleteMobileChild(authSession, selectedChildId);
-    await loadChildren(authSession, { ignoreErrors: true });
-    setActiveScreen("children");
-  }, [authSession, loadChildren, selectedChildId]);
+  const {
+    handleSubmitChildCreate,
+    handleSubmitChildProfileEdit,
+    handleDeleteSelectedChild,
+  } = useShellChildCrudController({
+    authSession,
+    selectedChildId,
+    loadChildren,
+    setSelectedChildId,
+    setChildren,
+    setLatestChildMetricsByCardId,
+    setActiveScreen,
+  });
 
   const rootTabContentProps: RootTabContentProps = {
     locale,
@@ -683,6 +524,16 @@ export function usePillPathExpoShellState() {
     onOpenPrivacyPolicy: handleOpenPrivacyPolicy,
     onUpdateAuthSession: handleUpdateAuthSession,
     onOpenPillboxAnalytics: handleOpenPillboxAnalytics,
+    pushNotificationsBannerVisible: pushBannerState.visible,
+    pushNotificationsBannerTitle: pushBannerState.title,
+    pushNotificationsBannerBody: pushBannerState.body,
+    pushNotificationsBannerActionLabel: pushBannerState.actionLabel,
+    onOpenPushNotificationSettings:
+      pushBannerState.openTarget === "system"
+        ? () => {
+            void openNativeNotificationSettings();
+          }
+        : handleOpenSettings,
     screenLayerStyle: {
       position: "absolute",
       top: 0,
@@ -777,6 +628,8 @@ export function usePillPathExpoShellState() {
           onBackFamily: handleCloseFamily,
           onOpenChildrenFromFamily: handleOpenChildrenFromFamily,
           onOpenPillboxFromFamily: handleOpenPillboxFromFamily,
+          onOpenPrivacyPolicy: handleOpenPrivacyPolicy,
+          onOpenTermsOfUse: handleOpenTermsOfUse,
           onRefreshFamilyMembers: handleRefreshFamilyMembers,
           onUpdateCurrentProfile: handleUpdateAuthSession,
           onSessionDeleted: handleSessionDeleted,

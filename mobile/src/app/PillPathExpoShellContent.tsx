@@ -83,6 +83,11 @@ type RootTabContentProps = {
     relationshipLabel?: string | null;
     phone?: string | null;
   }) => Promise<void>;
+  pushNotificationsBannerVisible: boolean;
+  pushNotificationsBannerTitle: string;
+  pushNotificationsBannerBody: string;
+  pushNotificationsBannerActionLabel: string;
+  onOpenPushNotificationSettings: () => void;
   onRootTabBarModeChange?: (
     mode: "foreground" | "background" | "hidden",
   ) => void;
@@ -112,6 +117,11 @@ export function RootTabContent({
   onOpenTermsOfUse,
   onOpenPrivacyPolicy,
   onUpdateAuthSession,
+  pushNotificationsBannerVisible,
+  pushNotificationsBannerTitle,
+  pushNotificationsBannerBody,
+  pushNotificationsBannerActionLabel,
+  onOpenPushNotificationSettings,
   onRootTabBarModeChange,
   onOpenPillboxAnalytics,
   screenLayerStyle,
@@ -142,6 +152,11 @@ export function RootTabContent({
           activeObservationByCardId={activeObservationByCardId}
           onSleepPress={onSleepPress}
           onFeedingPress={onFeedingPress}
+          pushNotificationsBannerVisible={pushNotificationsBannerVisible}
+          pushNotificationsBannerTitle={pushNotificationsBannerTitle}
+          pushNotificationsBannerBody={pushNotificationsBannerBody}
+          pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
+          onOpenPushNotificationSettings={onOpenPushNotificationSettings}
         />
       </View>
       {authSession ? (
@@ -179,6 +194,11 @@ export function RootTabContent({
           <MedicineCabinetOverviewScreen
             authSession={authSession}
             familyMembers={familyMembers}
+            pushNotificationsBannerVisible={pushNotificationsBannerVisible}
+            pushNotificationsBannerTitle={pushNotificationsBannerTitle}
+            pushNotificationsBannerBody={pushNotificationsBannerBody}
+            pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
+            onOpenPushNotificationSettings={onOpenPushNotificationSettings}
             onTabBarModeChange={onRootTabBarModeChange}
           />
         ) : activeRootTab === "pillbox" && !showMoreTab ? (
@@ -187,6 +207,11 @@ export function RootTabContent({
             currentAccountId={authSession?.account.id ?? ""}
             familyMembers={familyMembers}
             onOpenAnalytics={onOpenPillboxAnalytics}
+            pushNotificationsBannerVisible={pushNotificationsBannerVisible}
+            pushNotificationsBannerTitle={pushNotificationsBannerTitle}
+            pushNotificationsBannerBody={pushNotificationsBannerBody}
+            pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
+            onOpenPushNotificationSettings={onOpenPushNotificationSettings}
             onTabBarModeChange={onRootTabBarModeChange}
           />
         ) : placeholderTabKey ? (
@@ -336,6 +361,8 @@ type OverlayScreensProps = {
     onBackFamily: () => void;
     onOpenChildrenFromFamily: () => void;
     onOpenPillboxFromFamily: () => void;
+    onOpenTermsOfUse: () => void;
+    onOpenPrivacyPolicy: () => void;
     onRefreshFamilyMembers: () => Promise<void>;
     onUpdateCurrentProfile: (patch: {
       displayName?: string;
@@ -653,6 +680,8 @@ function UtilityOverlays({
         onUpdatePreferredLanguage={utilityFlow.onUpdatePreferredLanguage}
         onPushPreferencesChanged={utilityFlow.onPushPreferencesChanged}
         onFamilyAccessChanged={utilityFlow.onFamilyAccessChanged}
+        onOpenTermsOfUse={utilityFlow.onOpenTermsOfUse}
+        onOpenPrivacyPolicy={utilityFlow.onOpenPrivacyPolicy}
       />
       <LegalDocumentScreen
         documentKey="terms"

@@ -1,5 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { NotificationDisabledBanner } from "../../../shared/components/NotificationDisabledBanner";
+import { journalTypography } from "../../../shared/theme/journalTypography";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import {
   getCabinetFilterSectionTitle,
@@ -12,6 +14,11 @@ import { medicineCabinetOverviewStyles as styles } from "./medicineCabinetOvervi
 
 export function MedicineCabinetOverviewContent({
   locale,
+  pushNotificationsBannerVisible,
+  pushNotificationsBannerTitle,
+  pushNotificationsBannerBody,
+  pushNotificationsBannerActionLabel,
+  onOpenPushNotificationSettings,
   searchQuery,
   onChangeSearchQuery,
   activeFilter,
@@ -34,6 +41,11 @@ export function MedicineCabinetOverviewContent({
   onDeleteItem,
 }: {
   locale: MobileLocale;
+  pushNotificationsBannerVisible: boolean;
+  pushNotificationsBannerTitle?: string;
+  pushNotificationsBannerBody?: string;
+  pushNotificationsBannerActionLabel?: string;
+  onOpenPushNotificationSettings: () => void;
   searchQuery: string;
   onChangeSearchQuery: (value: string) => void;
   activeFilter: CabinetFilterKey;
@@ -122,6 +134,31 @@ export function MedicineCabinetOverviewContent({
               <Text style={styles.infoLineTextStrong}>{recipientsSummary}</Text>
             </Text>
           </View>
+
+          {pushNotificationsBannerVisible ? (
+            <NotificationDisabledBanner
+              title={pushNotificationsBannerTitle}
+              body={pushNotificationsBannerBody}
+              actionLabel={pushNotificationsBannerActionLabel}
+              onPress={onOpenPushNotificationSettings}
+              palette={{
+                borderColor: "#F0D8CC",
+                backgroundColor: "rgba(255,252,248,0.98)",
+                iconBackgroundColor: "#E59A63",
+                titleColor: "#172033",
+                bodyColor: "#6E7889",
+                actionColor: "#D88360",
+                shadowColor: "#172033",
+                chevronColor: "#D88360",
+              }}
+              typography={{
+                titleFontFamily: journalTypography.body,
+                bodyFontFamily: journalTypography.body,
+                actionFontFamily: journalTypography.body,
+              }}
+              marginTop={14}
+            />
+          ) : null}
 
           <Pressable
             accessibilityRole="button"

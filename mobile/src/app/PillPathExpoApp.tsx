@@ -15,7 +15,7 @@ import { redesignBackgrounds } from "../redesign/shared/backgrounds";
 import { redesignSharedIcons } from "../redesign/shared/icons";
 import { AssetWarmupLayer } from "../shared/components/AssetWarmupLayer";
 import { MobileBottomTabBar } from "../shared/components/MobileBottomTabBar";
-import { MobileI18nProvider } from "../shared/i18n/mobileI18n";
+import { MobileI18nProvider, useMobileI18n } from "../shared/i18n/mobileI18n";
 import {
   MobileThemeProvider,
   useMobileSurfaceTheme,
@@ -286,6 +286,15 @@ function CriticalAssetBootLayer({
 }
 
 function AppWarmupScreen() {
+  const { locale } = useMobileI18n();
+  const loadingLabel =
+    locale === "ru"
+      ? "Загрузка"
+      : locale === "de"
+        ? "Wird geladen"
+        : locale === "pl"
+          ? "Ładowanie"
+          : "Loading";
   const icons = useMemo(
     () => [
       redesignSharedIcons.feeding,
@@ -454,7 +463,7 @@ function AppWarmupScreen() {
           </Animated.View>
         </View>
         <Text style={styles.warmupTitle}>
-          {"Загружаем" + ".".repeat(dotCount)}
+          {loadingLabel + ".".repeat(dotCount)}
         </Text>
       </View>
     </ImageBackground>
@@ -468,7 +477,6 @@ const styles = StyleSheet.create({
   },
   warmupScreen: {
     flex: 1,
-    backgroundColor: "#FBF3EC",
   },
   warmupBackgroundImage: {
     width: "100%",

@@ -5,7 +5,11 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
+    "start:dev": "APP_ENV=mobile-dev expo start",
+    "start:prod": "APP_ENV=mobile-prod expo start",
     "ios": "PATH=\"$(ruby -rrubygems -e 'print Gem.user_dir')/bin:$PATH\" expo run:ios",
+    "ios:dev": "APP_ENV=mobile-dev PATH=\"$(ruby -rrubygems -e 'print Gem.user_dir')/bin:$PATH\" expo run:ios",
+    "ios:prod": "APP_ENV=mobile-prod PATH=\"$(ruby -rrubygems -e 'print Gem.user_dir')/bin:$PATH\" expo run:ios",
     "ios:tunnel": "expo start --ios --tunnel",
     "typecheck": "tsc --noEmit",
     "test": "jest",
@@ -22,7 +26,8 @@
     "expo-secure-store": "~15.0.8",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
-    "react-native": "0.81.5"
+    "react-native": "0.81.5",
+    "react-native-purchases": "^10.1.1"
   },
   "devDependencies": {
     "@testing-library/react-native": "^13.3.3",

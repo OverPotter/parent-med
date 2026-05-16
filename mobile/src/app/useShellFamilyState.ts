@@ -27,6 +27,7 @@ import {
   getCachedSettingsBundle,
   loadSettingsBundle,
 } from "../features/settings/model/settingsScreenLogic";
+import { defaultPushPreferences } from "../features/settings/model/settingsScreenHelpers";
 import {
   fetchActiveMobileSleepSession,
   type MobileSleepSession,
@@ -63,6 +64,7 @@ export function useShellFamilyState(params: {
   const [familyCanInviteMembers, setFamilyCanInviteMembers] = useState(false);
   const [familyRoutinesCount, setFamilyRoutinesCount] = useState(0);
   const [canUseLiveActivities, setCanUseLiveActivities] = useState(false);
+  const [pushPreferences, setPushPreferences] = useState(defaultPushPreferences);
   const [liveActivityPreferences, setLiveActivityPreferences] = useState(
     defaultMobileLiveActivityPreferences,
   );
@@ -94,6 +96,7 @@ export function useShellFamilyState(params: {
     setFamilyCanInviteMembers(false);
     setFamilyRoutinesCount(0);
     setCanUseLiveActivities(false);
+    setPushPreferences(defaultPushPreferences);
     setLiveActivityPreferences(defaultMobileLiveActivityPreferences);
     resetChildrenSnapshot();
   }, [resetChildrenSnapshot]);
@@ -294,6 +297,7 @@ export function useShellFamilyState(params: {
         if (!cancelled && settingsBundle) {
           applyFamilySettingsMeta(session, settingsBundle);
           setCanUseLiveActivities(settingsBundle.familyAccess.canUseLiveActivities);
+          setPushPreferences(settingsBundle.pushPreferences ?? defaultPushPreferences);
           setLiveActivityPreferences(
             toMobileLiveActivityPreferences(settingsBundle.pushPreferences),
           );
@@ -326,6 +330,7 @@ export function useShellFamilyState(params: {
       setFamilyCanInviteMembers(false);
       setFamilyRoutinesCount(0);
       setCanUseLiveActivities(false);
+      setPushPreferences(defaultPushPreferences);
       setLiveActivityPreferences(defaultMobileLiveActivityPreferences);
       return;
     }
@@ -339,6 +344,7 @@ export function useShellFamilyState(params: {
 
     applyFamilySettingsMeta(authSession, cachedSettingsBundle);
     setCanUseLiveActivities(cachedSettingsBundle.familyAccess.canUseLiveActivities);
+    setPushPreferences(cachedSettingsBundle.pushPreferences ?? defaultPushPreferences);
     setLiveActivityPreferences(
       toMobileLiveActivityPreferences(cachedSettingsBundle.pushPreferences),
     );
@@ -355,6 +361,7 @@ export function useShellFamilyState(params: {
     familyRoutinesCount,
     isShellBootstrapping,
     latestChildMetricsByCardId,
+    pushPreferences,
     liveActivityPreferences,
     loadChildren,
     refreshFamilyMembers,
@@ -366,6 +373,7 @@ export function useShellFamilyState(params: {
     setFamilyMembers,
     setFamilyRoutinesCount,
     setLatestChildMetricsByCardId,
+    setPushPreferences,
     setLiveActivityPreferences,
   };
 }

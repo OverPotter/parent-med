@@ -1,5 +1,6 @@
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
+import { getMobileApiBaseUrl } from "../../../shared/config/mobileRuntimeConfig";
 
 type BackendPreferredLanguage = MobileLocale;
 
@@ -68,6 +69,11 @@ type RawPushNotificationConfigResponse = {
   vapid_public_key: string | null;
 };
 
+type RawPushNotificationTestResponse = {
+  sent: boolean;
+  subscription_count: number;
+};
+
 export type MobilePushPreferences = {
   childrenEnabled: boolean;
   beforeReminderMinutes: number;
@@ -84,6 +90,13 @@ export type MobilePushPreferences = {
 export type MobilePushConfig = {
   enabled: boolean;
 };
+
+export type MobilePushTestResult = {
+  sent: boolean;
+  subscriptionCount: number;
+};
+
+export type MobileBillingDebugResult = Record<string, unknown>;
 
 export type MobilePushSubscription = {
   channel: "native";
@@ -140,24 +153,7 @@ export class MobileSettingsApiError extends Error {
   }
 }
 
-const PROD_API_ORIGIN = "https://parent-med-production.up.railway.app";
-const DEV_API_ORIGIN = "http://localhost:8000";
-
-function normalizeApiOrigin(raw: string | undefined) {
-  const value = raw?.trim().replace(/\/+$/, "") ?? "";
-
-  if (!value) {
-    return __DEV__ ? DEV_API_ORIGIN : PROD_API_ORIGIN;
-  }
-
-  if (/^https?:\/\//i.test(value)) {
-    return value;
-  }
-
-  return `https://${value}`;
-}
-
-const API_BASE_URL = `${normalizeApiOrigin(process.env.EXPO_PUBLIC_API_URL)}/api/v1`;
+const API_BASE_URL = getMobileApiBaseUrl();
 
 function parseErrorPayload(payload: unknown) {
   if (!payload || typeof payload !== "object") {
@@ -315,6 +311,35 @@ export async function fetchPushConfig(payload: {
   return {
     enabled: response.enabled,
   };
+}
+
+export async function sendTestPushNotification(payload: {
+  accessToken: string | null;
+}): Promise<MobilePushTestResult> {
+  const response = await requestAuthedJson<RawPushNotificationTestResponse>(
+    "/push-notifications/test",
+    {
+      method: "POST",
+    },
+    payload.accessToken,
+  );
+
+  return {
+    sent: response.sent,
+    subscriptionCount: response.subscription_count,
+  };
+}
+
+export async function resetBillingDebugToFree(payload: {
+  accessToken: string | null;
+}): Promise<MobileBillingDebugResult> {
+  return requestAuthedJson<MobileBillingDebugResult>(
+    "/billing/debug/reset-free",
+    {
+      method: "POST",
+    },
+    payload.accessToken,
+  );
 }
 
 export async function upsertPushSubscription(payload: {

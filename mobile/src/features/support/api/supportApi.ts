@@ -1,3 +1,5 @@
+import { getMobileApiBaseUrl } from "../../../shared/config/mobileRuntimeConfig";
+
 type RawPublicSupportRequestResponse = {
   id: string;
   reply_contact: string;
@@ -18,24 +20,7 @@ export class MobileSupportApiError extends Error {
   }
 }
 
-const PROD_API_ORIGIN = "https://parent-med-production.up.railway.app";
-const DEV_API_ORIGIN = "http://localhost:8000";
-
-function normalizeApiOrigin(raw: string | undefined) {
-  const value = raw?.trim().replace(/\/+$/, "") ?? "";
-
-  if (!value) {
-    return __DEV__ ? DEV_API_ORIGIN : PROD_API_ORIGIN;
-  }
-
-  if (/^https?:\/\//i.test(value)) {
-    return value;
-  }
-
-  return `https://${value}`;
-}
-
-const API_BASE_URL = `${normalizeApiOrigin(process.env.EXPO_PUBLIC_API_URL)}/api/v1`;
+const API_BASE_URL = getMobileApiBaseUrl();
 
 function parseErrorPayload(payload: unknown) {
   if (!payload || typeof payload !== "object") {

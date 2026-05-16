@@ -67,6 +67,36 @@ export type SettingsScreenContent = {
   subscriptionMembersLabel: string;
   subscriptionAccessUntilLabel: string;
   subscriptionManageLabel: string;
+  debugSectionTitle: string;
+  debugSectionHint: string;
+  debugTestPushLabel: string;
+  debugTestPushHint: string;
+  debugOpenPaywallLabel: string;
+  debugOpenPaywallHint: string;
+  debugRevenueCatTitle: string;
+  debugRevenueCatHint: string;
+  debugRevenueCatSandboxOnly: string;
+  debugRevenueCatConfigureLabel: string;
+  debugRevenueCatOfferingsLabel: string;
+  debugRevenueCatBuyMonthlyLabel: string;
+  debugRevenueCatBuyAnnualLabel: string;
+  debugRevenueCatRestoreLabel: string;
+  debugRevenueCatSnapshotLabel: string;
+  debugRevenueCatResetToFreeLabel: string;
+  debugRevenueCatWorkingLabel: string;
+  debugRevenueCatReadyLabel: string;
+  debugRevenueCatNoResultLabel: string;
+  debugRevenueCatApiKeyPresentLabel: string;
+  debugRevenueCatApiKeyMissingLabel: string;
+  debugRevenueCatEntitlementLabel: string;
+  debugRevenueCatSyncEnabledLabel: string;
+  debugRevenueCatSyncDisabledLabel: string;
+  debugRevenueCatAccountMissingLabel: string;
+  debugRevenueCatPackageMissingLabel: string;
+  debugTestPushSending: string;
+  debugTestPushSent: string;
+  debugTestPushNoSubscriptions: string;
+  debugTestPushFailed: string;
   securitySectionTitle: string;
   securitySectionHint: string;
   passwordTitle: string;
@@ -214,9 +244,9 @@ export function buildSettingsScreenContent(
       ? "Открыть настройки"
       : isDe
         ? "Einstellungen öffnen"
-      : isPl
-        ? "Otwórz ustawienia"
-      : "Open Settings",
+        : isPl
+          ? "Otwórz ustawienia"
+          : "Open Settings",
     pushMasterTitle: isRu ? "Все уведомления" : isDe ? "Alle Benachrichtigungen" : isPl ? "Wszystkie powiadomienia" : "All notifications",
     pushMasterHint: isRu
       ? "Главный переключатель."
@@ -332,6 +362,114 @@ export function buildSettingsScreenContent(
     subscriptionMembersLabel: isRu ? "Участников семьи" : isDe ? "Familienmitglieder" : isPl ? "Członkowie rodziny" : "Family members",
     subscriptionAccessUntilLabel: isRu ? "Доступ до" : isDe ? "Zugang bis" : isPl ? "Dostęp do" : "Access until",
     subscriptionManageLabel: isRu ? "Управлять подпиской" : isDe ? "Abo verwalten" : isPl ? "Zarządzaj subskrypcją" : "Manage subscription",
+    debugSectionTitle: isRu ? "Dev tools" : isDe ? "Dev-Tools" : isPl ? "Narzędzia dev" : "Dev tools",
+    debugSectionHint: isRu
+      ? "Только для dev-сборки: быстрые проверки push и paywall."
+      : isDe
+        ? "Nur für Dev-Builds: schnelle Checks für Push und Paywall."
+        : isPl
+          ? "Tylko dla buildów dev: szybkie testy push i paywalla."
+          : "Dev-build only: quick push and paywall checks.",
+    debugTestPushLabel: isRu ? "Тестовый push" : isDe ? "Test-Push" : isPl ? "Test push" : "Test push",
+    debugTestPushHint: isRu
+      ? "Отправить push в подписки текущего аккаунта."
+      : isDe
+        ? "Einen Push an die Abonnements des aktuellen Kontos senden."
+        : isPl
+          ? "Wyślij push do subskrypcji bieżącego konta."
+          : "Send a push to the current account subscriptions.",
+    debugOpenPaywallLabel: isRu ? "Тестовый paywall" : isDe ? "Test-Paywall" : isPl ? "Testowy paywall" : "Test paywall",
+    debugOpenPaywallHint: isRu
+      ? "Открыть внутренний paywall и проверить локальные цены RevenueCat."
+      : isDe
+        ? "Internen Paywall öffnen und lokale RevenueCat-Preise prüfen."
+        : isPl
+          ? "Otwórz wewnętrzny paywall i sprawdź lokalne ceny RevenueCat."
+          : "Open the internal paywall and verify localized RevenueCat prices.",
+    debugRevenueCatTitle: isRu
+      ? "RevenueCat sandbox"
+      : isDe
+        ? "RevenueCat Sandbox"
+        : isPl
+          ? "RevenueCat sandbox"
+          : "RevenueCat sandbox",
+    debugRevenueCatHint: isRu
+      ? "Dev-only smoke test: configure, offerings, purchase, restore, snapshot и reset."
+      : isDe
+        ? "Nur für Dev: Configure, Offerings, Kauf, Restore, Snapshot und Reset."
+        : isPl
+          ? "Tylko dla dev: configure, offerings, zakup, restore, snapshot i reset."
+          : "Dev-only smoke test: configure, offerings, purchase, restore, snapshot, and reset.",
+    debugRevenueCatSandboxOnly: isRu
+      ? "Только для ручной проверки RevenueCat на iPhone в dev-сборке."
+      : isDe
+        ? "Nur für die manuelle RevenueCat-Prüfung auf dem iPhone im Dev-Build."
+        : isPl
+          ? "Tylko do ręcznego sprawdzania RevenueCat na iPhonie w buildzie dev."
+          : "Only for manual RevenueCat validation on iPhone in a dev build.",
+    debugRevenueCatConfigureLabel: isRu ? "Configure" : "Configure",
+    debugRevenueCatOfferingsLabel: isRu ? "Offerings" : "Offerings",
+    debugRevenueCatBuyMonthlyLabel: isRu ? "Buy monthly" : "Buy monthly",
+    debugRevenueCatBuyAnnualLabel: isRu ? "Buy annual" : "Buy annual",
+    debugRevenueCatRestoreLabel: isRu ? "Restore" : "Restore",
+    debugRevenueCatSnapshotLabel: isRu ? "Snapshot" : "Snapshot",
+    debugRevenueCatResetToFreeLabel: isRu ? "Reset to free" : "Reset to free",
+    debugRevenueCatWorkingLabel: isRu ? "Выполняем…" : isDe ? "Läuft…" : isPl ? "Trwa…" : "Working…",
+    debugRevenueCatReadyLabel: isRu ? "Готово" : isDe ? "Bereit" : isPl ? "Gotowe" : "Ready",
+    debugRevenueCatNoResultLabel: isRu
+      ? "Результат появится здесь после первого действия."
+      : isDe
+        ? "Das Ergebnis erscheint hier nach der ersten Aktion."
+        : isPl
+          ? "Wynik pojawi się tutaj po pierwszej akcji."
+          : "The result will appear here after the first action.",
+    debugRevenueCatApiKeyPresentLabel: isRu ? "iOS key: есть" : isDe ? "iOS key: vorhanden" : isPl ? "iOS key: jest" : "iOS key: present",
+    debugRevenueCatApiKeyMissingLabel: isRu ? "iOS key: нет" : isDe ? "iOS key: fehlt" : isPl ? "iOS key: brak" : "iOS key: missing",
+    debugRevenueCatEntitlementLabel: isRu ? "Entitlement" : "Entitlement",
+    debugRevenueCatSyncEnabledLabel: isRu ? "Backend sync включен" : isDe ? "Backend Sync an" : isPl ? "Backend sync włączony" : "Backend sync is on",
+    debugRevenueCatSyncDisabledLabel: isRu ? "Backend sync выключен" : isDe ? "Backend Sync aus" : isPl ? "Backend sync wyłączony" : "Backend sync is off",
+    debugRevenueCatAccountMissingLabel: isRu
+      ? "Для теста нужен активный аккаунт в приложении."
+      : isDe
+        ? "Für den Test wird ein aktives Konto in der App benötigt."
+        : isPl
+          ? "Do testu potrzebne jest aktywne konto w aplikacji."
+          : "An active signed-in account is required for this test.",
+    debugRevenueCatPackageMissingLabel: isRu
+      ? "В текущем offering нет пакета для этой покупки."
+      : isDe
+        ? "Im aktuellen Offering gibt es kein Paket für diesen Kauf."
+        : isPl
+          ? "W bieżącym offeringu nie ma pakietu dla tego zakupu."
+          : "The current offering has no package for this purchase.",
+    debugTestPushSending: isRu
+      ? "Отправляем тестовый push..."
+      : isDe
+        ? "Test-Push wird gesendet..."
+        : isPl
+          ? "Wysyłanie testowego push..."
+          : "Sending test push...",
+    debugTestPushSent: isRu
+      ? "Тестовый push отправлен."
+      : isDe
+        ? "Test-Push gesendet."
+        : isPl
+          ? "Wysłano testowy push."
+          : "Test push sent.",
+    debugTestPushNoSubscriptions: isRu
+      ? "У аккаунта нет активных push-подписок."
+      : isDe
+        ? "Für dieses Konto gibt es keine aktiven Push-Abonnements."
+        : isPl
+          ? "To konto nie ma aktywnych subskrypcji push."
+          : "This account has no active push subscriptions.",
+    debugTestPushFailed: isRu
+      ? "Тестовый push не отправлен."
+      : isDe
+        ? "Test-Push konnte nicht gesendet werden."
+        : isPl
+          ? "Nie udało się wysłać testowego push."
+          : "Test push failed.",
     securitySectionTitle: isRu ? "Безопасность" : isDe ? "Sicherheit" : isPl ? "Bezpieczeństwo" : "Security",
     securitySectionHint: isRu
       ? "Пароль и код восстановления."

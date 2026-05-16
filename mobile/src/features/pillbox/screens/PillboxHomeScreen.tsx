@@ -12,8 +12,10 @@ import {
 import { useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
+import { NotificationDisabledBanner } from "../../../shared/components/NotificationDisabledBanner";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
+import { journalTypography } from "../../../shared/theme/journalTypography";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import type { MobilePillboxMedication } from "../api/mobilePillboxPlansApi";
 import { resolveIllnessRecipientSelection } from "../../illness/model/illnessRecipients";
@@ -37,6 +39,11 @@ export function PillboxHomeScreen({
   onOpenPlan = noop,
   onMarkIntake = noop,
   familyMembers = [],
+  pushNotificationsBannerVisible = false,
+  pushNotificationsBannerTitle,
+  pushNotificationsBannerBody,
+  pushNotificationsBannerActionLabel,
+  onOpenPushNotificationSettings = noop,
   onTabBarModeChange,
 }: {
   accessToken: string | null;
@@ -46,6 +53,11 @@ export function PillboxHomeScreen({
   onOpenPlan?: (planId: string) => void;
   onMarkIntake?: (intakeId: string) => void;
   familyMembers?: MobileFamilyMember[];
+  pushNotificationsBannerVisible?: boolean;
+  pushNotificationsBannerTitle?: string;
+  pushNotificationsBannerBody?: string;
+  pushNotificationsBannerActionLabel?: string;
+  onOpenPushNotificationSettings?: () => void;
   onTabBarModeChange?: (mode: "foreground" | "background" | "hidden") => void;
 }) {
   const { locale } = useMobileI18n();
@@ -328,6 +340,30 @@ export function PillboxHomeScreen({
               </Text>
             </Pressable>
           </View>
+
+          {pushNotificationsBannerVisible ? (
+            <NotificationDisabledBanner
+              title={pushNotificationsBannerTitle}
+              body={pushNotificationsBannerBody}
+              actionLabel={pushNotificationsBannerActionLabel}
+              onPress={onOpenPushNotificationSettings}
+              palette={{
+                borderColor: "#D9E2F2",
+                backgroundColor: "rgba(248,250,255,0.96)",
+                iconBackgroundColor: "#7B8FD8",
+                titleColor: "#172033",
+                bodyColor: "#5F6B7A",
+                actionColor: "#6B7DB7",
+                shadowColor: "#172033",
+                chevronColor: "#6B7DB7",
+              }}
+              typography={{
+                titleFontFamily: journalTypography.body,
+                bodyFontFamily: journalTypography.body,
+                actionFontFamily: journalTypography.body,
+              }}
+            />
+          ) : null}
         </View>
 
         <View style={styles.quickActionsRow}>

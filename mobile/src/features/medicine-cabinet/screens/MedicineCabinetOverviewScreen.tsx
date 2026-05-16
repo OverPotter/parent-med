@@ -13,10 +13,20 @@ import {
 export function MedicineCabinetOverviewScreen({
   authSession,
   familyMembers,
+  pushNotificationsBannerVisible = false,
+  pushNotificationsBannerTitle,
+  pushNotificationsBannerBody,
+  pushNotificationsBannerActionLabel,
+  onOpenPushNotificationSettings,
   onTabBarModeChange,
 }: {
   authSession: MobileAuthSession | null;
   familyMembers: MobileFamilyMember[];
+  pushNotificationsBannerVisible?: boolean;
+  pushNotificationsBannerTitle?: string;
+  pushNotificationsBannerBody?: string;
+  pushNotificationsBannerActionLabel?: string;
+  onOpenPushNotificationSettings?: () => void;
   onTabBarModeChange?: (mode: CabinetTabBarMode) => void;
 }) {
   const controller = useMedicineCabinetOverviewController({
@@ -37,6 +47,11 @@ export function MedicineCabinetOverviewScreen({
         <View style={styles.decorationMiddle} />
         <MedicineCabinetOverviewContent
           locale={controller.locale}
+          pushNotificationsBannerVisible={pushNotificationsBannerVisible}
+          pushNotificationsBannerTitle={pushNotificationsBannerTitle}
+          pushNotificationsBannerBody={pushNotificationsBannerBody}
+          pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
+          onOpenPushNotificationSettings={onOpenPushNotificationSettings ?? (() => {})}
           searchQuery={controller.searchQuery}
           onChangeSearchQuery={controller.setSearchQuery}
           activeFilter={controller.activeFilter}

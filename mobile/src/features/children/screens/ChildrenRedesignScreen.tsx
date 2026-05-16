@@ -2,11 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   ImageBackground,
-  Pressable,
   ScrollView,
   Text,
   View,
+  Pressable,
 } from "react-native";
+import { NotificationDisabledBanner } from "../../../shared/components/NotificationDisabledBanner";
 import { ChildrenChildCard } from "../components/ChildrenChildCard";
 import {
   buildChildrenScreenContent,
@@ -30,6 +31,11 @@ type ChildrenRedesignScreenProps = {
   activeObservationByCardId?: Record<string, boolean>;
   onFeedingPress?: (cardId: string) => void;
   onSleepPress?: (cardId: string) => void;
+  pushNotificationsBannerVisible?: boolean;
+  pushNotificationsBannerTitle?: string;
+  pushNotificationsBannerBody?: string;
+  pushNotificationsBannerActionLabel?: string;
+  onOpenPushNotificationSettings?: () => void;
 };
 
 const noop = () => {};
@@ -49,6 +55,11 @@ export function ChildrenRedesignScreen({
   activeObservationByCardId = {},
   onFeedingPress = noop,
   onSleepPress = noop,
+  pushNotificationsBannerVisible = false,
+  pushNotificationsBannerTitle,
+  pushNotificationsBannerBody,
+  pushNotificationsBannerActionLabel,
+  onOpenPushNotificationSettings = noop,
 }: ChildrenRedesignScreenProps) {
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
@@ -168,6 +179,25 @@ export function ChildrenRedesignScreen({
               {childrenScreenContent.headerSubtitle}
             </Text>
           </View>
+
+          {pushNotificationsBannerVisible ? (
+            <NotificationDisabledBanner
+              title={pushNotificationsBannerTitle}
+              body={pushNotificationsBannerBody}
+              actionLabel={pushNotificationsBannerActionLabel}
+              onPress={onOpenPushNotificationSettings}
+              palette={{
+                borderColor: "#F2C8BE",
+                backgroundColor: "#FFF6F1",
+                iconBackgroundColor: "#E78783",
+                titleColor: "#252B35",
+                bodyColor: "#6C6664",
+                actionColor: "#D56B67",
+                shadowColor: "#D49B8D",
+                chevronColor: "#D56B67",
+              }}
+            />
+          ) : null}
 
           <View style={styles.cardsStack}>
             {cardsToRender.map((card) => (
