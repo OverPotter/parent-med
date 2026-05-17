@@ -3,9 +3,13 @@ export type SubscriptionPaywallCopy = {
   subtitle: string;
   freeTitle: string;
   plusTitle: string;
+  freeBadge: string;
+  plusBadge: string;
   freeForever: string;
-  freeItems: string[];
-  plusItems: string[];
+  plusMore: string;
+  freeItems: SubscriptionPaywallFeature[];
+  plusItems: SubscriptionPaywallFeature[];
+  comparisonLabel: string;
   plansLabel: string;
   annualTitle: string;
   monthlyTitle: string;
@@ -23,6 +27,20 @@ export type SubscriptionPaywallCopy = {
   loading: string;
   restoreSuccess: string;
   restoreInactive: string;
+};
+
+export type SubscriptionPaywallFeature = {
+  icon:
+    | "user"
+    | "users"
+    | "heart"
+    | "clipboard"
+    | "shield"
+    | "activity"
+    | "calendar"
+    | "download"
+    | "zap";
+  label: string;
 };
 
 export function formatIntroDuration(
@@ -72,31 +90,91 @@ export function buildSubscriptionPaywallCopy(
   const isPl = locale === "pl";
 
   return {
-    title: isRu ? "Начните бесплатно или выберите Plus" : isDe ? "Mit Kostenlos oder Plus starten" : isPl ? "Zacznij za darmo lub wybierz Plus" : "Start with Free or Plus",
+    title: isRu ? "Все для семьи в одном месте" : isDe ? "Wählen Sie einen Plan für Ihre Familie" : isPl ? "Wybierz plan dla rodziny" : "Choose a plan for your family",
     subtitle: isRu
-      ? "Выберите вариант, который подходит вашей семье."
+      ? "Дети, болезни, аптечка и таблетница. Начните бесплатно и подключите Plus, когда нужен семейный режим."
       : isDe
-        ? "Wählen Sie die Option, die zu Ihrer Familie passt."
+        ? "Kostenlos für den Start. Plus für Familie, gemeinsame Pflege und erweiterte Funktionen."
         : isPl
-          ? "Wybierz opcję, która pasuje Twojej rodzinie."
-          : "Choose the setup that fits your family care flow.",
-    freeTitle: isRu ? "Бесплатно" : isDe ? "Kostenlos" : isPl ? "Darmowy" : "Free",
-    plusTitle: "Plus",
+          ? "Darmowy na start. Plus dla rodziny, wspólnej opieki i rozszerzonych funkcji."
+          : "Free to start. Plus for shared family care and advanced features.",
+    freeTitle: isRu ? "Старт" : isDe ? "Start" : isPl ? "Start" : "Start",
+    plusTitle: isRu ? "Семья" : isDe ? "Familie" : isPl ? "Rodzina" : "Family",
+    freeBadge: "Free",
+    plusBadge: "Plus",
     freeForever: isRu ? "Навсегда бесплатно" : isDe ? "Dauerhaft kostenlos" : isPl ? "Darmowy na zawsze" : "Free forever",
+    plusMore: isRu ? "И многое другое" : isDe ? "Und vieles mehr" : isPl ? "I wiele więcej" : "And much more",
     freeItems: isRu
-      ? ["1 взрослый аккаунт", "1 ребёнок", "1 план лекарств", "Домашняя аптечка", "Уведомления", "Аналитика"]
+      ? [
+          { icon: "user", label: "1 взрослый" },
+          { icon: "heart", label: "1 ребёнок" },
+          { icon: "calendar", label: "1 план приёма" },
+          { icon: "clipboard", label: "Журнал болезней" },
+          { icon: "activity", label: "Сон, кормление, рост" },
+          { icon: "shield", label: "Домашняя аптечка" },
+        ]
       : isDe
-        ? ["1 Konto für Erwachsene", "1 Kind", "1 Medikamentenplan", "Hausapotheke", "Benachrichtigungen", "Analysen"]
+        ? [
+            { icon: "user", label: "1 Konto für Erwachsene" },
+            { icon: "heart", label: "1 Kind" },
+            { icon: "calendar", label: "1 Medikamentenplan" },
+            { icon: "clipboard", label: "Journal und Krankheiten" },
+            { icon: "activity", label: "Schlaf, Füttern und Wachstum" },
+            { icon: "shield", label: "Hausapotheke" },
+          ]
         : isPl
-          ? ["1 konto dorosłego", "1 dziecko", "1 plan leków", "Apteczka", "Powiadomienia", "Analityka"]
-          : ["1 adult account", "1 child", "1 medication plan", "Medicine cabinet", "Notifications", "Analytics"],
+          ? [
+              { icon: "user", label: "1 konto dorosłego" },
+              { icon: "heart", label: "1 dziecko" },
+              { icon: "calendar", label: "1 plan leków" },
+              { icon: "clipboard", label: "Dziennik i choroby" },
+              { icon: "activity", label: "Sen, karmienie i wzrost" },
+              { icon: "shield", label: "Apteczka" },
+            ]
+          : [
+              { icon: "user", label: "1 adult account" },
+              { icon: "heart", label: "1 child" },
+              { icon: "calendar", label: "1 medication plan" },
+              { icon: "clipboard", label: "Journal and illness" },
+              { icon: "activity", label: "Sleep, feeding and growth" },
+              { icon: "shield", label: "Medicine cabinet" },
+            ],
     plusItems: isRu
-      ? ["Всё из бесплатного плана, плюс:", "Вся семья и приглашения", "Безлимит детей", "Справочник лекарств", "Доступы и приватность", "Live Activities", "Экспорт CSV / Excel"]
+      ? [
+          { icon: "users", label: "Приглашения для семьи" },
+          { icon: "heart", label: "Дети без лимита" },
+          { icon: "shield", label: "Гибкие доступы" },
+          { icon: "calendar", label: "Несколько планов приёма" },
+          { icon: "activity", label: "Live Activities" },
+          { icon: "download", label: "Экспорт CSV" },
+        ]
       : isDe
-        ? ["Alles aus Kostenlos, plus:", "Die ganze Familie und Einladungen", "Unbegrenzte Kinder", "Medikamentenratgeber", "Zugriffe und Privatsphäre", "Live Activities", "CSV-/Excel-Export"]
+        ? [
+            { icon: "users", label: "Die ganze Familie und Einladungen" },
+            { icon: "heart", label: "Unbegrenzte Kinder" },
+            { icon: "shield", label: "Zugriffe und Privatsphäre" },
+            { icon: "calendar", label: "Mehrere Medikamentenpläne" },
+            { icon: "activity", label: "Live Activities" },
+            { icon: "download", label: "CSV-Export" },
+          ]
         : isPl
-          ? ["Wszystko z planu darmowego, plus:", "Cała rodzina i zaproszenia", "Nielimitowana liczba dzieci", "Przewodnik po lekach", "Dostępy i prywatność", "Live Activities", "Eksport CSV / Excel"]
-          : ["Everything in Free, plus:", "Whole family and invites", "Unlimited children", "Medicine guide", "Access and privacy controls", "Live Activities", "CSV / Excel export"],
+          ? [
+              { icon: "users", label: "Cała rodzina i zaproszenia" },
+              { icon: "heart", label: "Nielimitowana liczba dzieci" },
+              { icon: "shield", label: "Dostępy i prywatność" },
+              { icon: "calendar", label: "Wiele planów leków" },
+              { icon: "activity", label: "Live Activities" },
+              { icon: "download", label: "Eksport CSV" },
+            ]
+          : [
+              { icon: "users", label: "Whole family and invites" },
+              { icon: "heart", label: "Unlimited children" },
+              { icon: "shield", label: "Access and privacy controls" },
+              { icon: "calendar", label: "Multiple medication plans" },
+              { icon: "activity", label: "Live Activities" },
+              { icon: "download", label: "CSV export" },
+            ],
+    comparisonLabel: isRu ? "Что входит" : isDe ? "Was enthalten ist" : isPl ? "Co zawiera plan" : "What you get",
     plansLabel: isRu ? "Выберите план Plus" : isDe ? "Wählen Sie einen Plus-Plan" : isPl ? "Wybierz plan Plus" : "Choose a Plus plan",
     annualTitle: isRu ? "Год" : isDe ? "Jahr" : isPl ? "Rok" : "Year",
     monthlyTitle: isRu ? "Месяц" : isDe ? "Monat" : isPl ? "Miesiąc" : "Month",

@@ -1,20 +1,26 @@
+import { Feather } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 import type { RevenueCatPaywallPlanKey } from "../model/useRevenueCatPaywallController";
-import type { SubscriptionPaywallCopy } from "../model/subscriptionPaywallCopy";
+import type {
+  SubscriptionPaywallCopy,
+  SubscriptionPaywallFeature,
+} from "../model/subscriptionPaywallCopy";
 import type { PlanCardViewModel } from "../model/subscriptionPaywallViewModel";
 import { styles } from "./subscriptionPaywallStyles";
 
 type ComparisonColumnProps = {
   title: string;
+  badge: string;
   titleStyle: object;
   cardStyle: object;
-  items: string[];
+  items: SubscriptionPaywallFeature[];
   footer?: string;
   isPlus?: boolean;
 };
 
 export function ComparisonColumn({
   title,
+  badge,
   titleStyle,
   cardStyle,
   items,
@@ -23,25 +29,43 @@ export function ComparisonColumn({
 }: ComparisonColumnProps) {
   return (
     <View style={[styles.comparisonCard, cardStyle]}>
-      {isPlus ? (
-        <View style={styles.plusHeadingRow}>
+      <View style={styles.comparisonBody}>
+        <View style={styles.comparisonHeadingRow}>
           <Text style={[styles.comparisonTitle, titleStyle]}>{title}</Text>
-          <View style={styles.plusMiniPill}>
-            <Text style={styles.plusMiniPillText}>Plus</Text>
-          </View>
+          <Text
+            style={[
+              styles.comparisonBadgeText,
+              isPlus ? styles.comparisonBadgeTextPlus : styles.comparisonBadgeTextFree,
+            ]}
+          >
+            {badge}
+          </Text>
         </View>
-      ) : (
-        <Text style={[styles.comparisonTitle, titleStyle]}>{title}</Text>
-      )}
-      {items.map((item, index) => (
-        <Text
-          key={item}
-          style={isPlus && index === 0 ? styles.plusLeadItem : styles.comparisonItem}
-        >
-          {isPlus && index === 0 ? item : `• ${item}`}
-        </Text>
-      ))}
-      {footer ? <Text style={styles.freeForever}>{footer}</Text> : null}
+        <View style={styles.comparisonItems}>
+          {items.map((item) => {
+            return (
+              <View key={item.label} style={styles.comparisonItemRow}>
+                <View
+                  style={[
+                    styles.comparisonIconWrap,
+                    isPlus ? styles.comparisonIconWrapPlus : styles.comparisonIconWrapFree,
+                  ]}
+                >
+                  <Feather
+                    name={item.icon}
+                    size={13}
+                    color={isPlus ? "#D94D8E" : "#4677DA"}
+                  />
+                </View>
+                <Text style={styles.comparisonItem}>{item.label}</Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+      {footer ? (
+        <Text style={isPlus ? styles.plusFooter : styles.freeForever}>{footer}</Text>
+      ) : null}
     </View>
   );
 }
@@ -91,6 +115,8 @@ export function PlanCard({
 type FooterLinksProps = {
   copy: SubscriptionPaywallCopy;
   isSubmitting: boolean;
+  canOpenTerms: boolean;
+  canOpenPrivacy: boolean;
   onRestore: () => void;
   onTerms: () => void;
   onPrivacy: () => void;
@@ -99,6 +125,8 @@ type FooterLinksProps = {
 export function FooterLinks({
   copy,
   isSubmitting,
+  canOpenTerms,
+  canOpenPrivacy,
   onRestore,
   onTerms,
   onPrivacy,
@@ -109,12 +137,16 @@ export function FooterLinks({
         <Text style={styles.footerLink}>{copy.restore}</Text>
       </Pressable>
       <Text style={styles.footerSeparator}>|</Text>
-      <Pressable onPress={onTerms}>
-        <Text style={styles.footerLink}>{copy.terms}</Text>
+      <Pressable onPress={onTerms} disabled={!canOpenTerms}>
+        <Text style={[styles.footerLink, !canOpenTerms ? styles.footerLinkDisabled : null]}>
+          {copy.terms}
+        </Text>
       </Pressable>
       <Text style={styles.footerSeparator}>|</Text>
-      <Pressable onPress={onPrivacy}>
-        <Text style={styles.footerLink}>{copy.privacy}</Text>
+      <Pressable onPress={onPrivacy} disabled={!canOpenPrivacy}>
+        <Text style={[styles.footerLink, !canOpenPrivacy ? styles.footerLinkDisabled : null]}>
+          {copy.privacy}
+        </Text>
       </Pressable>
     </View>
   );

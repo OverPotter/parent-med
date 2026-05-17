@@ -22,7 +22,6 @@ export type RevenueCatPaywallPlanKey = "annual" | "monthly";
 type UseRevenueCatPaywallControllerArgs = {
   visible: boolean;
   session: MobileAuthSession | null;
-  logPrefix: string;
   restoreSuccessMessage: string;
   restoreInactiveMessage: string;
   onClose?: () => void;
@@ -40,7 +39,6 @@ function describeUnknownError(error: unknown) {
 export function useRevenueCatPaywallController({
   visible,
   session,
-  logPrefix,
   restoreSuccessMessage,
   restoreInactiveMessage,
   onClose,
@@ -99,16 +97,8 @@ export function useRevenueCatPaywallController({
       appUserId: session.account.id,
     })
       .then(async () => {
-        console.log(`${logPrefix} configured`, {
-          accountId: session.account.id,
-          hasApiKey: Boolean(apiKey),
-          apiKeyPrefix: apiKey.slice(0, 5),
-          entitlementCode: getRevenueCatEntitlementCode(),
-        });
-
         const offeringData = await loadRevenueCatPaywallOffering();
         if (!offeringData || cancelled) {
-          console.warn(`${logPrefix} no current offering`);
           setInlineMessage("RevenueCat current offering is unavailable.");
           return;
         }
@@ -117,14 +107,12 @@ export function useRevenueCatPaywallController({
           return;
         }
 
-        console.log(`${logPrefix} offering loaded`, offeringData.logDetails);
         setSelectedPlan(offeringData.selectedPlan);
         setPackagesByPlan(offeringData.packagesByPlan);
         setPriceByPlan(offeringData.priceByPlan);
         setTrialDetailsByPlan(offeringData.trialDetailsByPlan);
       })
       .catch((error) => {
-        console.warn(`${logPrefix} offerings load failed`, error);
         if (!cancelled) {
           setInlineMessage(
             `RevenueCat offering load failed: ${describeUnknownError(error)}`,
@@ -140,7 +128,7 @@ export function useRevenueCatPaywallController({
     return () => {
       cancelled = true;
     };
-  }, [logPrefix, session, visible]);
+  }, [session, visible]);
 
   const handleSnapshotSync = async (snapshot: RevenueCatCustomerSnapshot | null) => {
     if (!snapshot || !session?.accessToken) {
@@ -157,11 +145,6 @@ export function useRevenueCatPaywallController({
 
     const selectedPackage = packagesByPlan[selectedPlan];
     if (!selectedPackage) {
-      console.warn(`${logPrefix} selected package missing`, {
-        selectedPlan,
-        annual: packagesByPlan.annual?.product.identifier ?? null,
-        monthly: packagesByPlan.monthly?.product.identifier ?? null,
-      });
       setInlineMessage(`RevenueCat package for ${selectedPlan} is unavailable.`);
       return;
     }

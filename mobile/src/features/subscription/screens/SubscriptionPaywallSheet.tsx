@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -39,8 +39,6 @@ export function SubscriptionPaywallSheet({
   onOpenPrivacyPolicy,
 }: SubscriptionPaywallSheetProps) {
   const { locale } = useMobileI18n();
-  const [containerHeight, setContainerHeight] = useState(0);
-  const [contentHeight, setContentHeight] = useState(0);
   const copy = useMemo(() => buildSubscriptionPaywallCopy(locale), [locale]);
   const {
     selectedPlan,
@@ -56,7 +54,6 @@ export function SubscriptionPaywallSheet({
   } = useRevenueCatPaywallController({
     visible,
     session,
-    logPrefix: "[Paywall]",
     restoreSuccessMessage: copy.restoreSuccess,
     restoreInactiveMessage: copy.restoreInactive,
     onClose,
@@ -75,11 +72,6 @@ export function SubscriptionPaywallSheet({
       }),
     [copy, locale, priceByPlan, selectedPlan, trialDetailsByPlan],
   );
-
-  const isScrollEnabled =
-    containerHeight > 0 && contentHeight > 0
-      ? contentHeight > containerHeight + 8
-      : true;
 
   const handleOpenTerms = () => {
     if (!onOpenTermsOfUse) {
@@ -108,12 +100,15 @@ export function SubscriptionPaywallSheet({
         >
           <View style={styles.screenOverlay} />
 
-          <View style={styles.heroTouchZone}>
+          <View style={styles.topBar}>
+            <View />
             <Pressable
               onPress={requestClose}
+              disabled={isSubmitting}
               hitSlop={10}
               style={({ pressed }) => [
                 styles.closeButton,
+                isSubmitting ? styles.disabled : null,
                 pressed ? styles.closeButtonPressed : null,
               ]}
             >
@@ -126,96 +121,98 @@ export function SubscriptionPaywallSheet({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             bounces={false}
-            scrollEnabled={isScrollEnabled}
-            onLayout={(event) => {
-              setContainerHeight(event.nativeEvent.layout.height);
-            }}
-            onContentSizeChange={(_, nextHeight) => {
-              setContentHeight(nextHeight);
-            }}
           >
-            <View style={styles.heroCard}>
-              <Text style={styles.title}>{copy.title}</Text>
-              <Text style={styles.subtitle}>{copy.subtitle}</Text>
-            </View>
+            <View style={styles.scrollInner}>
+              <View style={styles.topSection}>
+                <View style={styles.heroCard}>
+                  <Text style={styles.title}>{copy.title}</Text>
+                  <Text style={styles.subtitle}>{copy.subtitle}</Text>
+                </View>
 
-            <View style={styles.comparisonGrid}>
-              <ComparisonColumn
-                title={copy.freeTitle}
-                titleStyle={styles.freeTitle}
-                cardStyle={styles.freeCard}
-                items={copy.freeItems}
-                footer={copy.freeForever}
-              />
-              <ComparisonColumn
-                title={copy.plusTitle}
-                titleStyle={styles.plusTitle}
-                cardStyle={styles.plusCard}
-                items={copy.plusItems}
-                isPlus
-              />
-            </View>
-
-            <Text style={styles.planLabel}>{copy.plansLabel}</Text>
-
-            {isLoading ? (
-              <View style={styles.loadingWrap}>
-                <ActivityIndicator color="#F45BA6" />
-                <Text style={styles.loadingText}>{copy.loading}</Text>
+                <View style={styles.comparisonGrid}>
+                  <ComparisonColumn
+                    title={copy.freeTitle}
+                    badge={copy.freeBadge}
+                    titleStyle={styles.freeTitle}
+                    cardStyle={styles.freeCard}
+                    items={copy.freeItems}
+                    footer={copy.freeForever}
+                  />
+                  <ComparisonColumn
+                    title={copy.plusTitle}
+                    badge={copy.plusBadge}
+                    titleStyle={styles.plusTitle}
+                    cardStyle={styles.plusCard}
+                    items={copy.plusItems}
+                    footer={copy.plusMore}
+                    isPlus
+                  />
+                </View>
               </View>
-            ) : null}
 
-            <View style={styles.planGrid}>
-              {(["annual", "monthly"] as const).map((planKey) => (
-                <PlanCard
-                  key={planKey}
-                  planKey={planKey}
-                  plan={plans[planKey]}
-                  isSelected={selectedPlan === planKey}
-                  onPress={setSelectedPlan}
+              <View style={styles.bottomSection}>
+                {isLoading ? (
+                  <View style={styles.loadingWrap}>
+                    <ActivityIndicator color="#F45BA6" />
+                    <Text style={styles.loadingText}>{copy.loading}</Text>
+                  </View>
+                ) : null}
+
+                <View style={styles.planGrid}>
+                  {(["annual", "monthly"] as const).map((planKey) => (
+                    <PlanCard
+                      key={planKey}
+                      planKey={planKey}
+                      plan={plans[planKey]}
+                      isSelected={selectedPlan === planKey}
+                      onPress={setSelectedPlan}
+                    />
+                  ))}
+                </View>
+
+                <Pressable
+                  onPress={() => {
+                    void handlePurchase();
+                  }}
+                  disabled={!canPurchase}
+                  style={({ pressed }) => [
+                    styles.primaryAction,
+                    pressed ? styles.primaryActionPressed : null,
+                    !canPurchase ? styles.disabled : null,
+                  ]}
+                >
+                  <Text style={styles.primaryActionText}>{selectedPlanCta}</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={onClose}
+                  disabled={isSubmitting}
+                  style={({ pressed }) => [
+                    styles.secondaryAction,
+                    pressed ? styles.primaryActionPressed : null,
+                    isSubmitting ? styles.disabled : null,
+                  ]}
+                >
+                  <Text style={styles.secondaryActionText}>{copy.continueFree}</Text>
+                </Pressable>
+
+                <Text style={styles.legalNote}>{selectedPlanLegal}</Text>
+
+                {inlineMessage ? <Text style={styles.inlineMessage}>{inlineMessage}</Text> : null}
+
+                <FooterLinks
+                  copy={copy}
+                  isSubmitting={isSubmitting}
+                  canOpenTerms={Boolean(onOpenTermsOfUse)}
+                  canOpenPrivacy={Boolean(onOpenPrivacyPolicy)}
+                  onRestore={() => {
+                    void handleRestore();
+                  }}
+                  onTerms={handleOpenTerms}
+                  onPrivacy={handleOpenPrivacy}
                 />
-              ))}
+              </View>
             </View>
-
-            <Pressable
-              onPress={() => {
-                void handlePurchase();
-              }}
-              disabled={!canPurchase}
-              style={({ pressed }) => [
-                styles.primaryAction,
-                pressed ? styles.primaryActionPressed : null,
-                !canPurchase ? styles.disabled : null,
-              ]}
-            >
-              <Text style={styles.primaryActionText}>{selectedPlanCta}</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={onClose}
-              disabled={isSubmitting}
-              style={({ pressed }) => [
-                styles.secondaryAction,
-                pressed ? styles.primaryActionPressed : null,
-                isSubmitting ? styles.disabled : null,
-              ]}
-            >
-              <Text style={styles.secondaryActionText}>{copy.continueFree}</Text>
-            </Pressable>
-
-            <Text style={styles.legalNote}>{selectedPlanLegal}</Text>
-
-            {inlineMessage ? <Text style={styles.inlineMessage}>{inlineMessage}</Text> : null}
-
-            <FooterLinks
-              copy={copy}
-              isSubmitting={isSubmitting}
-              onRestore={() => {
-                void handleRestore();
-              }}
-              onTerms={handleOpenTerms}
-              onPrivacy={handleOpenPrivacy}
-            />
           </ScrollView>
         </ImageBackground>
       )}
