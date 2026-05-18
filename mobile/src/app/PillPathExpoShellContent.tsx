@@ -41,6 +41,7 @@ import type {
   MobileFamilyAccessSummary,
   MobilePushPreferences,
 } from "../features/settings/api/settingsApi";
+import type { SettingsBundle } from "../features/settings/model/settingsScreenLogic";
 import { SleepHistoryScreen } from "../features/sleep/screens/SleepHistoryScreen";
 import { SupportScreen } from "../features/support/screens/SupportScreen";
 import { WeightHistoryScreen } from "../features/weight/screens/WeightHistoryScreen";
@@ -109,6 +110,147 @@ type RootTabContentProps = {
   onPillboxPaywallPurchased: () => Promise<void> | void;
   onOpenLockedPillboxPlan: () => void;
   screenLayerStyle: object;
+};
+
+type ChildFlowProps = {
+  onOpenChildCreate: () => void;
+  onBackChildCreate: () => void;
+  onSubmitChildCreate: (payload: {
+    name: string;
+    birthDate: string | null;
+    avatarKey: string | null;
+    gender: string | null;
+    babyModeEnabled: boolean;
+    weightKg: number | null;
+    heightCm: number | null;
+    allergies: string | null;
+    notes: string | null;
+  }) => Promise<void>;
+  onBackChildProfile: () => void;
+  onEditProfile: () => void;
+  onOpenAnalytics: () => void;
+  onOpenJournalEntry: (kind: ChildProfileDestination) => void;
+  onBackEditProfile: () => void;
+  onSubmitEditProfile: (payload: {
+    name: string;
+    birthDate: string | null;
+    avatarKey: string | null;
+    gender: string | null;
+    babyModeEnabled: boolean;
+    allergies: string | null;
+    notes: string | null;
+  }) => void | Promise<void>;
+  onDeleteChild: () => void | Promise<void>;
+  onBackAnalytics: () => void;
+  onOpenEpisode: (episode: AnalyticsEpisodeCard) => void;
+  onBackAnalyticsEpisode: () => void;
+  onBackJournalEntry: () => void;
+  onStartFeedingTimer: () => void;
+  onBackFeedingHistory: () => void;
+  onBackSleepHistory: () => void;
+  onBackWeightHistory: () => void;
+  onBackGrowthHistory: () => void;
+  onBackOverview: () => void;
+};
+
+type IllnessFlowProps = {
+  onStartIllnessObservation: (payload: {
+    startedAt: string;
+    reason: string;
+  }) => void | Promise<void>;
+  onAddIllnessEntry: (childId: string, kind: IllnessQuickActionKind) => void;
+  onSaveAdministrationEntry: (payload: {
+    childId: string;
+    customMedicineName: string;
+    amount: string;
+    administeredAt: string;
+    reason?: string | null;
+  }) => void | Promise<void>;
+  onTakeReminderDose: (payload: {
+    childId: string;
+    plan: MobileEpisodeMedicationPlan;
+    administeredAt?: string | null;
+  }) => void | Promise<void>;
+  onUpdateReminderEntry: (payload: {
+    childId: string;
+    planId: string;
+    customMedicineName: string;
+    doseAmount: string;
+    minIntervalMinutes: number;
+    maxDosesPerDay?: number | null;
+    alreadyGiven?: boolean;
+    lastGivenAt?: string | null;
+    notes?: string | null;
+  }) => void | Promise<void>;
+  onSaveIllnessNoteEntry: (payload: {
+    childId: string;
+    text: string;
+    createdAt: string;
+  }) => void | Promise<void>;
+  onSaveReminderEntry: (payload: {
+    childId: string;
+    customMedicineName: string;
+    doseAmount: string;
+    minIntervalMinutes: number;
+    maxDosesPerDay?: number | null;
+    alreadyGiven?: boolean;
+    lastGivenAt?: string | null;
+    notes?: string | null;
+  }) => void | Promise<void>;
+  onOpenIllnessReminders: (childId: string) => void;
+  onOpenReminderComposer: (childId: string) => void;
+  onSaveReminderRecipients: (payload: {
+    childId: string;
+    memberAccountIds: string[];
+  }) => void | Promise<void>;
+  onSaveTemperatureEntry: (payload: {
+    childId: string;
+    valueCelsius: number;
+    measuredAt: string;
+  }) => void | Promise<void>;
+  isIllnessLiveActivityEnabled: (observation: MobileIllnessObservation) => boolean;
+  onToggleIllnessLiveActivity: (
+    observation: MobileIllnessObservation,
+  ) => void | Promise<void>;
+  onDeleteIllnessEntry: (payload: {
+    childId: string;
+    entryId: string;
+    kind: "temperature" | "note" | "medicine" | "reminder";
+  }) => void | Promise<void>;
+  onFinishIllnessObservation: (childId: string) => void | Promise<void>;
+  selectedIllnessActionKind: IllnessQuickActionKind;
+  onBackIllnessJournal: () => void;
+  onBackIllnessReminders: () => void;
+  onBackIllnessActionPlaceholder: () => void;
+  onBackIllnessOnboarding: () => void;
+};
+
+type UtilityFlowProps = {
+  onBackFamily: () => void;
+  onOpenChildrenFromFamily: () => void;
+  onOpenLockedChild: () => void;
+  onOpenLockedFamilyInvite: () => void;
+  onOpenPillboxFromFamily: () => void;
+  onOpenTermsOfUse: () => void;
+  onOpenPrivacyPolicy: () => void;
+  onRefreshFamilyMembers: () => Promise<void>;
+  onUpdateCurrentProfile: (patch: {
+    displayName?: string;
+    relationshipLabel?: string | null;
+    phone?: string | null;
+  }) => Promise<void>;
+  onSessionDeleted: () => Promise<void>;
+  onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
+  onPushPreferencesChanged: (preferences: MobilePushPreferences) => void;
+  onFamilyAccessChanged: (familyAccess: MobileFamilyAccessSummary) => void;
+  onSettingsBundleChanged: (bundle: SettingsBundle) => void;
+  onBackPrivacyPolicy: () => void;
+  onBackSupport: () => void;
+  onBackSettings: () => void;
+  onBackTermsOfUse: () => void;
+  familyPaywallVisible: boolean;
+  onCloseFamilyPaywall: () => void;
+  onFamilyPaywallPurchased: () => Promise<void> | void;
 };
 
 export function RootTabContent({
@@ -306,145 +448,9 @@ type OverlayScreensProps = {
   familyInviteLocked: boolean;
   familyRoutinesCount: number;
   authSession: MobileAuthSession;
-  childFlow: {
-    onOpenChildCreate: () => void;
-    onBackChildCreate: () => void;
-    onSubmitChildCreate: (payload: {
-      name: string;
-      birthDate: string | null;
-      avatarKey: string | null;
-      gender: string | null;
-      babyModeEnabled: boolean;
-      weightKg: number | null;
-      heightCm: number | null;
-      allergies: string | null;
-      notes: string | null;
-    }) => Promise<void>;
-    onBackChildProfile: () => void;
-    onEditProfile: () => void;
-    onOpenAnalytics: () => void;
-    onOpenJournalEntry: (kind: ChildProfileDestination) => void;
-    onBackEditProfile: () => void;
-    onSubmitEditProfile: (payload: {
-      name: string;
-      birthDate: string | null;
-      avatarKey: string | null;
-      gender: string | null;
-      babyModeEnabled: boolean;
-      allergies: string | null;
-      notes: string | null;
-    }) => void | Promise<void>;
-    onDeleteChild: () => void | Promise<void>;
-    onBackAnalytics: () => void;
-    onOpenEpisode: (episode: AnalyticsEpisodeCard) => void;
-    onBackAnalyticsEpisode: () => void;
-    onBackJournalEntry: () => void;
-    onStartFeedingTimer: () => void;
-    onBackFeedingHistory: () => void;
-    onBackSleepHistory: () => void;
-    onBackWeightHistory: () => void;
-    onBackGrowthHistory: () => void;
-    onBackOverview: () => void;
-  };
-  illnessFlow: {
-    onStartIllnessObservation: (payload: {
-      startedAt: string;
-      reason: string;
-    }) => void | Promise<void>;
-    onAddIllnessEntry: (childId: string, kind: IllnessQuickActionKind) => void;
-    onSaveAdministrationEntry: (payload: {
-      childId: string;
-      customMedicineName: string;
-      amount: string;
-      administeredAt: string;
-      reason?: string | null;
-    }) => void | Promise<void>;
-    onTakeReminderDose: (payload: {
-      childId: string;
-      plan: MobileEpisodeMedicationPlan;
-      administeredAt?: string | null;
-    }) => void | Promise<void>;
-    onUpdateReminderEntry: (payload: {
-      childId: string;
-      planId: string;
-      customMedicineName: string;
-      doseAmount: string;
-      minIntervalMinutes: number;
-      maxDosesPerDay?: number | null;
-      alreadyGiven?: boolean;
-      lastGivenAt?: string | null;
-      notes?: string | null;
-    }) => void | Promise<void>;
-    onSaveIllnessNoteEntry: (payload: {
-      childId: string;
-      text: string;
-      createdAt: string;
-    }) => void | Promise<void>;
-    onSaveReminderEntry: (payload: {
-      childId: string;
-      customMedicineName: string;
-      doseAmount: string;
-      minIntervalMinutes: number;
-      maxDosesPerDay?: number | null;
-      alreadyGiven?: boolean;
-      lastGivenAt?: string | null;
-      notes?: string | null;
-    }) => void | Promise<void>;
-    onOpenIllnessReminders: (childId: string) => void;
-    onOpenReminderComposer: (childId: string) => void;
-    onSaveReminderRecipients: (payload: {
-      childId: string;
-      memberAccountIds: string[];
-    }) => void | Promise<void>;
-    onSaveTemperatureEntry: (payload: {
-      childId: string;
-      valueCelsius: number;
-      measuredAt: string;
-    }) => void | Promise<void>;
-    isIllnessLiveActivityEnabled: (
-      observation: MobileIllnessObservation,
-    ) => boolean;
-    onToggleIllnessLiveActivity: (
-      observation: MobileIllnessObservation,
-    ) => void | Promise<void>;
-    onDeleteIllnessEntry: (payload: {
-      childId: string;
-      entryId: string;
-      kind: "temperature" | "note" | "medicine" | "reminder";
-    }) => void | Promise<void>;
-    onFinishIllnessObservation: (childId: string) => void | Promise<void>;
-    selectedIllnessActionKind: IllnessQuickActionKind;
-    onBackIllnessJournal: () => void;
-    onBackIllnessReminders: () => void;
-    onBackIllnessActionPlaceholder: () => void;
-    onBackIllnessOnboarding: () => void;
-  };
-  utilityFlow: {
-    onBackFamily: () => void;
-    onOpenChildrenFromFamily: () => void;
-    onOpenLockedChild: () => void;
-    onOpenLockedFamilyInvite: () => void;
-    onOpenPillboxFromFamily: () => void;
-    onOpenTermsOfUse: () => void;
-    onOpenPrivacyPolicy: () => void;
-    onRefreshFamilyMembers: () => Promise<void>;
-    onUpdateCurrentProfile: (patch: {
-      displayName?: string;
-      relationshipLabel?: string | null;
-      phone?: string | null;
-    }) => Promise<void>;
-    onSessionDeleted: () => Promise<void>;
-    onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
-    onPushPreferencesChanged: (preferences: MobilePushPreferences) => void;
-    onFamilyAccessChanged: (familyAccess: MobileFamilyAccessSummary) => void;
-    onBackPrivacyPolicy: () => void;
-    onBackSupport: () => void;
-    onBackSettings: () => void;
-    onBackTermsOfUse: () => void;
-    familyPaywallVisible: boolean;
-    onCloseFamilyPaywall: () => void;
-    onFamilyPaywallPurchased: () => Promise<void> | void;
-  };
+  childFlow: ChildFlowProps;
+  illnessFlow: IllnessFlowProps;
+  utilityFlow: UtilityFlowProps;
   pillboxFlow: {
     onBackAnalytics: () => void;
   };
@@ -763,6 +769,7 @@ function UtilityOverlays({
         onUpdatePreferredLanguage={utilityFlow.onUpdatePreferredLanguage}
         onPushPreferencesChanged={utilityFlow.onPushPreferencesChanged}
         onFamilyAccessChanged={utilityFlow.onFamilyAccessChanged}
+        onSettingsBundleChanged={utilityFlow.onSettingsBundleChanged}
         onOpenTermsOfUse={utilityFlow.onOpenTermsOfUse}
         onOpenPrivacyPolicy={utilityFlow.onOpenPrivacyPolicy}
       />

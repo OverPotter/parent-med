@@ -1,5 +1,6 @@
 import type { MobileAuthSession } from "../../features/auth/api/authApi";
 import {
+  getRevenueCatEntitlementCode,
   getRevenueCatIosApiKey,
   isRevenueCatBackendSyncEnabled,
 } from "../config/mobileRuntimeConfig";
@@ -31,7 +32,9 @@ export async function syncRevenueCatSessionState(
     return null;
   }
 
-  const snapshot = await getNativeRevenueCatCustomerSnapshot();
+  const snapshot = await getNativeRevenueCatCustomerSnapshot(
+    getRevenueCatEntitlementCode(),
+  );
   if (!snapshot) {
     return null;
   }

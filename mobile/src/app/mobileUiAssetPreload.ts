@@ -12,7 +12,7 @@ import type { MobileBottomTabKey } from "../shared/components/mobileBottomTabMod
 import type { PillPathActiveScreen } from "./pillPathExpoShellModel";
 
 const authScreenAssets = {
-  background: require("../redesign/screens/auth/assets/auth_family_background_spot.png"),
+  background: require("../redesign/screens/auth/assets/auth_family_background_spot.jpg"),
 } as const;
 
 type OverlayAssetContext = {

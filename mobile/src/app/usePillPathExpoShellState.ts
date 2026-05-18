@@ -17,11 +17,19 @@ import {
   applyPreferredLanguageToSession,
   updatePreferredLanguage,
 } from "../features/settings/api/settingsApi";
-import { loadSettingsBundle } from "../features/settings/model/settingsScreenLogic";
+import {
+  getCachedSettingsBundle,
+  loadSettingsBundle,
+  type SettingsBundle,
+} from "../features/settings/model/settingsScreenLogic";
 import { buildSettingsScreenContent } from "../features/settings/model/settingsScreen";
 import { useLiveActivitiesSync } from "../features/live-activities/useLiveActivitiesSync";
 import { useMobileI18n, type MobileLocale } from "../shared/i18n/mobileI18n";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
+import {
+  markPostAuthPaywallShown,
+  readPostAuthPaywallShown,
+} from "./postAuthOnboardingStorage";
 import { buildPushBannerState } from "./pushBannerModel";
 import { buildRootTabItems, shouldShowJournalRootTab } from "./shellRootTabsModel";
 import { usePostAuthOnboardingController } from "./usePostAuthOnboardingController";
@@ -45,6 +53,36 @@ import {
 
 type RootTabContentProps = ComponentProps<typeof RootTabContent>;
 type OverlayScreensProps = ComponentProps<typeof OverlayScreens>;
+type PaywallTarget =
+  | "children"
+  | "family"
+  | "cabinet"
+  | "pillbox"
+  | "post-auth"
+  | null;
+
+function usePaywallController() {
+  const [activePaywallTarget, setActivePaywallTarget] =
+    useState<PaywallTarget>(null);
+
+  const openPaywall = useCallback((target: Exclude<PaywallTarget, null>) => {
+    setActivePaywallTarget(target);
+  }, []);
+
+  const closePaywall = useCallback(() => {
+    setActivePaywallTarget(null);
+  }, []);
+
+  return {
+    childrenPaywallVisible: activePaywallTarget === "children",
+    cabinetPaywallVisible: activePaywallTarget === "cabinet",
+    pillboxPaywallVisible: activePaywallTarget === "pillbox",
+    familyPaywallVisible: activePaywallTarget === "family",
+    postAuthPaywallVisible: activePaywallTarget === "post-auth",
+    openPaywall,
+    closePaywall,
+  };
+}
 
 export function usePillPathExpoShellState() {
   const { copy, locale, setLocale } = useMobileI18n();
@@ -72,17 +110,29 @@ export function usePillPathExpoShellState() {
     useState<JournalEntryKind>("feeding");
   const [selectedIllnessActionKind, setSelectedIllnessActionKind] =
     useState<IllnessQuickActionKind>("temperature");
-  const [childrenPaywallVisible, setChildrenPaywallVisible] = useState(false);
-  const [familyPaywallVisible, setFamilyPaywallVisible] = useState(false);
-  const [cabinetPaywallVisible, setCabinetPaywallVisible] = useState(false);
-  const [pillboxPaywallVisible, setPillboxPaywallVisible] = useState(false);
   const [illnessActionReturnScreen, setIllnessActionReturnScreen] = useState<
     "illnessJournal" | "illnessReminders"
   >("illnessJournal");
   const {
+    childrenPaywallVisible,
+    cabinetPaywallVisible,
+    pillboxPaywallVisible,
+    familyPaywallVisible,
+    postAuthPaywallVisible,
+    openPaywall,
+    closePaywall,
+  } = usePaywallController();
+  const [shouldPresentPostAuthPaywall, setShouldPresentPostAuthPaywall] =
+    useState(false);
+  const [didEnterPostAuthOnboarding, setDidEnterPostAuthOnboarding] =
+    useState(false);
+  const [postAuthPaywallAlreadyShown, setPostAuthPaywallAlreadyShown] =
+    useState(false);
+  const {
     activeFeedingRecordsByCardId,
     activeIllnessObservationsByChildId,
     activeSleepSessionsByCardId,
+    applyFamilySettingsBundle,
     canUseLiveActivities,
     children,
     familyCanSeeInviteCard,
@@ -100,7 +150,6 @@ export function usePillPathExpoShellState() {
     setActiveSleepSessionsByCardId,
     setChildren,
     setCanUseLiveActivities,
-    setFamilyPremiumActive,
     setFamilyRoutinesCount,
     setLatestChildMetricsByCardId,
     setPushPreferences,
@@ -132,6 +181,17 @@ export function usePillPathExpoShellState() {
     [handleLiveActivityPushPreferencesChanged, setPushPreferences],
   );
 
+  const applySettingsBundleToShell = useCallback(
+    (bundle: SettingsBundle) => {
+      if (!authSession) {
+        return;
+      }
+
+      applyFamilySettingsBundle(authSession, bundle);
+    },
+    [applyFamilySettingsBundle, authSession],
+  );
+
   const childAccess = useMemo(
     () =>
       resolveChildAccess({
@@ -152,6 +212,10 @@ export function usePillPathExpoShellState() {
     (childId: string) => Boolean(activeIllnessObservationsByChildId[childId]),
     [activeIllnessObservationsByChildId],
   );
+  const addChildLocked = children.length >= 1 && !familyPremiumActive;
+  const addCabinetFromCatalogLocked = !familyPremiumActive;
+  const createPillboxPlanLocked =
+    familyRoutinesCount >= 1 && !familyPremiumActive;
 
   const childrenCards = useMemo(() => {
     if (!authSession) {
@@ -202,7 +266,7 @@ export function usePillPathExpoShellState() {
   const handleOpenIllnessJournalRoot = useCallback(
     (childId: string) => {
       if (isChildLocked(childId) && !hasActiveIllnessObservation(childId)) {
-        setChildrenPaywallVisible(true);
+        openPaywall("children");
         return;
       }
 
@@ -216,6 +280,7 @@ export function usePillPathExpoShellState() {
     [
       hasActiveIllnessObservation,
       isChildLocked,
+      openPaywall,
       setActiveRootTab,
       setActiveScreen,
       setSelectedChildId,
@@ -279,6 +344,9 @@ export function usePillPathExpoShellState() {
   useEffect(() => {
     if (!authSession) {
       setDidJustAuthenticate(false);
+      setShouldPresentPostAuthPaywall(false);
+      setDidEnterPostAuthOnboarding(false);
+      setPostAuthPaywallAlreadyShown(false);
       return;
     }
 
@@ -295,6 +363,26 @@ export function usePillPathExpoShellState() {
     setActiveScreen(landingScreen);
     setDidJustAuthenticate(false);
   }, [authSession, didJustAuthenticate]);
+
+  useEffect(() => {
+    const accountId = authSession?.account.id;
+    if (!accountId) {
+      setPostAuthPaywallAlreadyShown(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    void readPostAuthPaywallShown(accountId).then((value) => {
+      if (!cancelled) {
+        setPostAuthPaywallAlreadyShown(value);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authSession?.account.id]);
 
   useEffect(() => {
     if (childrenCards.length === 0) {
@@ -379,6 +467,8 @@ export function usePillPathExpoShellState() {
     async (session: MobileAuthSession) => {
       await applyAuthenticated(session);
       setDidJustAuthenticate(true);
+      setShouldPresentPostAuthPaywall(true);
+      setDidEnterPostAuthOnboarding(false);
     },
     [applyAuthenticated],
   );
@@ -393,6 +483,46 @@ export function usePillPathExpoShellState() {
     handleUpdateAuthSession,
     handleMarkRecoveryCodeConfigured,
   });
+
+  useEffect(() => {
+    if (!authSession || !shouldPresentPostAuthPaywall) {
+      return;
+    }
+
+    if (postAuthOnboardingStep != null) {
+      setDidEnterPostAuthOnboarding(true);
+    }
+  }, [authSession, postAuthOnboardingStep, shouldPresentPostAuthPaywall]);
+
+  useEffect(() => {
+    const accountId = authSession?.account.id;
+    if (
+      !accountId ||
+      !shouldPresentPostAuthPaywall ||
+      !didEnterPostAuthOnboarding ||
+      postAuthOnboardingStep != null
+    ) {
+      return;
+    }
+
+    setShouldPresentPostAuthPaywall(false);
+
+    if (postAuthPaywallAlreadyShown || familyPremiumActive) {
+      return;
+    }
+
+    setPostAuthPaywallAlreadyShown(true);
+    openPaywall("post-auth");
+    void markPostAuthPaywallShown(accountId);
+  }, [
+    authSession?.account.id,
+    didEnterPostAuthOnboarding,
+    familyPremiumActive,
+    openPaywall,
+    postAuthOnboardingStep,
+    postAuthPaywallAlreadyShown,
+    shouldPresentPostAuthPaywall,
+  ]);
   const {
     handleCloseAnalytics,
     handleCloseAnalyticsEpisode,
@@ -414,7 +544,7 @@ export function usePillPathExpoShellState() {
   } = useShellChildFlowController({
     activeIllnessObservationsByChildId,
     isChildLocked,
-    onOpenLockedChild: () => setChildrenPaywallVisible(true),
+    onOpenLockedChild: () => openPaywall("children"),
     setActiveRootTab,
     setActiveScreen,
     setSelectedChildId,
@@ -506,7 +636,7 @@ export function usePillPathExpoShellState() {
           isChildLocked(activeIllnessChildId) &&
           !hasActiveIllnessObservation(activeIllnessChildId)
         ) {
-          setChildrenPaywallVisible(true);
+          openPaywall("children");
           return;
         }
 
@@ -526,6 +656,7 @@ export function usePillPathExpoShellState() {
       activeIllnessObservationsByChildId,
       hasActiveIllnessObservation,
       isChildLocked,
+      openPaywall,
       selectedChildId,
       setActiveRootTab,
       setActiveScreen,
@@ -535,12 +666,12 @@ export function usePillPathExpoShellState() {
 
   const handleOpenChildCreate = useCallback(() => {
     if (children.length >= 1 && !familyPremiumActive) {
-      setChildrenPaywallVisible(true);
+      openPaywall("children");
       return;
     }
 
     setActiveScreen("childCreate");
-  }, [children.length, familyPremiumActive]);
+  }, [children.length, familyPremiumActive, openPaywall]);
 
   const handleCloseChildCreate = useCallback(() => {
     setActiveScreen("children");
@@ -550,32 +681,18 @@ export function usePillPathExpoShellState() {
       return;
     }
 
+    const cachedBundle = getCachedSettingsBundle(authSession.accessToken);
+    if (cachedBundle) {
+      applySettingsBundleToShell(cachedBundle);
+    }
+
     const nextBundle = await loadSettingsBundle(authSession);
-    setFamilyPremiumActive(Boolean(nextBundle.familySummary.premiumActive));
-    handlePushPreferencesChanged(nextBundle.pushPreferences);
-    handleFamilyAccessChanged(nextBundle.familyAccess);
-  }, [
-    authSession,
-    handleFamilyAccessChanged,
-    handlePushPreferencesChanged,
-    setFamilyPremiumActive,
-  ]);
-  const handleChildrenPaywallPurchased = useCallback(async () => {
+    applySettingsBundleToShell(nextBundle);
+  }, [applySettingsBundleToShell, authSession]);
+  const handlePaywallPurchased = useCallback(async () => {
     await refreshPremiumAccessAfterPurchase();
-    setChildrenPaywallVisible(false);
-  }, [refreshPremiumAccessAfterPurchase]);
-  const handlePillboxPaywallPurchased = useCallback(async () => {
-    await refreshPremiumAccessAfterPurchase();
-    setPillboxPaywallVisible(false);
-  }, [refreshPremiumAccessAfterPurchase]);
-  const handleCabinetPaywallPurchased = useCallback(async () => {
-    await refreshPremiumAccessAfterPurchase();
-    setCabinetPaywallVisible(false);
-  }, [refreshPremiumAccessAfterPurchase]);
-  const handleFamilyPaywallPurchased = useCallback(async () => {
-    await refreshPremiumAccessAfterPurchase();
-    setFamilyPaywallVisible(false);
-  }, [refreshPremiumAccessAfterPurchase]);
+    closePaywall();
+  }, [closePaywall, refreshPremiumAccessAfterPurchase]);
   const {
     handleSubmitChildCreate,
     handleSubmitChildProfileEdit,
@@ -607,11 +724,11 @@ export function usePillPathExpoShellState() {
     ),
     onOpenChildProfile: handleOpenChildProfile,
     onOpenChildCreate: handleOpenChildCreate,
-    addChildLocked: children.length >= 1 && !familyPremiumActive,
+    addChildLocked,
     childrenPaywallVisible,
-    onCloseChildrenPaywall: () => setChildrenPaywallVisible(false),
-    onChildrenPaywallPurchased: handleChildrenPaywallPurchased,
-    onOpenLockedChild: () => setChildrenPaywallVisible(true),
+    onCloseChildrenPaywall: closePaywall,
+    onChildrenPaywallPurchased: handlePaywallPurchased,
+    onOpenLockedChild: () => openPaywall("children"),
     onOpenRootJournalEntry: handleOpenRootJournalEntry,
     onOpenObservation: handleOpenObservation,
     onSleepPress: handleSleepPress,
@@ -624,16 +741,16 @@ export function usePillPathExpoShellState() {
     onOpenPrivacyPolicy: handleOpenPrivacyPolicy,
     onUpdateAuthSession: handleUpdateAuthSession,
     onOpenPillboxAnalytics: handleOpenPillboxAnalytics,
-    addCabinetFromCatalogLocked: !familyPremiumActive,
+    addCabinetFromCatalogLocked,
     cabinetPaywallVisible,
-    onCloseCabinetPaywall: () => setCabinetPaywallVisible(false),
-    onCabinetPaywallPurchased: handleCabinetPaywallPurchased,
-    onOpenLockedCabinetCatalog: () => setCabinetPaywallVisible(true),
-    createPillboxPlanLocked: familyRoutinesCount >= 1 && !familyPremiumActive,
+    onCloseCabinetPaywall: closePaywall,
+    onCabinetPaywallPurchased: handlePaywallPurchased,
+    onOpenLockedCabinetCatalog: () => openPaywall("cabinet"),
+    createPillboxPlanLocked,
     pillboxPaywallVisible,
-    onClosePillboxPaywall: () => setPillboxPaywallVisible(false),
-    onPillboxPaywallPurchased: handlePillboxPaywallPurchased,
-    onOpenLockedPillboxPlan: () => setPillboxPaywallVisible(true),
+    onClosePillboxPaywall: closePaywall,
+    onPillboxPaywallPurchased: handlePaywallPurchased,
+    onOpenLockedPillboxPlan: () => openPaywall("pillbox"),
     pushNotificationsBannerVisible: pushBannerState.visible,
     pushNotificationsBannerTitle: pushBannerState.title,
     pushNotificationsBannerBody: pushBannerState.body,
@@ -738,8 +855,8 @@ export function usePillPathExpoShellState() {
         utilityFlow: {
           onBackFamily: handleCloseFamily,
           onOpenChildrenFromFamily: handleOpenChildrenFromFamily,
-          onOpenLockedChild: () => setChildrenPaywallVisible(true),
-          onOpenLockedFamilyInvite: () => setFamilyPaywallVisible(true),
+          onOpenLockedChild: () => openPaywall("children"),
+          onOpenLockedFamilyInvite: () => openPaywall("family"),
           onOpenPillboxFromFamily: handleOpenPillboxFromFamily,
           onOpenPrivacyPolicy: handleOpenPrivacyPolicy,
           onOpenTermsOfUse: handleOpenTermsOfUse,
@@ -749,13 +866,14 @@ export function usePillPathExpoShellState() {
           onUpdatePreferredLanguage: handleUpdatePreferredLanguage,
           onPushPreferencesChanged: handlePushPreferencesChanged,
           onFamilyAccessChanged: handleFamilyAccessChanged,
+          onSettingsBundleChanged: applySettingsBundleToShell,
           onBackPrivacyPolicy: handleClosePrivacyPolicy,
           onBackSupport: handleCloseSupport,
           onBackSettings: handleCloseSettings,
           onBackTermsOfUse: handleCloseTermsOfUse,
           familyPaywallVisible,
-          onCloseFamilyPaywall: () => setFamilyPaywallVisible(false),
-          onFamilyPaywallPurchased: handleFamilyPaywallPurchased,
+          onCloseFamilyPaywall: closePaywall,
+          onFamilyPaywallPurchased: handlePaywallPurchased,
         },
         pillboxFlow: {
           onBackAnalytics: handleClosePillboxAnalytics,
@@ -778,5 +896,10 @@ export function usePillPathExpoShellState() {
     handleSavePostAuthRecoveryCode,
     rootTabContentProps,
     overlayScreensProps,
+    postAuthPaywallVisible,
+    closePaywall,
+    handlePaywallPurchased,
+    handleOpenTermsOfUse,
+    handleOpenPrivacyPolicy,
   };
 }

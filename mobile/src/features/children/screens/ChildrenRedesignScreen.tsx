@@ -264,8 +264,18 @@ export function ChildrenRedesignScreen({
             <View style={styles.addChildIconCircle}>
               <Ionicons name="add" size={22} color="#FFFFFF" />
             </View>
-            <View style={styles.addChildCopy}>
-              <View style={styles.addChildTitleRow}>
+            <View
+              style={[
+                styles.addChildCopy,
+                addChildLocked ? styles.addChildCopyLocked : styles.addChildCopyCentered,
+              ]}
+            >
+              <View
+                style={[
+                  styles.addChildTitleRow,
+                  addChildLocked ? null : styles.addChildTitleRowCentered,
+                ]}
+              >
                 <Text style={styles.addChildLabel}>
                   {childrenScreenContent.addChildLabel}
                 </Text>

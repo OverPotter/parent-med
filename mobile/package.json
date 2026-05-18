@@ -18,9 +18,9 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "expo": "~54.0.33",
-    "expo-clipboard": "^55.0.13",
+    "expo-clipboard": "~8.0.8",
     "expo-linear-gradient": "~15.0.8",
-    "expo-localization": "^55.0.14",
+    "expo-localization": "~17.0.8",
     "expo-modules-core": "^3.0.30",
     "expo-notifications": "~0.32.12",
     "expo-secure-store": "~15.0.8",

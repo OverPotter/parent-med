@@ -25,6 +25,7 @@ import {
   type MobileFamilyAccessSummary,
   type MobilePushPreferences,
 } from "../api/settingsApi";
+import type { SettingsBundle } from "../model/settingsScreenLogic";
 import { SubscriptionPaywallSheet } from "../../subscription/screens/SubscriptionPaywallSheet";
 import { settingsScreenAssets } from "../assets";
 import {
@@ -50,6 +51,7 @@ type SettingsScreenProps = {
   onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
   onPushPreferencesChanged?: (preferences: MobilePushPreferences) => void;
   onFamilyAccessChanged?: (familyAccess: MobileFamilyAccessSummary) => void;
+  onSettingsBundleChanged?: (bundle: SettingsBundle) => void;
   onOpenTermsOfUse?: () => void;
   onOpenPrivacyPolicy?: () => void;
 };
@@ -77,6 +79,7 @@ export function SettingsScreen({
   onUpdatePreferredLanguage,
   onPushPreferencesChanged,
   onFamilyAccessChanged,
+  onSettingsBundleChanged,
   onOpenTermsOfUse,
   onOpenPrivacyPolicy,
 }: SettingsScreenProps) {
@@ -160,6 +163,7 @@ export function SettingsScreen({
     onUpdatePreferredLanguage,
     onPushPreferencesChanged,
     onFamilyAccessChanged,
+    onSettingsBundleChanged,
   });
 
   useEffect(() => {

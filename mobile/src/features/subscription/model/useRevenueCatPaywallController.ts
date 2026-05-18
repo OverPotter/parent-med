@@ -196,6 +196,7 @@ export function useRevenueCatPaywallController({
       );
       await handleSnapshotSync(snapshot);
       if (!snapshot?.entitlementActive) {
+        await onPurchased?.();
         setInlineMessage(restoreInactiveMessage);
         return;
       }

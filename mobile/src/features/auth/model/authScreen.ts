@@ -61,7 +61,7 @@ export type AuthScreenContent = {
   };
 };
 
-const authBackgroundSource = require("../../../redesign/screens/auth/assets/auth_family_background_spot.png");
+const authBackgroundSource = require("../../../redesign/screens/auth/assets/auth_family_background_spot.jpg");
 
 function buildFields(locale: MobileLocale, variant: AuthTabKey): AuthFieldConfig[] {
   const isRu = locale === "ru";

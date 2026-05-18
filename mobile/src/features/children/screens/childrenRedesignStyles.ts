@@ -290,14 +290,23 @@ export const styles = StyleSheet.create({
     fontWeight: "800",
   },
   addChildCopy: {
-    flex: 1,
     gap: 4,
+  },
+  addChildCopyLocked: {
+    flex: 1,
+  },
+  addChildCopyCentered: {
+    flex: 0,
+    alignItems: "center",
   },
   addChildTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     flexWrap: "wrap",
+  },
+  addChildTitleRowCentered: {
+    justifyContent: "center",
   },
   addChildHint: {
     color: "#C06B86",

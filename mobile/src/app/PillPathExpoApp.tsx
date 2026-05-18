@@ -22,6 +22,7 @@ import {
 } from "../shared/theme/mobileSurfaceTheme";
 import { PostAuthOnboardingOverlay } from "./PostAuthOnboardingOverlay";
 import { OverlayScreens, RootTabContent } from "./PillPathExpoShellContent";
+import { SubscriptionPaywallSheet } from "../features/subscription/screens/SubscriptionPaywallSheet";
 import {
   getCriticalMobileUiAssetModules,
   getInitialShellAssetModules,
@@ -64,6 +65,11 @@ function PillPathExpoShell() {
     postAuthOnboardingStep,
     rootTabContentProps,
     overlayScreensProps,
+    postAuthPaywallVisible,
+    closePaywall,
+    handlePaywallPurchased,
+    handleOpenTermsOfUse,
+    handleOpenPrivacyPolicy,
   } = usePillPathExpoShellState();
   const shouldShowRootTabBarBackground =
     (overlayScreensProps
@@ -196,6 +202,14 @@ function PillPathExpoShell() {
         />
       </View>
       {overlayScreensProps ? <OverlayScreens {...overlayScreensProps} /> : null}
+      <SubscriptionPaywallSheet
+        visible={postAuthPaywallVisible}
+        session={authSession}
+        onClose={closePaywall}
+        onPurchased={handlePaywallPurchased}
+        onOpenTermsOfUse={handleOpenTermsOfUse}
+        onOpenPrivacyPolicy={handleOpenPrivacyPolicy}
+      />
       {authSession ? (
         <PostAuthOnboardingOverlay
           session={authSession}
@@ -223,8 +237,6 @@ function CriticalAssetBootLayer({
   const total = assetModules.length;
 
   useEffect(() => {
-    let cancelled = false;
-
     if (readyRef.current) {
       return;
     }
@@ -232,31 +244,8 @@ function CriticalAssetBootLayer({
     if (total === 0) {
       readyRef.current = true;
       onReady();
-      return;
+      return undefined;
     }
-
-    Promise.all(
-      assetModules.map(async (moduleId) => {
-        const resolved = Image.resolveAssetSource(moduleId as ImageSourcePropType);
-
-        if (resolved?.uri) {
-          await Image.prefetch(resolved.uri).catch(() => false);
-        }
-      }),
-    )
-      .catch(() => {})
-      .finally(() => {
-        if (cancelled || readyRef.current) {
-          return;
-        }
-
-        readyRef.current = true;
-        onReady();
-      });
-
-    return () => {
-      cancelled = true;
-    };
   }, [onReady, total]);
 
   useEffect(() => {

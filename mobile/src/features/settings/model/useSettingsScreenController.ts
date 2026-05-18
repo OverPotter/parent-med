@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert } from "react-native";
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import {
@@ -23,6 +23,7 @@ import {
   getPasswordInlineHint,
   loadSettingsBundle,
   patchCachedSettingsBundle,
+  type SettingsBundle,
 } from "./settingsScreenLogic";
 import {
   defaultFamilyAccess,
@@ -60,6 +61,7 @@ type UseSettingsScreenControllerArgs = {
   onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
   onPushPreferencesChanged?: (preferences: MobilePushPreferences) => void;
   onFamilyAccessChanged?: (familyAccess: MobileFamilyAccessSummary) => void;
+  onSettingsBundleChanged?: (bundle: SettingsBundle) => void;
 };
 
 export function useSettingsScreenController({
@@ -73,6 +75,7 @@ export function useSettingsScreenController({
   onUpdatePreferredLanguage,
   onPushPreferencesChanged,
   onFamilyAccessChanged,
+  onSettingsBundleChanged,
 }: UseSettingsScreenControllerArgs) {
   const manageSubscriptionPendingRef = useRef(false);
 
@@ -113,6 +116,19 @@ export function useSettingsScreenController({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const applySettingsBundle = useCallback(
+    (bundle: SettingsBundle) => {
+      setPushPreferences(bundle.pushPreferences);
+      setPushConfig(bundle.pushConfig);
+      setFamilySummary(bundle.familySummary);
+      setFamilyAccess(bundle.familyAccess);
+      onPushPreferencesChanged?.(bundle.pushPreferences);
+      onFamilyAccessChanged?.(bundle.familyAccess);
+      onSettingsBundleChanged?.(bundle);
+    },
+    [onFamilyAccessChanged, onPushPreferencesChanged, onSettingsBundleChanged],
+  );
+
   useEffect(() => {
     setHasRecoveryCode(Boolean(session?.account.hasRecoveryCode));
   }, [session?.account.hasRecoveryCode]);
@@ -127,10 +143,7 @@ export function useSettingsScreenController({
     let cancelled = false;
 
     if (cachedBundle) {
-      setPushPreferences(cachedBundle.pushPreferences);
-      setPushConfig(cachedBundle.pushConfig);
-      setFamilySummary(cachedBundle.familySummary);
-      setFamilyAccess(cachedBundle.familyAccess);
+      applySettingsBundle(cachedBundle);
       setIsLoading(false);
     }
 
@@ -145,12 +158,7 @@ export function useSettingsScreenController({
           return;
         }
 
-        setPushPreferences(nextBundle.pushPreferences);
-        setPushConfig(nextBundle.pushConfig);
-        setFamilySummary(nextBundle.familySummary);
-        setFamilyAccess(nextBundle.familyAccess);
-        onPushPreferencesChanged?.(nextBundle.pushPreferences);
-        onFamilyAccessChanged?.(nextBundle.familyAccess);
+        applySettingsBundle(nextBundle);
       } catch {
         if (!cancelled && !cachedBundle) {
           setError(content.saveErrorLabel);
@@ -168,9 +176,8 @@ export function useSettingsScreenController({
       cancelled = true;
     };
   }, [
+    applySettingsBundle,
     content.saveErrorLabel,
-    onFamilyAccessChanged,
-    onPushPreferencesChanged,
     session,
     visible,
   ]);
@@ -536,12 +543,7 @@ export function useSettingsScreenController({
     }
 
     const nextBundle = await loadSettingsBundle(session);
-    setPushPreferences(nextBundle.pushPreferences);
-    setPushConfig(nextBundle.pushConfig);
-    setFamilySummary(nextBundle.familySummary);
-    setFamilyAccess(nextBundle.familyAccess);
-    onPushPreferencesChanged?.(nextBundle.pushPreferences);
-    onFamilyAccessChanged?.(nextBundle.familyAccess);
+    applySettingsBundle(nextBundle);
   };
 
   const handleManageSubscription = async () => {

@@ -199,11 +199,16 @@ export function useRevenueCatDebugController({
     },
     snapshot: async () => {
       await ensureConfigured();
-      return (
+      const currentSnapshot =
         (await getNativeRevenueCatCustomerSnapshot(entitlementCode)) ?? {
           configured: false,
-        }
-      );
+        };
+
+      if ("configured" in currentSnapshot && currentSnapshot.configured) {
+        await refreshBillingState(currentSnapshot);
+      }
+
+      return currentSnapshot;
     },
   };
 }

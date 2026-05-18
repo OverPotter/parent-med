@@ -78,18 +78,23 @@ export function useShellFamilyState(params: {
     setActiveIllnessObservationsByChildId({});
   }, []);
 
+  const isFamilyOwner = useCallback(
+    (session: MobileAuthSession) =>
+      session.family.ownerAccountId != null &&
+      session.family.ownerAccountId === session.account.id,
+    [],
+  );
+
   const applyFamilySettingsMeta = useCallback(
     (
       session: MobileAuthSession,
       bundle: Pick<FamilySettingsBundle, "familySummary" | "familyAccess">,
     ) => {
       setFamilyPremiumActive(Boolean(bundle.familySummary.premiumActive));
-      setFamilyCanSeeInviteCard(
-        session.family.ownerAccountId === session.account.id,
-      );
+      setFamilyCanSeeInviteCard(isFamilyOwner(session));
       setFamilyRoutinesCount(bundle.familyAccess.currentPillboxPlanCount);
     },
-    [],
+    [isFamilyOwner],
   );
 
   const resetFamilyShellState = useCallback(() => {
@@ -152,6 +157,21 @@ export function useShellFamilyState(params: {
 
     await loadFamilyMembers(params.authSession);
   }, [loadFamilyMembers, params.authSession]);
+
+  const applyFamilySettingsBundle = useCallback(
+    (
+      session: MobileAuthSession,
+      bundle: FamilySettingsBundle,
+    ) => {
+      applyFamilySettingsMeta(session, bundle);
+      setCanUseLiveActivities(bundle.familyAccess.canUseLiveActivities);
+      setPushPreferences(bundle.pushPreferences ?? defaultPushPreferences);
+      setLiveActivityPreferences(
+        toMobileLiveActivityPreferences(bundle.pushPreferences),
+      );
+    },
+    [applyFamilySettingsMeta],
+  );
 
   const loadChildren = useCallback(
     async (
@@ -297,12 +317,7 @@ export function useShellFamilyState(params: {
           | null;
 
         if (!cancelled && settingsBundle) {
-          applyFamilySettingsMeta(session, settingsBundle);
-          setCanUseLiveActivities(settingsBundle.familyAccess.canUseLiveActivities);
-          setPushPreferences(settingsBundle.pushPreferences ?? defaultPushPreferences);
-          setLiveActivityPreferences(
-            toMobileLiveActivityPreferences(settingsBundle.pushPreferences),
-          );
+          applyFamilySettingsBundle(session, settingsBundle);
         }
 
         if (bootstrapChildId) {
@@ -324,7 +339,7 @@ export function useShellFamilyState(params: {
     return () => {
       cancelled = true;
     };
-  }, [applyFamilySettingsMeta, loadChildren, params.authSession, resetFamilyShellState]);
+  }, [applyFamilySettingsBundle, loadChildren, params.authSession, resetFamilyShellState]);
 
   useEffect(() => {
     const authSession = params.authSession;
@@ -345,18 +360,14 @@ export function useShellFamilyState(params: {
       return;
     }
 
-    applyFamilySettingsMeta(authSession, cachedSettingsBundle);
-    setCanUseLiveActivities(cachedSettingsBundle.familyAccess.canUseLiveActivities);
-    setPushPreferences(cachedSettingsBundle.pushPreferences ?? defaultPushPreferences);
-    setLiveActivityPreferences(
-      toMobileLiveActivityPreferences(cachedSettingsBundle.pushPreferences),
-    );
-  }, [applyFamilySettingsMeta, params.authSession]);
+    applyFamilySettingsBundle(authSession, cachedSettingsBundle);
+  }, [applyFamilySettingsBundle, params.authSession]);
 
   return {
     activeFeedingRecordsByCardId,
     activeIllnessObservationsByChildId,
     activeSleepSessionsByCardId,
+    applyFamilySettingsBundle,
     canUseLiveActivities,
     children,
     familyCanSeeInviteCard,
