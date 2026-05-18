@@ -27,6 +27,10 @@ export type SubscriptionPaywallCopy = {
   loading: string;
   restoreSuccess: string;
   restoreInactive: string;
+  unavailable: string;
+  purchaseUnavailable: string;
+  purchaseFailed: string;
+  restoreFailed: string;
 };
 
 export type SubscriptionPaywallFeature = {
@@ -204,5 +208,33 @@ export function buildSubscriptionPaywallCopy(
     loading: isRu ? "Загружаем цены…" : isDe ? "Preise werden geladen…" : isPl ? "Ładowanie cen…" : "Loading prices…",
     restoreSuccess: isRu ? "Покупки восстановлены." : isDe ? "Käufe wurden wiederhergestellt." : isPl ? "Zakupy zostały przywrócone." : "Purchases restored.",
     restoreInactive: isRu ? "Активных покупок для восстановления не найдено." : isDe ? "Es wurden keine aktiven Käufe zum Wiederherstellen gefunden." : isPl ? "Nie znaleziono aktywnych zakupów do przywrócenia." : "No active purchases were found to restore.",
+    unavailable: isRu
+      ? "Подписка сейчас недоступна. Попробуйте позже."
+      : isDe
+        ? "Das Abo ist gerade nicht verfügbar. Bitte versuchen Sie es später erneut."
+        : isPl
+          ? "Subskrypcja jest teraz niedostępna. Spróbuj ponownie później."
+          : "Subscription is unavailable right now. Please try again later.",
+    purchaseUnavailable: isRu
+      ? "Покупка сейчас недоступна. Попробуйте позже."
+      : isDe
+        ? "Der Kauf ist gerade nicht verfügbar. Bitte versuchen Sie es später erneut."
+        : isPl
+          ? "Zakup jest teraz niedostępny. Spróbuj ponownie później."
+          : "Purchase is unavailable right now. Please try again later.",
+    purchaseFailed: isRu
+      ? "Не удалось оформить подписку. Попробуйте ещё раз."
+      : isDe
+        ? "Das Abo konnte nicht abgeschlossen werden. Bitte versuchen Sie es erneut."
+        : isPl
+          ? "Nie udało się włączyć subskrypcji. Spróbuj ponownie."
+          : "Could not complete the subscription. Please try again.",
+    restoreFailed: isRu
+      ? "Не удалось восстановить покупки. Попробуйте ещё раз."
+      : isDe
+        ? "Käufe konnten nicht wiederhergestellt werden. Bitte versuchen Sie es erneut."
+        : isPl
+          ? "Nie udało się przywrócić zakupów. Spróbuj ponownie."
+          : "Could not restore purchases. Please try again.",
   };
 }

@@ -24,6 +24,10 @@ type UseRevenueCatPaywallControllerArgs = {
   session: MobileAuthSession | null;
   restoreSuccessMessage: string;
   restoreInactiveMessage: string;
+  unavailableMessage: string;
+  purchaseUnavailableMessage: string;
+  purchaseFailedMessage: string;
+  restoreFailedMessage: string;
   onClose?: () => void;
   onPurchased?: () => Promise<void> | void;
   onError?: (message: string) => void;
@@ -41,6 +45,10 @@ export function useRevenueCatPaywallController({
   session,
   restoreSuccessMessage,
   restoreInactiveMessage,
+  unavailableMessage,
+  purchaseUnavailableMessage,
+  purchaseFailedMessage,
+  restoreFailedMessage,
   onClose,
   onPurchased,
   onError,
@@ -84,7 +92,10 @@ export function useRevenueCatPaywallController({
 
     const apiKey = getRevenueCatIosApiKey();
     if (!apiKey) {
-      setInlineMessage("RevenueCat iOS API key is missing.");
+      if (__DEV__) {
+        console.warn("[paywall] RevenueCat iOS API key is missing.");
+      }
+      setInlineMessage(unavailableMessage);
       return;
     }
 
@@ -99,7 +110,10 @@ export function useRevenueCatPaywallController({
       .then(async () => {
         const offeringData = await loadRevenueCatPaywallOffering();
         if (!offeringData || cancelled) {
-          setInlineMessage("RevenueCat current offering is unavailable.");
+          if (!cancelled && __DEV__) {
+            console.warn("[paywall] RevenueCat current offering is unavailable.");
+          }
+          setInlineMessage(unavailableMessage);
           return;
         }
 
@@ -114,9 +128,12 @@ export function useRevenueCatPaywallController({
       })
       .catch((error) => {
         if (!cancelled) {
-          setInlineMessage(
-            `RevenueCat offering load failed: ${describeUnknownError(error)}`,
-          );
+          if (__DEV__) {
+            console.warn(
+              `[paywall] RevenueCat offering load failed: ${describeUnknownError(error)}`,
+            );
+          }
+          setInlineMessage(unavailableMessage);
         }
       })
       .finally(() => {
@@ -145,7 +162,12 @@ export function useRevenueCatPaywallController({
 
     const selectedPackage = packagesByPlan[selectedPlan];
     if (!selectedPackage) {
-      setInlineMessage(`RevenueCat package for ${selectedPlan} is unavailable.`);
+      if (__DEV__) {
+        console.warn(
+          `[paywall] RevenueCat package for ${selectedPlan} is unavailable.`,
+        );
+      }
+      setInlineMessage(purchaseUnavailableMessage);
       return;
     }
 
@@ -174,7 +196,12 @@ export function useRevenueCatPaywallController({
       await onPurchased?.();
       onClose?.();
     } catch (error) {
-      const message = `Purchase failed: ${describeUnknownError(error)}`;
+      if (__DEV__) {
+        console.warn(
+          `[paywall] Purchase failed: ${describeUnknownError(error)}`,
+        );
+      }
+      const message = purchaseFailedMessage;
       setInlineMessage(message);
       onError?.(message);
     } finally {
@@ -203,7 +230,12 @@ export function useRevenueCatPaywallController({
       await onPurchased?.();
       setInlineMessage(restoreSuccessMessage);
     } catch (error) {
-      const message = `Restore failed: ${describeUnknownError(error)}`;
+      if (__DEV__) {
+        console.warn(
+          `[paywall] Restore failed: ${describeUnknownError(error)}`,
+        );
+      }
+      const message = restoreFailedMessage;
       setInlineMessage(message);
       onError?.(message);
     } finally {
