@@ -12,7 +12,7 @@
     "ios:prod": "APP_ENV=mobile-prod PATH=\"/opt/homebrew/bin:$(ruby -rrubygems -e 'print Gem.user_dir')/bin:$PATH\" expo run:ios",
     "ios:tunnel": "expo start --ios --tunnel",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
+    "test": "TZ=Europe/Minsk jest",
     "android": "expo run:android"
   },
   "dependencies": {
