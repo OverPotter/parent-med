@@ -147,6 +147,8 @@ function Probe({
 
 describe("usePillboxHomeController", () => {
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-05-15T08:00:00.000Z"));
     jest.resetAllMocks();
     latestController = null;
     mockedListPlans.mockResolvedValue([]);
@@ -154,6 +156,10 @@ describe("usePillboxHomeController", () => {
     mockedGetPlan.mockResolvedValue(makePlan());
     mockedUpdatePlan.mockResolvedValue(makePlan({ memberAccountIds: ["acc-1"] }));
     mockedTakeDose.mockResolvedValue(makeSummary());
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("loads plans on mount and builds root state", async () => {
