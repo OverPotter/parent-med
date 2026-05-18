@@ -70,6 +70,7 @@ function toPlanSummary(
     id: plan.id,
     title: plan.title,
     status: plan.status,
+    subjectAccountId: plan.subjectAccountId,
     memberAccountIds: plan.memberAccountIds,
     activeMedicationCount: plan.medications.length,
     nextDoseAt: existingSummary?.nextDoseAt ?? null,

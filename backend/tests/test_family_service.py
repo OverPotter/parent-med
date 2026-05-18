@@ -808,7 +808,9 @@ async def test_free_family_cannot_update_member_access_or_roles() -> None:
     with pytest.raises(ForbiddenError, match="только в Plus"):
         await service.update_member_for_account(
             member_account_id=member.id,
-            dto=FamilyMemberUpdateDto(access_policy=FamilyAccessPolicyUpdateDto(cabinet_access="view")),
+            dto=FamilyMemberUpdateDto(
+                access_policy=FamilyAccessPolicyUpdateDto(cabinet_access="view")
+            ),
             current_account_id=owner.id,
             current_family_id=family.id,
             current_family_role="owner",
