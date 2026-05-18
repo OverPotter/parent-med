@@ -18,8 +18,7 @@ import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme"
 import { journalTypography } from "../../../shared/theme/journalTypography";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import type { MobilePillboxMedication } from "../api/mobilePillboxPlansApi";
-import { resolveIllnessRecipientSelection } from "../../illness/model/illnessRecipients";
-import { ReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
+import { InstantReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
 import { pillboxTimeIcons } from "../assets/time";
 import { buildPillboxHomeScreenContent } from "../model/pillboxHomeScreen";
 import type { PillboxDraftMedicine } from "../model/pillboxPlanOnboarding";
@@ -93,7 +92,6 @@ export function PillboxHomeScreen({
   const [pickerHour, setPickerHour] = useState(8);
   const [pickerMinute, setPickerMinute] = useState(30);
   const [recipientsPlanId, setRecipientsPlanId] = useState<string | null>(null);
-  const [draftRecipientIds, setDraftRecipientIds] = useState<string[]>([]);
   const carouselPageWidth = width - 44;
   const isPreControllerOverlayActive =
     medicineDraft !== null || recipientsPlanId !== null;
@@ -199,7 +197,6 @@ export function PillboxHomeScreen({
       return;
     }
     setRecipientsPlanId(planId);
-    setDraftRecipientIds([...plan.memberAccountIds]);
   };
 
   const openMedicineEditor = (planId: string, medicineId: string) => {
@@ -722,39 +719,28 @@ export function PillboxHomeScreen({
         }}
       />
 
-      <ReminderRecipientsSheet
+      <InstantReminderRecipientsSheet
         title="Кому придут уведомления"
         subtitle="Если снять всех, по умолчанию останетесь вы."
-        cancelLabel="Отмена"
-        saveLabel="Сохранить"
         currentUserLabel="Вы"
         visible={recipientsPlan !== null}
         isSaving={recipientsPlanId !== null && updatingPlanId === recipientsPlanId}
         members={recipientSheetMembers}
         currentAccountId={currentAccountId}
-        selectedIds={draftRecipientIds}
-        onToggleMember={(memberId) =>
-          setDraftRecipientIds((current) =>
-            resolveIllnessRecipientSelection(
-              current.includes(memberId)
-                ? current.filter((id) => id !== memberId)
-                : [...current, memberId],
-              eligibleRecipientIds,
-              currentAccountId,
-            ),
-          )
-        }
-        onClose={() => {
-          setRecipientsPlanId(null);
-          setDraftRecipientIds([]);
-        }}
-        onSave={() => {
-          if (!recipientsPlanId) {
+        selectedIds={recipientsPlan?.memberAccountIds ?? []}
+        onToggleMember={(memberId) => {
+          if (!recipientsPlanId || !recipientsPlan) {
             return;
           }
-          handleSavePlanRecipients(recipientsPlanId, draftRecipientIds);
+
+          const nextRecipientIds = recipientsPlan.memberAccountIds.includes(memberId)
+            ? recipientsPlan.memberAccountIds.filter((id) => id !== memberId)
+            : [...recipientsPlan.memberAccountIds, memberId];
+
+          handleSavePlanRecipients(recipientsPlanId, nextRecipientIds);
+        }}
+        onClose={() => {
           setRecipientsPlanId(null);
-          setDraftRecipientIds([]);
         }}
       />
 

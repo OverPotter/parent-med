@@ -52,7 +52,6 @@ export function usePillboxPlanOnboardingController({
   const [isCourseSheetOpen, setIsCourseSheetOpen] = useState(false);
   const [isCustomCourseSheetOpen, setIsCustomCourseSheetOpen] = useState(false);
   const [isRecipientSheetOpen, setIsRecipientSheetOpen] = useState(false);
-  const [draftRecipientIds, setDraftRecipientIds] = useState<string[]>([]);
   const [isSavingPlan, setIsSavingPlan] = useState(false);
   const [customCourseDays, setCustomCourseDays] = useState("");
   const [pickerHour, setPickerHour] = useState(8);
@@ -70,7 +69,6 @@ export function usePillboxPlanOnboardingController({
       setIsCourseSheetOpen(false);
       setIsCustomCourseSheetOpen(false);
       setIsRecipientSheetOpen(false);
-      setDraftRecipientIds([]);
       setIsSavingPlan(false);
       setCustomCourseDays("");
       setPickerHour(8);
@@ -340,32 +338,20 @@ export function usePillboxPlanOnboardingController({
   };
 
   const handleOpenRecipients = () => {
-    setDraftRecipientIds([...resolvedRecipientIds]);
     setIsRecipientSheetOpen(true);
   };
 
   const handleToggleRecipient = (memberId: string) => {
-    setDraftRecipientIds((current) =>
-      resolveIllnessRecipientSelection(
-        current.includes(memberId)
-          ? current.filter((id) => id !== memberId)
-          : [...current, memberId],
-        eligibleRecipientIds,
-        currentAccountId,
-      ),
-    );
-  };
-
-  const handleSaveRecipients = () => {
     setDraft((current) => ({
       ...current,
       notificationRecipientIds: resolveIllnessRecipientSelection(
-        draftRecipientIds,
+        current.notificationRecipientIds.includes(memberId)
+          ? current.notificationRecipientIds.filter((id) => id !== memberId)
+          : [...current.notificationRecipientIds, memberId],
         eligibleRecipientIds,
         currentAccountId,
       ),
     }));
-    setIsRecipientSheetOpen(false);
   };
 
   return {
@@ -386,8 +372,6 @@ export function usePillboxPlanOnboardingController({
     setIsCustomCourseSheetOpen,
     isRecipientSheetOpen,
     setIsRecipientSheetOpen,
-    draftRecipientIds,
-    setDraftRecipientIds,
     isSavingPlan,
     customCourseDays,
     setCustomCourseDays,
@@ -423,7 +407,6 @@ export function usePillboxPlanOnboardingController({
     handleSelectMealRelation,
     handleOpenRecipients,
     handleToggleRecipient,
-    handleSaveRecipients,
   };
 }
 

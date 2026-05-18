@@ -19,7 +19,7 @@ import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
 import { ReminderNumberOptionsSheet } from "../../illness/screens/ReminderNumberOptionsSheet";
-import { ReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
+import { InstantReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import type { ReminderNumberSheetOption } from "../../illness/screens/reminderNumberOptions";
 import type { MobilePillboxPlan } from "../api/mobilePillboxPlansApi";
@@ -79,7 +79,6 @@ export function PillboxPlanOnboardingFlow({
     setIsCustomCourseSheetOpen,
     isRecipientSheetOpen,
     setIsRecipientSheetOpen,
-    draftRecipientIds,
     customCourseDays,
     setCustomCourseDays,
     pickerHour,
@@ -90,6 +89,7 @@ export function PillboxPlanOnboardingFlow({
     currentStepIndex,
     participantTitle,
     recipientSheetMembers,
+    resolvedRecipientIds,
     currentCourseDurationDays,
     canGoNextFromParticipant,
     canGoNextFromList,
@@ -112,7 +112,6 @@ export function PillboxPlanOnboardingFlow({
     handleSelectMealRelation,
     handleOpenRecipients,
     handleToggleRecipient,
-    handleSaveRecipients,
     notificationRecipientTitle,
   } = usePillboxPlanOnboardingController({
     visible,
@@ -465,7 +464,7 @@ export function PillboxPlanOnboardingFlow({
           )}
         </FormBottomSheet>
 
-        <ReminderRecipientsSheet
+        <InstantReminderRecipientsSheet
           title={
             locale === "ru"
               ? "Кому придут уведомления"
@@ -476,17 +475,14 @@ export function PillboxPlanOnboardingFlow({
               ? "По умолчанию выбран участник плана."
               : "The plan participant is selected by default."
           }
-          cancelLabel={locale === "ru" ? "Отмена" : "Cancel"}
-          saveLabel={locale === "ru" ? "Сохранить" : "Save"}
           currentUserLabel={locale === "ru" ? "Вы" : "You"}
           visible={isRecipientSheetOpen}
           isSaving={isSavingPlan}
           members={recipientSheetMembers}
           currentAccountId={currentAccountId}
-          selectedIds={draftRecipientIds}
+          selectedIds={resolvedRecipientIds}
           onToggleMember={handleToggleRecipient}
           onClose={() => setIsRecipientSheetOpen(false)}
-          onSave={handleSaveRecipients}
         />
 
         <View

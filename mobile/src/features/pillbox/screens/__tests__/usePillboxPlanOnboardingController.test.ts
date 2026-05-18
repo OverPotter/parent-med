@@ -318,8 +318,7 @@ describe("usePillboxPlanOnboardingController", () => {
 
     act(() => {
       latestController?.handleSaveMedicine();
-      latestController?.setDraftRecipientIds([]);
-      latestController?.handleSaveRecipients();
+      latestController?.handleToggleRecipient("acc-2");
       latestController?.setStep("review");
     });
 
