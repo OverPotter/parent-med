@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { MobileFamilyMember } from "../../family/api/familyMembersApi";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 
@@ -58,9 +58,11 @@ function ReminderRecipientsSheetBase({
                 <Pressable
                   key={member.id}
                   onPress={() => onToggleMember(member.id)}
+                  disabled={isSaving}
                   style={[
                     styles.memberRow,
                     selected ? styles.memberRowSelected : null,
+                    isSaving ? styles.memberRowDisabled : null,
                   ]}
                 >
                   <View style={styles.memberCopy}>
@@ -133,9 +135,29 @@ export function ReminderRecipientsSheet({
 }
 
 export function InstantReminderRecipientsSheet(
-  props: ReminderRecipientsSheetBaseProps,
+  props: ReminderRecipientsSheetBaseProps & {
+    instantHint?: string;
+  },
 ) {
-  return <ReminderRecipientsSheetBase {...props} />;
+  return (
+    <ReminderRecipientsSheetBase
+      {...props}
+      footer={
+        <View style={styles.instantHintCard}>
+          <View style={styles.instantHintIconWrap}>
+            {props.isSaving ? (
+              <ActivityIndicator size="small" color="#F56F68" />
+            ) : (
+              <Feather name="zap" size={14} color="#F56F68" />
+            )}
+          </View>
+          <Text style={styles.instantHintText}>
+            {props.instantHint ?? "Changes apply immediately."}
+          </Text>
+        </View>
+      }
+    />
+  );
 }
 
 const styles = StyleSheet.create({
@@ -190,6 +212,9 @@ const styles = StyleSheet.create({
   memberRowSelected: {
     borderColor: "#F56F68",
     backgroundColor: "#FFF3EF",
+  },
+  memberRowDisabled: {
+    opacity: 0.6,
   },
   memberCopy: { flex: 1, minWidth: 0 },
   memberTitleRow: {
@@ -276,5 +301,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 21,
     fontWeight: "800",
+  },
+  instantHintCard: {
+    marginTop: 18,
+    minHeight: 52,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#F2DDD4",
+    backgroundColor: "#FFF7F3",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  instantHintIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFE8E0",
+  },
+  instantHintText: {
+    flex: 1,
+    color: "#8A5B4D",
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
   },
 });

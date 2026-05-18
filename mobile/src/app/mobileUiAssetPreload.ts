@@ -39,7 +39,6 @@ function collectModulesToSet(value: unknown, bucket: Set<number>) {
 function getShellReadyAssetModules() {
   const modules = new Set<number>();
 
-  collectModulesToSet(authScreenAssets, modules);
   collectModulesToSet(childrenScreenAssets.background, modules);
   collectModulesToSet(childrenScreenAssets.icons, modules);
   collectModulesToSet(redesignSharedIcons, modules);
@@ -228,7 +227,7 @@ function collectAssetsForScreenBranch(
 }
 
 export function getCriticalMobileUiAssetModules() {
-  return getShellReadyAssetModules();
+  return [authScreenAssets.background, ...getShellReadyAssetModules()];
 }
 
 export function getInitialShellAssetModules(childrenCards: ChildCard[]) {

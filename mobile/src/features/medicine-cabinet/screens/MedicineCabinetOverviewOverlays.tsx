@@ -102,6 +102,15 @@ export function MedicineCabinetOverviewOverlays({
         currentAccountId={currentAccountId}
         selectedIds={selectedRecipientIds}
         onToggleMember={onToggleRecipient}
+        instantHint={
+          locale === "ru"
+            ? "Изменения сохраняются сразу."
+            : locale === "de"
+              ? "Änderungen werden sofort übernommen."
+              : locale === "pl"
+                ? "Zmiany zapisują się od razu."
+                : "Changes apply immediately."
+        }
         onClose={() => setIsRecipientsSheetOpen(false)}
       />
 

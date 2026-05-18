@@ -6,6 +6,7 @@ import Purchases, {
   type PurchasesPackage,
 } from "react-native-purchases";
 import { Platform } from "react-native";
+import { getRevenueCatOfferingIdentifier } from "../config/mobileRuntimeConfig";
 
 export type RevenueCatSnapshotStatus =
   | "inactive"
@@ -164,6 +165,11 @@ export async function getNativeRevenueCatCurrentOffering() {
   }
 
   const offerings = await Purchases.getOfferings();
+  const configuredOfferingId = getRevenueCatOfferingIdentifier()?.trim() || null;
+  if (configuredOfferingId) {
+    return offerings.all[configuredOfferingId] ?? null;
+  }
+
   return offerings.current;
 }
 

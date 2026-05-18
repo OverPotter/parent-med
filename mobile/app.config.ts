@@ -23,7 +23,8 @@ type PublicEnvKey =
   | "REVENUECAT_IOS_API_KEY"
   | "REVENUECAT_SYNC_BACKEND"
   | "REVENUECAT_ENTITLEMENT_CODE"
-  | "REVENUECAT_DEFAULT_PACKAGE_ID";
+  | "REVENUECAT_DEFAULT_PACKAGE_ID"
+  | "REVENUECAT_OFFERING_ID";
 
 function readProcessEnv(key: string): string {
   const value = process.env[key];
@@ -58,15 +59,6 @@ function parseEnvFile(filePath: string): Record<string, string> {
 }
 
 function getSelectedAppEnvProfile(): AppEnvProfile {
-  const candidate = readProcessEnv("APP_ENV");
-  if (
-    candidate === "mobile-dev" ||
-    candidate === "mobile-stage" ||
-    candidate === "mobile-prod"
-  ) {
-    return candidate;
-  }
-
   const xcodeConfiguration = readProcessEnv("CONFIGURATION").toLowerCase();
   if (xcodeConfiguration === "debug") {
     return "mobile-dev";
@@ -74,6 +66,15 @@ function getSelectedAppEnvProfile(): AppEnvProfile {
 
   if (xcodeConfiguration === "release") {
     return "mobile-prod";
+  }
+
+  const candidate = readProcessEnv("APP_ENV");
+  if (
+    candidate === "mobile-dev" ||
+    candidate === "mobile-stage" ||
+    candidate === "mobile-prod"
+  ) {
+    return candidate;
   }
 
   return "mobile-dev";
@@ -161,6 +162,7 @@ const extraPublicEnv = {
   REVENUECAT_SYNC_BACKEND: readPublicEnvValue("REVENUECAT_SYNC_BACKEND"),
   REVENUECAT_ENTITLEMENT_CODE: readPublicEnvValue("REVENUECAT_ENTITLEMENT_CODE"),
   REVENUECAT_DEFAULT_PACKAGE_ID: readPublicEnvValue("REVENUECAT_DEFAULT_PACKAGE_ID"),
+  REVENUECAT_OFFERING_ID: readPublicEnvValue("REVENUECAT_OFFERING_ID"),
 };
 
 const config = {

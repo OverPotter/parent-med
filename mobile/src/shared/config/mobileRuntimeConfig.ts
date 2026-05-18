@@ -17,7 +17,8 @@ type MobileConfigKey =
   | "REVENUECAT_IOS_API_KEY"
   | "REVENUECAT_SYNC_BACKEND"
   | "REVENUECAT_ENTITLEMENT_CODE"
-  | "REVENUECAT_DEFAULT_PACKAGE_ID";
+  | "REVENUECAT_DEFAULT_PACKAGE_ID"
+  | "REVENUECAT_OFFERING_ID";
 
 type MobilePublicEnv = Partial<Record<MobileConfigKey, string>>;
 
@@ -114,12 +115,14 @@ export function getRevenueCatIosApiKey(): string | null {
     readMobileConfigValue("REVENUECAT_ENTITLEMENT_CODE") || "plus";
   const defaultPackageId =
     readMobileConfigValue("REVENUECAT_DEFAULT_PACKAGE_ID") || null;
+  const offeringId = readMobileConfigValue("REVENUECAT_OFFERING_ID") || null;
   const signature = JSON.stringify({
     appEnvProfile,
     hasKey: Boolean(value),
     keyPrefix,
     entitlementCode,
     defaultPackageId,
+    offeringId,
   });
 
   if (__DEV__ && lastLoggedRevenueCatConfigSignature !== signature) {
@@ -130,6 +133,7 @@ export function getRevenueCatIosApiKey(): string | null {
       keyPrefix,
       entitlementCode,
       defaultPackageId,
+      offeringId,
     });
   }
 
@@ -147,5 +151,10 @@ export function getRevenueCatEntitlementCode(): string {
 
 export function getRevenueCatDefaultPackageIdentifier(): string | null {
   const value = readMobileConfigValue("REVENUECAT_DEFAULT_PACKAGE_ID");
+  return value || null;
+}
+
+export function getRevenueCatOfferingIdentifier(): string | null {
+  const value = readMobileConfigValue("REVENUECAT_OFFERING_ID");
   return value || null;
 }

@@ -134,6 +134,15 @@ export function useSettingsScreenController({
   }, [session?.account.hasRecoveryCode]);
 
   useEffect(() => {
+    if (visible) {
+      return;
+    }
+
+    manageSubscriptionPendingRef.current = false;
+    setPaywallVisible(false);
+  }, [visible]);
+
+  useEffect(() => {
     if (!visible || !session) {
       return;
     }
@@ -547,23 +556,22 @@ export function useSettingsScreenController({
   };
 
   const handleManageSubscription = async () => {
+    if (shouldOpenPurchasePaywall) {
+      setPaywallVisible(true);
+      return;
+    }
+
     if (manageSubscriptionPendingRef.current) {
       return;
     }
 
     manageSubscriptionPendingRef.current = true;
     try {
-      if (shouldOpenPurchasePaywall) {
-        setPaywallVisible(true);
-        return;
-      }
       await openSystemSubscriptionManagement();
     } catch {
       setError(content.saveErrorLabel);
     } finally {
-      setTimeout(() => {
-        manageSubscriptionPendingRef.current = false;
-      }, 900);
+      manageSubscriptionPendingRef.current = false;
     }
   };
 

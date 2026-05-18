@@ -482,6 +482,11 @@ export function PillboxPlanOnboardingFlow({
           currentAccountId={currentAccountId}
           selectedIds={resolvedRecipientIds}
           onToggleMember={handleToggleRecipient}
+          instantHint={
+            locale === "ru"
+              ? "Изменения сохраняются сразу."
+              : "Changes apply immediately."
+          }
           onClose={() => setIsRecipientSheetOpen(false)}
         />
 

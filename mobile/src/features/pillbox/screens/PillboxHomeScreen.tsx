@@ -728,6 +728,7 @@ export function PillboxHomeScreen({
         members={recipientSheetMembers}
         currentAccountId={currentAccountId}
         selectedIds={recipientsPlan?.memberAccountIds ?? []}
+        instantHint="Изменения сохраняются сразу."
         onToggleMember={(memberId) => {
           if (!recipientsPlanId || !recipientsPlan) {
             return;

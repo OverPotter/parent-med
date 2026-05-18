@@ -363,47 +363,26 @@ export function RootTabContent({
         </View>
       ) : null}
       <View
-        pointerEvents={
-          activeRootTab !== "children" && !showMoreTab ? "auto" : "none"
-        }
+        pointerEvents={activeRootTab === "cabinet" && !showMoreTab ? "auto" : "none"}
         style={[
           screenLayerStyle,
-          activeRootTab !== "children" && !showMoreTab
+          activeRootTab === "cabinet" && !showMoreTab
             ? tabLayerStyles.visible
             : tabLayerStyles.hidden,
         ]}
       >
-        {activeRootTab === "cabinet" && !showMoreTab ? (
-          <MedicineCabinetOverviewScreen
-            authSession={authSession}
-            familyMembers={familyMembers}
-            addFromCatalogLocked={addCabinetFromCatalogLocked}
-            onOpenLockedCatalog={onOpenLockedCabinetCatalog}
-            pushNotificationsBannerVisible={pushNotificationsBannerVisible}
-            pushNotificationsBannerTitle={pushNotificationsBannerTitle}
-            pushNotificationsBannerBody={pushNotificationsBannerBody}
-            pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
-            onOpenPushNotificationSettings={onOpenPushNotificationSettings}
-            onTabBarModeChange={onRootTabBarModeChange}
-          />
-        ) : activeRootTab === "pillbox" && !showMoreTab ? (
-          <PillboxHomeScreen
-            accessToken={authSession?.accessToken ?? null}
-            currentAccountId={authSession?.account.id ?? ""}
-            familyMembers={familyMembers}
-            onOpenAnalytics={onOpenPillboxAnalytics}
-            createPlanLocked={createPillboxPlanLocked}
-            onOpenLockedPlan={onOpenLockedPillboxPlan}
-            pushNotificationsBannerVisible={pushNotificationsBannerVisible}
-            pushNotificationsBannerTitle={pushNotificationsBannerTitle}
-            pushNotificationsBannerBody={pushNotificationsBannerBody}
-            pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
-            onOpenPushNotificationSettings={onOpenPushNotificationSettings}
-            onTabBarModeChange={onRootTabBarModeChange}
-          />
-        ) : placeholderTabKey ? (
-          <RootModulePlaceholderScreen tabKey={placeholderTabKey} />
-        ) : null}
+        <MedicineCabinetOverviewScreen
+          authSession={authSession}
+          familyMembers={familyMembers}
+          addFromCatalogLocked={addCabinetFromCatalogLocked}
+          onOpenLockedCatalog={onOpenLockedCabinetCatalog}
+          pushNotificationsBannerVisible={pushNotificationsBannerVisible}
+          pushNotificationsBannerTitle={pushNotificationsBannerTitle}
+          pushNotificationsBannerBody={pushNotificationsBannerBody}
+          pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
+          onOpenPushNotificationSettings={onOpenPushNotificationSettings}
+          onTabBarModeChange={onRootTabBarModeChange}
+        />
         <SubscriptionPaywallSheet
           visible={activeRootTab === "cabinet" && cabinetPaywallVisible}
           session={authSession}
@@ -411,6 +390,30 @@ export function RootTabContent({
           onPurchased={onCabinetPaywallPurchased}
           onOpenTermsOfUse={onOpenTermsOfUse}
           onOpenPrivacyPolicy={onOpenPrivacyPolicy}
+        />
+      </View>
+      <View
+        pointerEvents={activeRootTab === "pillbox" && !showMoreTab ? "auto" : "none"}
+        style={[
+          screenLayerStyle,
+          activeRootTab === "pillbox" && !showMoreTab
+            ? tabLayerStyles.visible
+            : tabLayerStyles.hidden,
+        ]}
+      >
+        <PillboxHomeScreen
+          accessToken={authSession?.accessToken ?? null}
+          currentAccountId={authSession?.account.id ?? ""}
+          familyMembers={familyMembers}
+          onOpenAnalytics={onOpenPillboxAnalytics}
+          createPlanLocked={createPillboxPlanLocked}
+          onOpenLockedPlan={onOpenLockedPillboxPlan}
+          pushNotificationsBannerVisible={pushNotificationsBannerVisible}
+          pushNotificationsBannerTitle={pushNotificationsBannerTitle}
+          pushNotificationsBannerBody={pushNotificationsBannerBody}
+          pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
+          onOpenPushNotificationSettings={onOpenPushNotificationSettings}
+          onTabBarModeChange={onRootTabBarModeChange}
         />
         <SubscriptionPaywallSheet
           visible={activeRootTab === "pillbox" && pillboxPaywallVisible}
@@ -420,6 +423,21 @@ export function RootTabContent({
           onOpenTermsOfUse={onOpenTermsOfUse}
           onOpenPrivacyPolicy={onOpenPrivacyPolicy}
         />
+      </View>
+      <View
+        pointerEvents={
+          placeholderTabKey === "more" && !showMoreTab ? "auto" : "none"
+        }
+        style={[
+          screenLayerStyle,
+          placeholderTabKey === "more" && !showMoreTab
+            ? tabLayerStyles.visible
+            : tabLayerStyles.hidden,
+        ]}
+      >
+        {placeholderTabKey === "more" ? (
+          <RootModulePlaceholderScreen tabKey={placeholderTabKey} />
+        ) : null}
       </View>
     </>
   );
