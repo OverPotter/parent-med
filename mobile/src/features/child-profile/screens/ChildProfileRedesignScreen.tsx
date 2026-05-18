@@ -28,6 +28,8 @@ type ChildProfileRedesignScreenProps = {
   child: ChildCard;
   visible: boolean;
   onBack: () => void;
+  isReadOnlyLocked?: boolean;
+  onOpenLockedChild?: () => void;
   onEditProfile?: () => void;
   onOpenAnalytics?: () => void;
   onOpenJournalEntry?: (
@@ -41,6 +43,8 @@ export function ChildProfileRedesignScreen({
   child,
   visible,
   onBack,
+  isReadOnlyLocked = false,
+  onOpenLockedChild,
   onEditProfile,
   onOpenAnalytics,
   onOpenJournalEntry,
@@ -52,6 +56,7 @@ export function ChildProfileRedesignScreen({
   const handleEditProfile = onEditProfile ?? noop;
   const handleOpenAnalytics = onOpenAnalytics ?? noop;
   const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
+  const handleOpenLocked = onOpenLockedChild ?? noop;
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
     enabled: visible && !isExportSheetOpen,
@@ -116,7 +121,7 @@ export function ChildProfileRedesignScreen({
                   <View style={styles.nameRow}>
                     <Text style={styles.childName}>{content.childName}</Text>
                     <Pressable
-                      onPress={handleEditProfile}
+                      onPress={isReadOnlyLocked ? handleOpenLocked : handleEditProfile}
                       style={({ pressed }) => [
                         styles.editButton,
                         pressed ? styles.editButtonPressed : null,
@@ -153,6 +158,22 @@ export function ChildProfileRedesignScreen({
                   ) : null}
                 </View>
               </View>
+              {isReadOnlyLocked ? (
+                <View style={styles.lockedProfileHint}>
+                  <View style={styles.lockedProfileBadge}>
+                    <Text style={styles.lockedProfileBadgeText}>Plus</Text>
+                  </View>
+                  <Text style={styles.lockedProfileHintText}>
+                    {locale === "ru"
+                      ? "Профиль, история и аналитика доступны. Редактирование и экспорт доступны в Plus."
+                      : locale === "de"
+                        ? "Profil, Verlauf und Analytik sind verfügbar. Bearbeiten und Export sind mit Plus verfügbar."
+                        : locale === "pl"
+                          ? "Profil, historia i analityka są dostępne. Edycja i eksport są dostępne w Plus."
+                          : "Profile, history, and analytics are available. Editing and export are available with Plus."}
+                  </Text>
+                </View>
+              ) : null}
             </View>
 
             <Text style={styles.sectionTitle}>{content.journalTitle}</Text>
@@ -211,7 +232,14 @@ export function ChildProfileRedesignScreen({
             </View>
 
             <Pressable
-              onPress={() => setIsExportSheetOpen(true)}
+              onPress={() => {
+                if (isReadOnlyLocked) {
+                  handleOpenLocked();
+                  return;
+                }
+
+                setIsExportSheetOpen(true);
+              }}
               style={({ pressed }) => [
                 styles.exportCard,
                 pressed ? styles.exportPressed : null,

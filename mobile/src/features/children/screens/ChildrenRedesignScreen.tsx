@@ -23,6 +23,8 @@ import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme"
 type ChildrenRedesignScreenProps = {
   cards?: ChildCard[];
   onOpenChildCreate?: () => void;
+  addChildLocked?: boolean;
+  onOpenLockedChild?: () => void;
   onOpenChildProfile?: (cardId: string) => void;
   onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
   onOpenObservation?: (cardId: string) => void;
@@ -47,6 +49,8 @@ type PendingStopAction = {
 export function ChildrenRedesignScreen({
   cards,
   onOpenChildCreate,
+  addChildLocked = false,
+  onOpenLockedChild = noop,
   onOpenChildProfile,
   onOpenJournalEntry,
   onOpenObservation,
@@ -77,6 +81,22 @@ export function ChildrenRedesignScreen({
   const stopActionCopy = pendingStopAction
     ? buildChildrenStopActionCopy(locale, pendingStopAction.kind)
     : null;
+  const addChildPlusLabel =
+    locale === "ru"
+      ? "Plus"
+      : locale === "de"
+        ? "Plus"
+        : locale === "pl"
+          ? "Plus"
+          : "Plus";
+  const addChildLockedHint =
+    locale === "ru"
+      ? "Больше детей в Plus"
+      : locale === "de"
+        ? "Mehr Kinder mit Plus"
+        : locale === "pl"
+          ? "Więcej dzieci w Plus"
+          : "More children with Plus";
 
   const hasActiveSleep = Object.values(activeSleepStartedAtByCardId).some(Boolean);
   const hasActiveFeeding = Object.values(activeFeedingStartedAtByCardId).some(
@@ -206,6 +226,7 @@ export function ChildrenRedesignScreen({
                 card={card}
                 collapsed={collapsedCardIds.includes(card.nodeId)}
                 onToggleCollapse={handleToggleCollapse}
+                onOpenLockedChild={onOpenLockedChild}
                 sleepElapsedLabel={
                   activeSleepStartedAtByCardId[card.nodeId]
                     ? formatElapsedDuration(
@@ -236,15 +257,28 @@ export function ChildrenRedesignScreen({
             onPress={onOpenChildCreate ?? noop}
             style={({ pressed }) => [
               styles.addChildCta,
+              addChildLocked ? styles.addChildCtaLocked : null,
               pressed ? styles.addChildCtaPressed : null,
             ]}
           >
             <View style={styles.addChildIconCircle}>
               <Ionicons name="add" size={22} color="#FFFFFF" />
             </View>
-            <Text style={styles.addChildLabel}>
-              {childrenScreenContent.addChildLabel}
-            </Text>
+            <View style={styles.addChildCopy}>
+              <View style={styles.addChildTitleRow}>
+                <Text style={styles.addChildLabel}>
+                  {childrenScreenContent.addChildLabel}
+                </Text>
+                {addChildLocked ? (
+                  <View style={styles.addChildPlusTip}>
+                    <Text style={styles.addChildPlusTipText}>{addChildPlusLabel}</Text>
+                  </View>
+                ) : null}
+              </View>
+              {addChildLocked ? (
+                <Text style={styles.addChildHint}>{addChildLockedHint}</Text>
+              ) : null}
+            </View>
           </Pressable>
         </ScrollView>
       </View>

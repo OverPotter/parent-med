@@ -356,6 +356,9 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
+  inviteRefreshButtonLocked: {
+    borderColor: "#F4BDD7",
+  },
   inviteTitle: {
     fontSize: 18,
     lineHeight: 22,

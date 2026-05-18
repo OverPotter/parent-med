@@ -13,6 +13,8 @@ import {
 
 export function useShellChildFlowController({
   activeIllnessObservationsByChildId,
+  isChildLocked,
+  onOpenLockedChild,
   setActiveRootTab,
   setActiveScreen,
   setSelectedChildId,
@@ -23,6 +25,8 @@ export function useShellChildFlowController({
     string,
     MobileIllnessObservation | undefined
   >;
+  isChildLocked: (childId: string) => boolean;
+  onOpenLockedChild: () => void;
   setActiveRootTab: Dispatch<SetStateAction<MobileBottomTabKey>>;
   setActiveScreen: Dispatch<SetStateAction<PillPathActiveScreen>>;
   setSelectedChildId: Dispatch<SetStateAction<string>>;
@@ -39,11 +43,16 @@ export function useShellChildFlowController({
 
   const handleOpenRootJournalEntry = useCallback(
     (cardId: string, kind: JournalEntryKind) => {
+      if (isChildLocked(cardId)) {
+        onOpenLockedChild();
+        return;
+      }
+
       setSelectedChildId(cardId);
       setSelectedJournalKind(kind);
       setActiveScreen("journalEntry");
     },
-    [setActiveScreen, setSelectedChildId, setSelectedJournalKind],
+    [isChildLocked, onOpenLockedChild, setActiveScreen, setSelectedChildId, setSelectedJournalKind],
   );
 
   const handleOpenObservation = useCallback(
@@ -58,11 +67,18 @@ export function useShellChildFlowController({
         return;
       }
 
+      if (isChildLocked(cardId)) {
+        onOpenLockedChild();
+        return;
+      }
+
       setActiveRootTab("children");
       setActiveScreen("illnessOnboarding");
     },
     [
       activeIllnessObservationsByChildId,
+      isChildLocked,
+      onOpenLockedChild,
       setActiveRootTab,
       setActiveScreen,
       setSelectedChildId,

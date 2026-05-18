@@ -29,6 +29,8 @@ export function MedicineCabinetOverviewOverlays({
   onToggleRecipient,
   isAddChoiceSheetOpen,
   setIsAddChoiceSheetOpen,
+  addFromCatalogLocked,
+  onOpenLockedCatalog,
   onOpenReferenceCreate,
   onOpenManualCreate,
   pendingRenewItem,
@@ -52,6 +54,8 @@ export function MedicineCabinetOverviewOverlays({
   onToggleRecipient: (memberId: string) => void;
   isAddChoiceSheetOpen: boolean;
   setIsAddChoiceSheetOpen: (value: boolean) => void;
+  addFromCatalogLocked: boolean;
+  onOpenLockedCatalog: () => void;
   onOpenReferenceCreate: () => void;
   onOpenManualCreate: () => void;
   pendingRenewItem: MedicineCardItem | null;
@@ -131,6 +135,11 @@ export function MedicineCabinetOverviewOverlays({
         visible={isAddChoiceSheetOpen}
         onClose={() => {
           setIsAddChoiceSheetOpen(false);
+        }}
+        addFromCatalogLocked={addFromCatalogLocked}
+        onOpenLockedCatalog={() => {
+          setIsAddChoiceSheetOpen(false);
+          onOpenLockedCatalog();
         }}
         onOpenReferenceCreate={() => {
           setIsAddChoiceSheetOpen(false);

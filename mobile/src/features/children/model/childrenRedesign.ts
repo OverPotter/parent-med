@@ -111,8 +111,14 @@ export type ChildCard = {
   name: string;
   stats: string;
   child: ChildCardChild;
+  isLocked: boolean;
   avatarSource: ImageSourcePropType | null;
   quickActions: ChildQuickAction[];
+};
+
+export type ChildAccessState = {
+  unlockedChildId: string | null;
+  lockedChildIds: string[];
 };
 
 export function getObservationActionLabel(
@@ -629,6 +635,7 @@ export function buildChildrenScreenContent(
       nodeId: card.nodeId,
       name: card.info.nameText,
       stats: card.info.statsText,
+      isLocked: false,
       child: {
         id: card.nodeId,
         name: card.info.nameText,
@@ -671,7 +678,9 @@ export function buildChildrenCardsFromApi(
     string,
     { weightKg?: number | null; heightCm?: number | null } | undefined
   >,
+  lockedChildIds: string[] = [],
 ): ChildCard[] {
+  const lockedChildIdSet = new Set(lockedChildIds);
   const quickActionByTitle = buildQuickActionMap(locale);
   const fallbackQuickActions = screenSpec.childrenCards[0]?.quickActions ?? [];
   const buildApiQuickActions = (childId: string, babyModeEnabled: boolean) =>
@@ -708,6 +717,7 @@ export function buildChildrenCardsFromApi(
       nodeId: child.id,
       name: child.name,
       stats: buildCardStatsLabel(child, { weightValue, heightValue }, locale),
+      isLocked: lockedChildIdSet.has(child.id),
       child: {
         id: child.id,
         name: child.name,
@@ -773,5 +783,26 @@ export function buildChildrenStopActionCopy(
     title,
     cancelLabel,
     confirmLabel,
+  };
+}
+
+export function resolveChildAccess(params: {
+  children: Array<Pick<MobileChildSummary, "id">>;
+  premiumActive: boolean;
+}): ChildAccessState {
+  if (params.premiumActive || params.children.length <= 1) {
+    return {
+      unlockedChildId: params.children[0]?.id ?? null,
+      lockedChildIds: [],
+    };
+  }
+
+  const unlockedChildId = params.children[0]?.id ?? null;
+
+  return {
+    unlockedChildId,
+    lockedChildIds: params.children
+      .slice(1)
+      .map((child) => child.id),
   };
 }

@@ -62,6 +62,10 @@ export const styles = StyleSheet.create({
     shadowRadius: 11,
     shadowOffset: { width: 0, height: 5 },
   },
+  cardLocked: {
+    backgroundColor: "#FFF7FA",
+    borderColor: "#F0D4E0",
+  },
   cardCollapsed: {
     gap: 0,
     paddingBottom: 18,
@@ -94,6 +98,9 @@ export const styles = StyleSheet.create({
     backgroundColor: "#FCEBE7",
     alignItems: "center",
     justifyContent: "center",
+  },
+  lockedCollapseButton: {
+    backgroundColor: "#FFF0F6",
   },
   collapseButtonPressed: {
     opacity: 0.82,
@@ -150,6 +157,34 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 21,
     fontWeight: "600",
+  },
+  cardLockedHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  cardLockedBadge: {
+    minHeight: 24,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F2C7D7",
+    backgroundColor: "#FFF0F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardLockedBadgeText: {
+    color: "#C0587B",
+    fontSize: 12,
+    lineHeight: 14,
+    fontWeight: "800",
+  },
+  cardLockedHintText: {
+    color: "#B06382",
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: "700",
   },
   quickActionsGrid: {
     flexDirection: "row",
@@ -230,6 +265,12 @@ export const styles = StyleSheet.create({
     backgroundColor: "#FFF7F1",
     marginTop: 4,
   },
+  addChildCtaLocked: {
+    justifyContent: "flex-start",
+    paddingHorizontal: 18,
+    backgroundColor: "#FFF5F5",
+    borderColor: "#F3C8D3",
+  },
   addChildCtaPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.985 }],
@@ -246,6 +287,38 @@ export const styles = StyleSheet.create({
     color: "#F26F6C",
     fontSize: 16,
     lineHeight: 18,
+    fontWeight: "800",
+  },
+  addChildCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  addChildTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  addChildHint: {
+    color: "#C06B86",
+    fontSize: 13,
+    lineHeight: 16,
+    fontWeight: "700",
+  },
+  addChildPlusTip: {
+    minHeight: 24,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F2C7D7",
+    backgroundColor: "#FFF0F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addChildPlusTipText: {
+    color: "#C0587B",
+    fontSize: 12,
+    lineHeight: 14,
     fontWeight: "800",
   },
   bottomNavWrap: {

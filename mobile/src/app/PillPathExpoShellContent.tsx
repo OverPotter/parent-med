@@ -34,6 +34,7 @@ import { MedicineCabinetOverviewScreen } from "../features/medicine-cabinet/scre
 import { ChildOverviewScreen } from "../features/overview/screens/ChildOverviewScreen";
 import { PillboxAnalyticsScreen } from "../features/pillbox/screens/PillboxAnalyticsScreen";
 import { PillboxHomeScreen } from "../features/pillbox/screens/PillboxHomeScreen";
+import { SubscriptionPaywallSheet } from "../features/subscription/screens/SubscriptionPaywallSheet";
 import { RootModulePlaceholderScreen } from "../shared/components/RootModulePlaceholderScreen";
 import { SettingsScreen } from "../features/settings/screens/SettingsScreen";
 import type {
@@ -67,6 +68,11 @@ type RootTabContentProps = {
   activeObservationByCardId: Record<string, boolean>;
   onOpenChildProfile: (cardId: string) => void;
   onOpenChildCreate: () => void;
+  addChildLocked: boolean;
+  childrenPaywallVisible: boolean;
+  onCloseChildrenPaywall: () => void;
+  onChildrenPaywallPurchased: () => Promise<void> | void;
+  onOpenLockedChild: () => void;
   onOpenRootJournalEntry: (cardId: string, kind: JournalEntryKind) => void;
   onOpenObservation: (cardId: string) => void;
   onSleepPress: (cardId: string) => void;
@@ -92,6 +98,16 @@ type RootTabContentProps = {
     mode: "foreground" | "background" | "hidden",
   ) => void;
   onOpenPillboxAnalytics: () => void;
+  addCabinetFromCatalogLocked: boolean;
+  cabinetPaywallVisible: boolean;
+  onCloseCabinetPaywall: () => void;
+  onCabinetPaywallPurchased: () => Promise<void> | void;
+  onOpenLockedCabinetCatalog: () => void;
+  createPillboxPlanLocked: boolean;
+  pillboxPaywallVisible: boolean;
+  onClosePillboxPaywall: () => void;
+  onPillboxPaywallPurchased: () => Promise<void> | void;
+  onOpenLockedPillboxPlan: () => void;
   screenLayerStyle: object;
 };
 
@@ -105,6 +121,11 @@ export function RootTabContent({
   activeFeedingStartedAtByCardId,
   activeObservationByCardId,
   onOpenChildCreate,
+  addChildLocked,
+  childrenPaywallVisible,
+  onCloseChildrenPaywall,
+  onChildrenPaywallPurchased,
+  onOpenLockedChild,
   onOpenChildProfile,
   onOpenRootJournalEntry,
   onOpenObservation,
@@ -124,6 +145,16 @@ export function RootTabContent({
   onOpenPushNotificationSettings,
   onRootTabBarModeChange,
   onOpenPillboxAnalytics,
+  addCabinetFromCatalogLocked,
+  cabinetPaywallVisible,
+  onCloseCabinetPaywall,
+  onCabinetPaywallPurchased,
+  onOpenLockedCabinetCatalog,
+  createPillboxPlanLocked,
+  pillboxPaywallVisible,
+  onClosePillboxPaywall,
+  onPillboxPaywallPurchased,
+  onOpenLockedPillboxPlan,
   screenLayerStyle,
 }: RootTabContentProps) {
   const showMoreTab = shouldRenderMoreTab(activeRootTab, authSession);
@@ -144,6 +175,8 @@ export function RootTabContent({
         <ChildrenRedesignScreen
           cards={childrenCards}
           onOpenChildCreate={onOpenChildCreate}
+          addChildLocked={addChildLocked}
+          onOpenLockedChild={onOpenLockedChild}
           onOpenChildProfile={onOpenChildProfile}
           onOpenJournalEntry={onOpenRootJournalEntry}
           onOpenObservation={onOpenObservation}
@@ -157,6 +190,14 @@ export function RootTabContent({
           pushNotificationsBannerBody={pushNotificationsBannerBody}
           pushNotificationsBannerActionLabel={pushNotificationsBannerActionLabel}
           onOpenPushNotificationSettings={onOpenPushNotificationSettings}
+        />
+        <SubscriptionPaywallSheet
+          visible={activeRootTab === "children" && childrenPaywallVisible}
+          session={authSession}
+          onClose={onCloseChildrenPaywall}
+          onPurchased={onChildrenPaywallPurchased}
+          onOpenTermsOfUse={onOpenTermsOfUse}
+          onOpenPrivacyPolicy={onOpenPrivacyPolicy}
         />
       </View>
       {authSession ? (
@@ -194,6 +235,8 @@ export function RootTabContent({
           <MedicineCabinetOverviewScreen
             authSession={authSession}
             familyMembers={familyMembers}
+            addFromCatalogLocked={addCabinetFromCatalogLocked}
+            onOpenLockedCatalog={onOpenLockedCabinetCatalog}
             pushNotificationsBannerVisible={pushNotificationsBannerVisible}
             pushNotificationsBannerTitle={pushNotificationsBannerTitle}
             pushNotificationsBannerBody={pushNotificationsBannerBody}
@@ -207,6 +250,8 @@ export function RootTabContent({
             currentAccountId={authSession?.account.id ?? ""}
             familyMembers={familyMembers}
             onOpenAnalytics={onOpenPillboxAnalytics}
+            createPlanLocked={createPillboxPlanLocked}
+            onOpenLockedPlan={onOpenLockedPillboxPlan}
             pushNotificationsBannerVisible={pushNotificationsBannerVisible}
             pushNotificationsBannerTitle={pushNotificationsBannerTitle}
             pushNotificationsBannerBody={pushNotificationsBannerBody}
@@ -217,6 +262,22 @@ export function RootTabContent({
         ) : placeholderTabKey ? (
           <RootModulePlaceholderScreen tabKey={placeholderTabKey} />
         ) : null}
+        <SubscriptionPaywallSheet
+          visible={activeRootTab === "cabinet" && cabinetPaywallVisible}
+          session={authSession}
+          onClose={onCloseCabinetPaywall}
+          onPurchased={onCabinetPaywallPurchased}
+          onOpenTermsOfUse={onOpenTermsOfUse}
+          onOpenPrivacyPolicy={onOpenPrivacyPolicy}
+        />
+        <SubscriptionPaywallSheet
+          visible={activeRootTab === "pillbox" && pillboxPaywallVisible}
+          session={authSession}
+          onClose={onClosePillboxPaywall}
+          onPurchased={onPillboxPaywallPurchased}
+          onOpenTermsOfUse={onOpenTermsOfUse}
+          onOpenPrivacyPolicy={onOpenPrivacyPolicy}
+        />
       </View>
     </>
   );
@@ -241,7 +302,8 @@ type OverlayScreensProps = {
   selectedIllnessActionKind: IllnessQuickActionKind;
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   familyMembers: MobileFamilyMember[];
-  familyCanInviteMembers: boolean;
+  familyCanSeeInviteCard: boolean;
+  familyInviteLocked: boolean;
   familyRoutinesCount: number;
   authSession: MobileAuthSession;
   childFlow: {
@@ -360,6 +422,8 @@ type OverlayScreensProps = {
   utilityFlow: {
     onBackFamily: () => void;
     onOpenChildrenFromFamily: () => void;
+    onOpenLockedChild: () => void;
+    onOpenLockedFamilyInvite: () => void;
     onOpenPillboxFromFamily: () => void;
     onOpenTermsOfUse: () => void;
     onOpenPrivacyPolicy: () => void;
@@ -377,6 +441,9 @@ type OverlayScreensProps = {
     onBackSupport: () => void;
     onBackSettings: () => void;
     onBackTermsOfUse: () => void;
+    familyPaywallVisible: boolean;
+    onCloseFamilyPaywall: () => void;
+    onFamilyPaywallPurchased: () => Promise<void> | void;
   };
   pillboxFlow: {
     onBackAnalytics: () => void;
@@ -388,6 +455,7 @@ type SelectedChildOverlayProps = {
   authSession: OverlayScreensProps["authSession"];
   childFlow: OverlayScreensProps["childFlow"];
   illnessFlow: OverlayScreensProps["illnessFlow"];
+  onOpenLockedChild: () => void;
   selectedChild: ChildCard;
   selectedEpisode: AnalyticsEpisodeCard | null;
   selectedJournalKind: JournalEntryKind;
@@ -398,6 +466,7 @@ function SelectedChildOverlays({
   authSession,
   childFlow,
   illnessFlow,
+  onOpenLockedChild,
   selectedChild,
   selectedEpisode,
   selectedJournalKind,
@@ -418,7 +487,9 @@ function SelectedChildOverlays({
         child={selectedChild}
         visible={isChildProfileVisibleScreen(activeScreen)}
         onBack={childFlow.onBackChildProfile}
-        onEditProfile={childFlow.onEditProfile}
+        isReadOnlyLocked={selectedChild.isLocked}
+        onOpenLockedChild={onOpenLockedChild}
+        onEditProfile={selectedChild.isLocked ? onOpenLockedChild : childFlow.onEditProfile}
         onOpenAnalytics={childFlow.onOpenAnalytics}
         onOpenJournalEntry={childFlow.onOpenJournalEntry}
       />
@@ -632,7 +703,8 @@ type UtilityOverlayProps = {
   activeScreen: PillPathActiveScreen;
   authSession: MobileAuthSession;
   childrenCards: ChildCard[];
-  familyCanInviteMembers: boolean;
+  familyCanSeeInviteCard: boolean;
+  familyInviteLocked: boolean;
   familyMembers: MobileFamilyMember[];
   familyRoutinesCount: number;
   utilityFlow: OverlayScreensProps["utilityFlow"];
@@ -642,7 +714,8 @@ function UtilityOverlays({
   activeScreen,
   authSession,
   childrenCards,
-  familyCanInviteMembers,
+  familyCanSeeInviteCard,
+  familyInviteLocked,
   familyMembers,
   familyRoutinesCount,
   utilityFlow,
@@ -661,11 +734,21 @@ function UtilityOverlays({
         onOpenPillbox={utilityFlow.onOpenPillboxFromFamily}
         onRefreshFamilyMembers={utilityFlow.onRefreshFamilyMembers}
         onUpdateCurrentProfile={utilityFlow.onUpdateCurrentProfile}
-        canInviteMembers={familyCanInviteMembers}
+        showInviteCard={familyCanSeeInviteCard}
+        inviteLocked={familyInviteLocked}
+        onOpenLockedInvite={utilityFlow.onOpenLockedFamilyInvite}
         familyMembers={familyMembers}
         routinesCount={familyRoutinesCount}
         childrenCards={childrenCards}
         session={authSession}
+      />
+      <SubscriptionPaywallSheet
+        visible={activeScreen === "family" && utilityFlow.familyPaywallVisible}
+        session={authSession}
+        onClose={utilityFlow.onCloseFamilyPaywall}
+        onPurchased={utilityFlow.onFamilyPaywallPurchased}
+        onOpenTermsOfUse={utilityFlow.onOpenTermsOfUse}
+        onOpenPrivacyPolicy={utilityFlow.onOpenPrivacyPolicy}
       />
       <SupportScreen
         visible={activeScreen === "support"}
@@ -702,7 +785,8 @@ export function OverlayScreens({
   selectedIllnessActionKind,
   observationsByChildId,
   familyMembers,
-  familyCanInviteMembers,
+  familyCanSeeInviteCard,
+  familyInviteLocked,
   familyRoutinesCount,
   authSession,
   childFlow,
@@ -726,6 +810,7 @@ export function OverlayScreens({
           authSession={authSession}
           childFlow={childFlow}
           illnessFlow={illnessFlow}
+          onOpenLockedChild={utilityFlow.onOpenLockedChild}
           selectedChild={selectedChild}
           selectedEpisode={selectedEpisode}
           selectedJournalKind={selectedJournalKind}
@@ -745,7 +830,8 @@ export function OverlayScreens({
         activeScreen={activeScreen}
         authSession={authSession}
         childrenCards={childrenCards}
-        familyCanInviteMembers={familyCanInviteMembers}
+        familyCanSeeInviteCard={familyCanSeeInviteCard}
+        familyInviteLocked={familyInviteLocked}
         familyMembers={familyMembers}
         familyRoutinesCount={familyRoutinesCount}
         utilityFlow={utilityFlow}

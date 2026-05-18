@@ -31,11 +31,26 @@ import { usePillboxHomeController } from "./usePillboxHomeController";
 
 const noop = () => {};
 
+function getCreatePlanLockedHint(locale: string) {
+  if (locale === "ru") {
+    return "В бесплатной версии доступен 1 план. Чтобы добавить ещё, нужен Plus.";
+  }
+  if (locale === "de") {
+    return "Im Free-Tarif ist 1 Plan verfügbar. Für weitere Pläne ist Plus nötig.";
+  }
+  if (locale === "pl") {
+    return "W wersji bezpłatnej dostępny jest 1 plan. Aby dodać więcej, potrzebny jest Plus.";
+  }
+  return "Free includes 1 plan. Upgrade to Plus to add more.";
+}
+
 export function PillboxHomeScreen({
   accessToken,
   currentAccountId,
   onOpenCreatePlan = noop,
   onOpenAnalytics = noop,
+  createPlanLocked = false,
+  onOpenLockedPlan = noop,
   onOpenPlan = noop,
   onMarkIntake = noop,
   familyMembers = [],
@@ -50,6 +65,8 @@ export function PillboxHomeScreen({
   currentAccountId: string;
   onOpenCreatePlan?: () => void;
   onOpenAnalytics?: () => void;
+  createPlanLocked?: boolean;
+  onOpenLockedPlan?: () => void;
   onOpenPlan?: (planId: string) => void;
   onMarkIntake?: (intakeId: string) => void;
   familyMembers?: MobileFamilyMember[];
@@ -296,6 +313,16 @@ export function PillboxHomeScreen({
     closeMedicineEditor();
   };
 
+  const handleOpenCreatePlanFlow = () => {
+    if (createPlanLocked) {
+      onOpenLockedPlan();
+      return;
+    }
+
+    onOpenCreatePlan();
+    setIsPlanFlowVisible(true);
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: surfaceTheme.appBackgroundColor }]}>
       <ImageBackground
@@ -368,20 +395,30 @@ export function PillboxHomeScreen({
 
         <View style={styles.quickActionsRow}>
           <Pressable
-            onPress={() => {
-              onOpenCreatePlan();
-              setIsPlanFlowVisible(true);
-            }}
+            onPress={handleOpenCreatePlanFlow}
             style={({ pressed }) => [
               styles.createPlanCta,
+              createPlanLocked ? styles.createPlanCtaLocked : null,
               pressed ? styles.createPlanCtaPressed : null,
             ]}
           >
             <View style={styles.createPlanIconCircle}>
               <Ionicons name="add" size={22} color="#FFFFFF" />
             </View>
-            <Text style={styles.createPlanLabel}>{content.createPlanLabel}</Text>
+            <View style={styles.createPlanLabelWrap}>
+              <Text style={styles.createPlanLabel}>{content.createPlanLabel}</Text>
+              {createPlanLocked ? (
+                <View style={styles.createPlanLockedBadge}>
+                  <Text style={styles.createPlanLockedBadgeText}>Plus</Text>
+                </View>
+              ) : null}
+            </View>
           </Pressable>
+          {createPlanLocked ? (
+            <Text style={styles.createPlanLockedHint}>
+              {getCreatePlanLockedHint(locale)}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.statsRow}>
@@ -570,19 +607,24 @@ export function PillboxHomeScreen({
               {content.emptyPlansDescription}
             </Text>
             <Pressable
-              onPress={() => {
-                onOpenCreatePlan();
-                setIsPlanFlowVisible(true);
-              }}
+              onPress={handleOpenCreatePlanFlow}
               style={({ pressed }) => [
                 styles.createPlanCta,
+                createPlanLocked ? styles.createPlanCtaLocked : null,
                 pressed ? styles.createPlanCtaPressed : null,
               ]}
             >
               <View style={styles.createPlanIconCircle}>
                 <Ionicons name="add" size={22} color="#FFFFFF" />
               </View>
-              <Text style={styles.createPlanLabel}>{content.createPlanLabel}</Text>
+              <View style={styles.createPlanLabelWrap}>
+                <Text style={styles.createPlanLabel}>{content.createPlanLabel}</Text>
+                {createPlanLocked ? (
+                  <View style={styles.createPlanLockedBadge}>
+                    <Text style={styles.createPlanLockedBadgeText}>Plus</Text>
+                  </View>
+                ) : null}
+              </View>
             </Pressable>
           </View>
         )}

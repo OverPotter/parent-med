@@ -53,7 +53,9 @@ type FamilyScreenProps = {
     relationshipLabel?: string | null;
     phone?: string | null;
   }) => Promise<void>;
-  canInviteMembers: boolean;
+  showInviteCard: boolean;
+  inviteLocked?: boolean;
+  onOpenLockedInvite?: () => void;
   familyMembers: MobileFamilyMember[];
   routinesCount: number;
   childrenCards: ChildCard[];
@@ -74,7 +76,9 @@ export function FamilyScreen({
   onOpenPillbox,
   onRefreshFamilyMembers,
   onUpdateCurrentProfile,
-  canInviteMembers,
+  showInviteCard,
+  inviteLocked = false,
+  onOpenLockedInvite,
   familyMembers,
   routinesCount,
   childrenCards,
@@ -239,6 +243,11 @@ export function FamilyScreen({
   ];
 
   const handleCopyInvite = () => {
+    if (inviteLocked) {
+      onOpenLockedInvite?.();
+      return;
+    }
+
     if (!inviteCode) {
       return;
     }
@@ -255,6 +264,11 @@ export function FamilyScreen({
   };
 
   const handleShareInvite = () => {
+    if (inviteLocked) {
+      onOpenLockedInvite?.();
+      return;
+    }
+
     if (!inviteCode) {
       return;
     }
@@ -274,6 +288,11 @@ export function FamilyScreen({
   };
 
   const handleRefreshInviteCode = async () => {
+    if (inviteLocked) {
+      onOpenLockedInvite?.();
+      return;
+    }
+
     if (isCreatingInvite) {
       return;
     }
@@ -413,7 +432,8 @@ export function FamilyScreen({
         inviteCode={inviteCode}
         inviteCopied={inviteCopied}
         inviteExpanded={inviteExpanded}
-        showInviteCard={canInviteMembers}
+        showInviteCard={showInviteCard}
+        inviteLocked={inviteLocked}
         memberRows={familyState.members.map((member, index) => (
           <MemberRow
             key={member.id}

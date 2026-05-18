@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
+import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import type {
   FamilyCabinetAccess,
   FamilyChildrenAccess,
@@ -34,6 +35,19 @@ type RoleRule = {
   color: string;
 };
 
+function getInviteLockedDescription(locale: string) {
+  if (locale === "ru") {
+    return "Приглашения в семью доступны в Plus.";
+  }
+  if (locale === "de") {
+    return "Familieneinladungen sind in Plus verfügbar.";
+  }
+  if (locale === "pl") {
+    return "Zaproszenia do rodziny są dostępne w Plus.";
+  }
+  return "Family invites are available in Plus.";
+}
+
 
 function FamilyStatsCards({
   compact,
@@ -51,6 +65,7 @@ function FamilyStatsCards({
     tone: StatTone;
   }>;
 }) {
+  const { locale } = useMobileI18n();
   return (
     <View style={[styles.statsRow, compact ? styles.statsRowCompact : null]}>
       {stats.map((item) => (
@@ -103,6 +118,7 @@ function FamilyInviteCard({
   inviteCode,
   inviteCopied,
   inviteExpanded,
+  inviteLocked,
   onCopyInvite,
   onRefreshInviteCode,
   onShareInvite,
@@ -114,6 +130,7 @@ function FamilyInviteCard({
   inviteCode: string | null;
   inviteCopied: boolean;
   inviteExpanded: boolean;
+  inviteLocked: boolean;
   onCopyInvite: () => void;
   onRefreshInviteCode: () => void;
   onShareInvite: () => void;
@@ -121,6 +138,7 @@ function FamilyInviteCard({
   palette: FamilyPalette;
   stackInviteButtons: boolean;
 }) {
+  const { locale } = useMobileI18n();
   return (
     <View
       style={[
@@ -134,6 +152,10 @@ function FamilyInviteCard({
       <View style={styles.inviteHeaderRow}>
         <Pressable
           onPress={() => {
+            if (inviteLocked) {
+              onRefreshInviteCode();
+              return;
+            }
             if (inviteCode) {
               onToggleInviteExpanded();
             }
@@ -144,35 +166,44 @@ function FamilyInviteCard({
             pressed ? styles.actionButtonPressed : null,
           ]}
         >
-          <LinearGradient
-            colors={[palette.peachIconBg, palette.cardBgSoft]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[
-              styles.inviteIconTile,
-              { borderWidth: 1, borderColor: palette.cardBorderLight },
-            ]}
-          >
-            <MaterialCommunityIcons
-              name={"email-fast-outline" as never}
-              size={24}
-              color={palette.peachIcon}
-            />
-          </LinearGradient>
-          <View style={styles.inviteTopCopy}>
-            <Text style={[styles.inviteTitle, { color: palette.textPrimary }]}>
-              {content.inviteCodeTitle}
-            </Text>
-            <Text style={[styles.inviteDescription, { color: palette.textSecondary }]}>
-              {inviteCode ? content.inviteReadyDescription : content.inviteEmptyDescription}
-            </Text>
-          </View>
+          {({ pressed }) => (
+            <>
+              <LinearGradient
+                colors={[palette.peachIconBg, palette.cardBgSoft]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[
+                  styles.inviteIconTile,
+                  { borderWidth: 1, borderColor: palette.cardBorderLight },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name={"email-fast-outline" as never}
+                  size={24}
+                  color={palette.peachIcon}
+                />
+              </LinearGradient>
+              <View style={styles.inviteTopCopy}>
+                <Text style={[styles.inviteTitle, { color: palette.textPrimary }]}>
+                  {content.inviteCodeTitle}
+                </Text>
+                <Text style={[styles.inviteDescription, { color: palette.textSecondary }]}>
+                  {inviteLocked
+                    ? getInviteLockedDescription(locale)
+                    : inviteCode
+                      ? content.inviteReadyDescription
+                      : content.inviteEmptyDescription}
+                </Text>
+              </View>
+            </>
+          )}
         </Pressable>
 
         <Pressable
           onPress={onRefreshInviteCode}
           style={({ pressed }) => [
             styles.inviteRefreshButton,
+            inviteLocked ? styles.inviteRefreshButtonLocked : null,
             {
               backgroundColor: "rgba(255,248,243,0.96)",
               borderColor: palette.cardBorder,
@@ -349,6 +380,7 @@ export function FamilyOverviewContent({
   inviteCode,
   inviteCopied,
   inviteExpanded,
+  inviteLocked,
   showInviteCard,
   memberRows,
   onCopyInvite,
@@ -372,6 +404,7 @@ export function FamilyOverviewContent({
   inviteCode: string | null;
   inviteCopied: boolean;
   inviteExpanded: boolean;
+  inviteLocked: boolean;
   showInviteCard: boolean;
   memberRows: React.ReactNode;
   onCopyInvite: () => void;
@@ -486,6 +519,7 @@ export function FamilyOverviewContent({
             inviteCode={inviteCode}
             inviteCopied={inviteCopied}
             inviteExpanded={inviteExpanded}
+            inviteLocked={inviteLocked}
             onCopyInvite={onCopyInvite}
             onRefreshInviteCode={onRefreshInviteCode}
             onShareInvite={onShareInvite}

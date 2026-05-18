@@ -100,6 +100,10 @@ export const pillboxHomeScreenStyles = StyleSheet.create({
     borderColor: "#F2C2B8",
     backgroundColor: "#FFF7F1",
   },
+  createPlanCtaLocked: {
+    borderColor: "#F3C8DE",
+    backgroundColor: "#FFF4F8",
+  },
   createPlanCtaPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.985 }],
@@ -121,6 +125,36 @@ export const pillboxHomeScreenStyles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 18,
     fontWeight: "800",
+    fontFamily: journalTypography.body,
+  },
+  createPlanLabelWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  createPlanLockedBadge: {
+    minHeight: 24,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFE4F0",
+    borderWidth: 1,
+    borderColor: "#F4BDD7",
+  },
+  createPlanLockedBadgeText: {
+    color: "#C9588D",
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: "700",
+    fontFamily: journalTypography.body,
+  },
+  createPlanLockedHint: {
+    paddingHorizontal: 6,
+    color: "#A35C7E",
+    fontSize: 13,
+    lineHeight: 17,
+    fontWeight: "500",
     fontFamily: journalTypography.body,
   },
   sectionHeader: {

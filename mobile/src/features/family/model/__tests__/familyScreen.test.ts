@@ -85,6 +85,7 @@ const childrenCards: ChildCard[] = [
     },
     avatarSource: null,
     quickActions: [],
+    isLocked: false,
   },
 ];
 

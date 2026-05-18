@@ -17,6 +17,7 @@ type ChildrenChildCardProps = {
   card: ChildCard;
   collapsed: boolean;
   onToggleCollapse: (cardId: string) => void;
+  onOpenLockedChild?: () => void;
   sleepElapsedLabel: string | null;
   feedingElapsedLabel: string | null;
   onSleepPress?: (cardId: string) => void;
@@ -31,6 +32,7 @@ export function ChildrenChildCard({
   card,
   collapsed,
   onToggleCollapse,
+  onOpenLockedChild = noop,
   sleepElapsedLabel,
   feedingElapsedLabel,
   onSleepPress = noop,
@@ -41,25 +43,52 @@ export function ChildrenChildCard({
   hasActiveObservation = false,
 }: ChildrenChildCardProps) {
   const { locale } = useMobileI18n();
+  const lockedHintLabel =
+    locale === "ru"
+      ? "Доступно только в Plus"
+      : locale === "de"
+        ? "Nur mit Plus verfügbar"
+        : locale === "pl"
+          ? "Dostępne tylko w Plus"
+          : "Available only with Plus";
+  const handleLockedPress = () => {
+    onOpenLockedChild();
+  };
+
   return (
-    <View style={[styles.card, collapsed ? styles.cardCollapsed : null]}>
+    <View
+      style={[
+        styles.card,
+        card.isLocked ? styles.cardLocked : null,
+        collapsed ? styles.cardCollapsed : null,
+      ]}
+    >
       <Pressable
-        onPress={() => onToggleCollapse(card.nodeId)}
+        onPress={
+          card.isLocked
+            ? () => onOpenProfile(card.nodeId)
+            : () => onToggleCollapse(card.nodeId)
+        }
         hitSlop={8}
         style={({ pressed }) => [
           styles.collapseButton,
+          card.isLocked ? styles.lockedCollapseButton : null,
           pressed ? styles.collapseButtonPressed : null,
         ]}
       >
         <Ionicons
-          name={collapsed ? "chevron-down" : "chevron-up"}
+          name={card.isLocked ? "lock-closed" : collapsed ? "chevron-down" : "chevron-up"}
           size={18}
-          color="#F26F6C"
+          color={card.isLocked ? "#C0587B" : "#F26F6C"}
         />
       </Pressable>
 
       <Pressable
-        onPress={() => onToggleCollapse(card.nodeId)}
+        onPress={
+          card.isLocked
+            ? () => onOpenProfile(card.nodeId)
+            : () => onToggleCollapse(card.nodeId)
+        }
         style={({ pressed }) => [
           styles.cardHeroRow,
           pressed ? styles.cardHeroRowPressed : null,
@@ -104,6 +133,14 @@ export function ChildrenChildCard({
           {card.stats ? (
             <Text style={styles.childStats}>{card.stats}</Text>
           ) : null}
+          {card.isLocked ? (
+            <View style={styles.cardLockedHintRow}>
+              <View style={styles.cardLockedBadge}>
+                <Text style={styles.cardLockedBadgeText}>Plus</Text>
+              </View>
+              <Text style={styles.cardLockedHintText}>{lockedHintLabel}</Text>
+            </View>
+          ) : null}
         </View>
       </Pressable>
 
@@ -126,6 +163,11 @@ export function ChildrenChildCard({
             sleepElapsedLabel={sleepElapsedLabel}
             feedingElapsedLabel={feedingElapsedLabel}
             onPress={() => {
+              if (card.isLocked) {
+                handleLockedPress();
+                return;
+              }
+
               if (action.kind === "sleep") {
                 onSleepPress(card.nodeId);
                 return;

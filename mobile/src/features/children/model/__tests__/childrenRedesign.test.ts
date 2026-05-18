@@ -3,6 +3,7 @@ import {
   buildChildrenScreenContent,
   buildChildrenCardsFromApi,
   buildChildrenStopActionCopy,
+  resolveChildAccess,
 } from "../childrenRedesign";
 
 function makeChild(overrides: Partial<MobileChildSummary> = {}): MobileChildSummary {
@@ -73,6 +74,50 @@ describe("buildChildrenCardsFromApi", () => {
     );
 
     expect(card.avatarSource).toBeNull();
+  });
+
+  it("marks locked children when child ids are passed in", () => {
+    const cards = buildChildrenCardsFromApi(
+      [makeChild(), makeChild({ id: "child-2", name: "Leo" })],
+      "ru",
+      undefined,
+      ["child-2"],
+    );
+
+    expect(cards.map((card) => [card.nodeId, card.isLocked])).toEqual([
+      ["child-1", false],
+      ["child-2", true],
+    ]);
+  });
+});
+
+describe("resolveChildAccess", () => {
+  it("keeps all children unlocked for premium families", () => {
+    expect(
+      resolveChildAccess({
+        children: [makeChild(), makeChild({ id: "child-2" })],
+        premiumActive: true,
+      }),
+    ).toEqual({
+      unlockedChildId: "child-1",
+      lockedChildIds: [],
+    });
+  });
+
+  it("locks every child after the first for free families", () => {
+    expect(
+      resolveChildAccess({
+        children: [
+          makeChild(),
+          makeChild({ id: "child-2" }),
+          makeChild({ id: "child-3" }),
+        ],
+        premiumActive: false,
+      }),
+    ).toEqual({
+      unlockedChildId: "child-1",
+      lockedChildIds: ["child-2", "child-3"],
+    });
   });
 });
 

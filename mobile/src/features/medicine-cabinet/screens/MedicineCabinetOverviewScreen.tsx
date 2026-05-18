@@ -13,6 +13,8 @@ import {
 export function MedicineCabinetOverviewScreen({
   authSession,
   familyMembers,
+  addFromCatalogLocked = false,
+  onOpenLockedCatalog,
   pushNotificationsBannerVisible = false,
   pushNotificationsBannerTitle,
   pushNotificationsBannerBody,
@@ -22,6 +24,8 @@ export function MedicineCabinetOverviewScreen({
 }: {
   authSession: MobileAuthSession | null;
   familyMembers: MobileFamilyMember[];
+  addFromCatalogLocked?: boolean;
+  onOpenLockedCatalog?: () => void;
   pushNotificationsBannerVisible?: boolean;
   pushNotificationsBannerTitle?: string;
   pushNotificationsBannerBody?: string;
@@ -102,6 +106,8 @@ export function MedicineCabinetOverviewScreen({
         onToggleRecipient={controller.handleToggleRecipient}
         isAddChoiceSheetOpen={controller.isAddChoiceSheetOpen}
         setIsAddChoiceSheetOpen={controller.setIsAddChoiceSheetOpen}
+        addFromCatalogLocked={addFromCatalogLocked}
+        onOpenLockedCatalog={onOpenLockedCatalog ?? (() => {})}
         onOpenReferenceCreate={() => controller.setActiveScreen("reference-create")}
         onOpenManualCreate={() => controller.setActiveScreen("manual-create")}
         pendingRenewItem={controller.pendingRenewItem}

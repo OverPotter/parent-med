@@ -41,6 +41,7 @@ function makeChildCard(): ChildCard {
     },
     avatarSource: 1,
     quickActions: [],
+    isLocked: false,
   };
 }
 

@@ -61,7 +61,8 @@ export function useShellFamilyState(params: {
     activeIllnessObservationsByChildId,
     setActiveIllnessObservationsByChildId,
   ] = useState<Record<string, MobileIllnessObservation | undefined>>({});
-  const [familyCanInviteMembers, setFamilyCanInviteMembers] = useState(false);
+  const [familyCanSeeInviteCard, setFamilyCanSeeInviteCard] = useState(false);
+  const [familyPremiumActive, setFamilyPremiumActive] = useState(false);
   const [familyRoutinesCount, setFamilyRoutinesCount] = useState(0);
   const [canUseLiveActivities, setCanUseLiveActivities] = useState(false);
   const [pushPreferences, setPushPreferences] = useState(defaultPushPreferences);
@@ -82,9 +83,9 @@ export function useShellFamilyState(params: {
       session: MobileAuthSession,
       bundle: Pick<FamilySettingsBundle, "familySummary" | "familyAccess">,
     ) => {
-      setFamilyCanInviteMembers(
-        session.family.ownerAccountId === session.account.id &&
-          Boolean(bundle.familySummary.premiumActive),
+      setFamilyPremiumActive(Boolean(bundle.familySummary.premiumActive));
+      setFamilyCanSeeInviteCard(
+        session.family.ownerAccountId === session.account.id,
       );
       setFamilyRoutinesCount(bundle.familyAccess.currentPillboxPlanCount);
     },
@@ -93,7 +94,8 @@ export function useShellFamilyState(params: {
 
   const resetFamilyShellState = useCallback(() => {
     setFamilyMembers([]);
-    setFamilyCanInviteMembers(false);
+    setFamilyCanSeeInviteCard(false);
+    setFamilyPremiumActive(false);
     setFamilyRoutinesCount(0);
     setCanUseLiveActivities(false);
     setPushPreferences(defaultPushPreferences);
@@ -327,7 +329,8 @@ export function useShellFamilyState(params: {
   useEffect(() => {
     const authSession = params.authSession;
     if (!authSession) {
-      setFamilyCanInviteMembers(false);
+      setFamilyCanSeeInviteCard(false);
+      setFamilyPremiumActive(false);
       setFamilyRoutinesCount(0);
       setCanUseLiveActivities(false);
       setPushPreferences(defaultPushPreferences);
@@ -356,7 +359,8 @@ export function useShellFamilyState(params: {
     activeSleepSessionsByCardId,
     canUseLiveActivities,
     children,
-    familyCanInviteMembers,
+    familyCanSeeInviteCard,
+    familyPremiumActive,
     familyMembers,
     familyRoutinesCount,
     isShellBootstrapping,
@@ -371,6 +375,7 @@ export function useShellFamilyState(params: {
     setChildren,
     setCanUseLiveActivities,
     setFamilyMembers,
+    setFamilyPremiumActive,
     setFamilyRoutinesCount,
     setLatestChildMetricsByCardId,
     setPushPreferences,
