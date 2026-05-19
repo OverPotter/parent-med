@@ -3,7 +3,7 @@ import { finalizeSuccessfulPaywallPurchase } from "../useRevenueCatPaywallContro
 describe("finalizeSuccessfulPaywallPurchase", () => {
   it("closes paywall before awaiting the post-purchase refresh", async () => {
     const callOrder: string[] = [];
-    let resolveRefresh: (() => void) | null = null;
+    let resolveRefresh!: () => void;
 
     const refreshPromise = new Promise<void>((resolve) => {
       resolveRefresh = resolve;
@@ -22,7 +22,7 @@ describe("finalizeSuccessfulPaywallPurchase", () => {
 
     expect(callOrder).toEqual(["close", "refresh-start"]);
 
-    resolveRefresh?.();
+    resolveRefresh();
     await resultPromise;
 
     expect(callOrder).toEqual(["close", "refresh-start", "refresh-end"]);
