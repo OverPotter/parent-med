@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import {
   Animated,
   ImageBackground,
@@ -29,6 +28,16 @@ type HelpScreenProps = {
   onOpenSettings: () => void;
 };
 
+type HelpSectionCardProps = {
+  section: HelpScreenSection;
+  onPress: () => void;
+  textPrimaryColor: string;
+  textSecondaryColor: string;
+  cardBackgroundColor: string;
+  cardBorderColor: string;
+  cardMutedBackgroundColor: string;
+};
+
 export function HelpScreen({
   visible,
   onBack,
@@ -48,25 +57,6 @@ export function HelpScreen({
     width,
     onBack,
   });
-
-  const actionHandlers = useMemo(
-    () => ({
-      cabinet: onOpenCabinet,
-      children: onOpenChildren,
-      family: onOpenFamily,
-      journal: onOpenJournal,
-      pillbox: onOpenPillbox,
-      settings: onOpenSettings,
-    }),
-    [
-      onOpenCabinet,
-      onOpenChildren,
-      onOpenFamily,
-      onOpenJournal,
-      onOpenPillbox,
-      onOpenSettings,
-    ],
-  );
 
   return (
     <Animated.View
@@ -119,78 +109,25 @@ export function HelpScreen({
               </Text>
             </View>
 
-            {content.sections.map((section) => {
-              const actionHandler = section.actionTarget
-                ? actionHandlers[section.actionTarget]
-                : null;
-
-              return (
-                <View
-                  key={section.id}
-                  style={[
-                    styles.sectionCard,
-                    {
-                      backgroundColor: surfaceTheme.cardBackgroundColor,
-                      borderColor: surfaceTheme.cardBorderColor,
-                    },
-                  ]}
-                >
-                  <View style={styles.sectionHeader}>
-                    <View style={styles.sectionHeaderCopy}>
-                      <Text
-                        style={[
-                          styles.sectionTitle,
-                          { color: surfaceTheme.textPrimaryColor },
-                        ]}
-                      >
-                        {section.title}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.sectionDescription,
-                          { color: surfaceTheme.textSecondaryColor },
-                        ]}
-                      >
-                        {section.description}
-                      </Text>
-                    </View>
-                    {section.actionLabel && actionHandler ? (
-                      <Pressable
-                        onPress={actionHandler}
-                        style={({ pressed }) => [
-                          styles.sectionActionButton,
-                          {
-                            backgroundColor: surfaceTheme.cardMutedBackgroundColor,
-                            borderColor: surfaceTheme.cardBorderColor,
-                          },
-                          pressed ? styles.sectionActionButtonPressed : null,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.sectionActionButtonText,
-                            { color: surfaceTheme.textPrimaryColor },
-                          ]}
-                        >
-                          {section.actionLabel}
-                        </Text>
-                      </Pressable>
-                    ) : null}
-                  </View>
-
-                  <View style={styles.itemsWrap}>
-                    {section.items.map((item) => (
-                      <HelpScreenItem
-                        key={`${section.id}-${item.title}`}
-                        item={item}
-                        textPrimaryColor={surfaceTheme.textPrimaryColor}
-                        textSecondaryColor={surfaceTheme.textSecondaryColor}
-                      />
-                    ))}
-                  </View>
-                </View>
-              );
-            })}
+            {content.sections.map((section) => (
+              <HelpSectionCard
+                key={section.id}
+                section={section}
+                onPress={resolveSectionPressHandler(section.id, {
+                  onOpenCabinet,
+                  onOpenChildren,
+                  onOpenFamily,
+                  onOpenJournal,
+                  onOpenPillbox,
+                  onOpenSettings,
+                })}
+                textPrimaryColor={surfaceTheme.textPrimaryColor}
+                textSecondaryColor={surfaceTheme.textSecondaryColor}
+                cardBackgroundColor={surfaceTheme.cardBackgroundColor}
+                cardBorderColor={surfaceTheme.cardBorderColor}
+                cardMutedBackgroundColor={surfaceTheme.cardMutedBackgroundColor}
+              />
+            ))}
           </ScrollView>
         </View>
       </ImageBackground>
@@ -198,26 +135,83 @@ export function HelpScreen({
   );
 }
 
-function HelpScreenItem({
-  item,
+function HelpSectionCard({
+  section,
+  onPress,
   textPrimaryColor,
   textSecondaryColor,
-}: {
-  item: HelpScreenSection["items"][number];
-  textPrimaryColor: string;
-  textSecondaryColor: string;
-}) {
+  cardBackgroundColor,
+  cardBorderColor,
+  cardMutedBackgroundColor,
+}: HelpSectionCardProps) {
   return (
-    <View style={styles.itemRow}>
-      <View style={styles.itemBullet} />
-      <View style={styles.itemCopy}>
-        <Text style={[styles.itemTitle, { color: textPrimaryColor }]}>
-          {item.title}
-        </Text>
-        <Text style={[styles.itemDescription, { color: textSecondaryColor }]}>
-          {item.description}
-        </Text>
+    <View
+      style={[
+        styles.sectionCard,
+        {
+          backgroundColor: cardBackgroundColor,
+          borderColor: cardBorderColor,
+        },
+      ]}
+    >
+      <View style={styles.sectionHeader}>
+        <View style={styles.sectionHeaderCopy}>
+          <Text style={[styles.sectionTitle, { color: textPrimaryColor }]}>
+            {section.title}
+          </Text>
+          <Text
+            style={[styles.sectionDescription, { color: textSecondaryColor }]}
+          >
+            {section.description}
+          </Text>
+        </View>
+        <Pressable
+          onPress={onPress}
+          style={({ pressed }) => [
+            styles.sectionActionButton,
+            {
+              backgroundColor: cardMutedBackgroundColor,
+              borderColor: cardBorderColor,
+            },
+            pressed ? styles.sectionActionButtonPressed : null,
+          ]}
+        >
+          <Text style={[styles.sectionActionButtonText, { color: textPrimaryColor }]}>
+            {section.actionLabel}
+          </Text>
+        </Pressable>
       </View>
+
+      <Text style={[styles.sectionCaseExample, { color: textSecondaryColor }]}>
+        {section.caseExample}
+      </Text>
     </View>
   );
+}
+
+function resolveSectionPressHandler(
+  sectionId: HelpScreenSection["id"],
+  handlers: {
+    onOpenChildren: () => void;
+    onOpenJournal: () => void;
+    onOpenPillbox: () => void;
+    onOpenCabinet: () => void;
+    onOpenFamily: () => void;
+    onOpenSettings: () => void;
+  },
+) {
+  switch (sectionId) {
+    case "children":
+      return handlers.onOpenChildren;
+    case "journal":
+      return handlers.onOpenJournal;
+    case "pillbox":
+      return handlers.onOpenPillbox;
+    case "cabinet":
+      return handlers.onOpenCabinet;
+    case "family":
+      return handlers.onOpenFamily;
+    case "settings":
+      return handlers.onOpenSettings;
+  }
 }

@@ -70,7 +70,7 @@ export const styles = StyleSheet.create({
   subtitle: {
     color: "#6A7889",
     fontSize: 14,
-    lineHeight: 19,
+    lineHeight: 20,
     fontWeight: "500",
   },
   sectionCard: {
@@ -78,13 +78,12 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    gap: 14,
+    gap: 10,
   },
   sectionHeader: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 12,
+    gap: 10,
   },
   sectionHeaderCopy: {
     flex: 1,
@@ -103,6 +102,7 @@ export const styles = StyleSheet.create({
     fontWeight: "500",
   },
   sectionActionButton: {
+    alignSelf: "flex-start",
     minHeight: 36,
     paddingHorizontal: 14,
     borderRadius: 18,
@@ -119,35 +119,12 @@ export const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: "700",
   },
-  itemsWrap: {
-    gap: 12,
-  },
-  itemRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  itemBullet: {
-    marginTop: 8,
-    width: 7,
-    height: 7,
-    borderRadius: 999,
-    backgroundColor: "#F47667",
-  },
-  itemCopy: {
-    flex: 1,
-    gap: 4,
-  },
-  itemTitle: {
-    color: "#243142",
-    fontSize: 16,
-    lineHeight: 20,
-    fontWeight: "700",
-  },
-  itemDescription: {
-    color: "#6A7889",
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "500",
+  sectionCaseExample: {
+    paddingTop: 2,
+    fontSize: 15,
+    lineHeight: 22,
+    fontStyle: "italic",
+    textAlign: "left",
+    opacity: 0.9,
   },
 });

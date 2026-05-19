@@ -1,29 +1,19 @@
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
+export type HelpSectionId =
+  | "children"
+  | "journal"
+  | "pillbox"
+  | "cabinet"
+  | "family"
+  | "settings";
+
 export type HelpScreenSection = {
-  id:
-    | "first-step"
-    | "children"
-    | "observations"
-    | "pillbox"
-    | "cabinet"
-    | "family"
-    | "live-activities"
-    | "analytics";
+  id: HelpSectionId;
   title: string;
   description: string;
-  items: Array<{
-    title: string;
-    description: string;
-  }>;
-  actionLabel?: string;
-  actionTarget?:
-    | "children"
-    | "journal"
-    | "pillbox"
-    | "cabinet"
-    | "family"
-    | "settings";
+  caseExample: string;
+  actionLabel: string;
 };
 
 export type HelpScreenContent = {
@@ -33,756 +23,318 @@ export type HelpScreenContent = {
   sections: HelpScreenSection[];
 };
 
+const HELP_SECTION_ORDER: HelpSectionId[] = [
+  "children",
+  "journal",
+  "pillbox",
+  "cabinet",
+  "family",
+  "settings",
+];
+
+type LocalizedHelpSectionCopy = Omit<HelpScreenSection, "id">;
+
 export function buildHelpScreenContent(locale: MobileLocale): HelpScreenContent {
-  const isRu = locale === "ru";
-  const isDe = locale === "de";
-  const isPl = locale === "pl";
-
-  if (isRu) {
-    return {
-      backLabel: "Ещё",
-      title: "Помощь",
-      subtitle: "Короткий гид по основным разделам и полезным действиям.",
-      sections: [
-        {
-          id: "first-step",
-          title: "Первый шаг",
-          description: "С чего начать и куда перейти дальше.",
-          actionLabel: "К разделу «Дети»",
-          actionTarget: "children",
-          items: [
-            {
-              title: "С чего начать",
-              description:
-                "Если открываете приложение впервые, начните с раздела «Дети».",
-            },
-            {
-              title: "Можно вернуться позже",
-              description:
-                "Это справка. Закройте экран в любой момент и продолжайте работу.",
-            },
-          ],
-        },
-        {
-          id: "children",
-          title: "Дети",
-          description: "Профили детей, история и вход в наблюдение.",
-          actionLabel: "Открыть детей",
-          actionTarget: "children",
-          items: [
-            {
-              title: "Добавить ребёнка",
-              description: "Если профиля ещё нет, начните здесь.",
-            },
-            {
-              title: "Открыть историю",
-              description: "Зайдите в ребёнка и откройте его завершённые эпизоды.",
-            },
-          ],
-        },
-        {
-          id: "observations",
-          title: "Наблюдения",
-          description: "Температура, приёмы и заметки по текущему состоянию.",
-          actionLabel: "Открыть наблюдения",
-          actionTarget: "journal",
-          items: [
-            {
-              title: "Начать наблюдение",
-              description:
-                "Откройте карточку ребёнка и запустите новое наблюдение.",
-            },
-            {
-              title: "Добавлять записи",
-              description:
-                "Внутри наблюдения можно фиксировать температуру, приёмы и заметки.",
-            },
-            {
-              title: "Проверить напоминания",
-              description: "Ближайшие действия и планы видны сразу.",
-            },
-          ],
-        },
-        {
-          id: "pillbox",
-          title: "Таблетница",
-          description: "Планы приёма: кто, что и когда принимает.",
-          actionLabel: "Открыть таблетницу",
-          actionTarget: "pillbox",
-          items: [
-            {
-              title: "Создать план",
-              description: "Добавьте лекарство, время приёма и сохраните план.",
-            },
-            {
-              title: "Отмечать приём",
-              description: "Когда время наступило, нажмите «Записать приём».",
-            },
-            {
-              title: "Пауза и возобновление",
-              description:
-                "План можно поставить на паузу и вернуть без потери истории.",
-            },
-          ],
-        },
-        {
-          id: "cabinet",
-          title: "Аптечка",
-          description: "Домашние препараты, сроки и остатки.",
-          actionLabel: "Открыть аптечку",
-          actionTarget: "cabinet",
-          items: [
-            {
-              title: "Добавить упаковку",
-              description: "Найдите в каталоге или добавьте вручную.",
-            },
-            {
-              title: "Следить за сроками",
-              description: "Сразу видно, что скоро истекает.",
-            },
-            {
-              title: "Использовать в наблюдении",
-              description: "Препарат можно выбрать прямо в эпизоде.",
-            },
-          ],
-        },
-        {
-          id: "family",
-          title: "Семья и доступы",
-          description: "Кому что видно: дети, журнал, приёмы и аптечка.",
-          actionLabel: "Открыть семью",
-          actionTarget: "family",
-          items: [
-            {
-              title: "Настроить доступ",
-              description:
-                "В «Семье» каждому участнику можно отдельно открыть детей, приёмы и аптечку.",
-            },
-            {
-              title: "Выбрать детей",
-              description:
-                "Если доступ к детям открыт, выберите всех детей или только нужных.",
-            },
-            {
-              title: "Не всем нужен полный доступ",
-              description:
-                "Для приёмов можно оставить только просмотр или отметку приёма.",
-            },
-          ],
-        },
-        {
-          id: "live-activities",
-          title: "Live Activity и уведомления",
-          description: "Быстрый статус на iPhone и push по важным действиям.",
-          actionLabel: "Открыть настройки",
-          actionTarget: "settings",
-          items: [
-            {
-              title: "Что включается",
-              description:
-                "В настройках отдельно включаются сон, кормление и наблюдение за болезнью.",
-            },
-            {
-              title: "Где это видно",
-              description:
-                "На iPhone это видно как большая карточка на экране блокировки и как компактная бровь в Dynamic Island.",
-            },
-            {
-              title: "Кому идут сигналы",
-              description:
-                "Push получают только участники с нужным доступом и включёнными уведомлениями.",
-            },
-          ],
-        },
-        {
-          id: "analytics",
-          title: "Аналитика истории ребёнка",
-          description:
-            "Где искать аналитику в истории ребёнка и что она показывает.",
-          items: [
-            {
-              title: "Где искать аналитику",
-              description:
-                "Откройте ребёнка, затем его историю. Там есть общая сводка и разбор каждого эпизода.",
-            },
-            {
-              title: "Что показывает сводка",
-              description:
-                "Она помогает понять, как часто ребёнок болел, как менялась частота и насколько длинными были эпизоды.",
-            },
-            {
-              title: "Что показывает разбор",
-              description:
-                "Внутри эпизода видны температура, ключевые события, лекарства и краткая картина по записи.",
-            },
-          ],
-        },
-      ],
-    };
-  }
-
-  if (isDe) {
-    return {
-      backLabel: "Mehr",
-      title: "Hilfe",
-      subtitle:
-        "Ein kurzer Leitfaden zu den wichtigsten Bereichen und nützlichen Aktionen.",
-      sections: [
-        {
-          id: "first-step",
-          title: "Erster Schritt",
-          description: "Wo Sie beginnen und wohin Sie als Nächstes gehen.",
-          actionLabel: "Zu Kinder",
-          actionTarget: "children",
-          items: [
-            {
-              title: "Womit anfangen",
-              description:
-                "Wenn Sie die App zum ersten Mal öffnen, beginnen Sie mit dem Bereich Kinder.",
-            },
-            {
-              title: "Später zurückkommen",
-              description:
-                "Das ist nur eine Hilfe. Sie können den Bildschirm jederzeit schließen und weiterarbeiten.",
-            },
-          ],
-        },
-        {
-          id: "children",
-          title: "Kinder",
-          description: "Kinderprofile, Verlauf und Einstieg in Beobachtungen.",
-          actionLabel: "Kinder öffnen",
-          actionTarget: "children",
-          items: [
-            {
-              title: "Kind hinzufügen",
-              description:
-                "Wenn noch kein Profil vorhanden ist, beginnen Sie hier.",
-            },
-            {
-              title: "Verlauf öffnen",
-              description:
-                "Öffnen Sie ein Kind und sehen Sie sich abgeschlossene Episoden an.",
-            },
-          ],
-        },
-        {
-          id: "observations",
-          title: "Beobachtungen",
-          description:
-            "Temperatur, Gaben und Notizen zum aktuellen Zustand.",
-          actionLabel: "Beobachtungen öffnen",
-          actionTarget: "journal",
-          items: [
-            {
-              title: "Beobachtung starten",
-              description:
-                "Öffnen Sie die Karte eines Kindes und starten Sie eine neue Beobachtung.",
-            },
-            {
-              title: "Einträge hinzufügen",
-              description:
-                "Innerhalb der Beobachtung können Sie Temperatur, Gaben und Notizen festhalten.",
-            },
-            {
-              title: "Erinnerungen prüfen",
-              description:
-                "Die nächsten Schritte und Pläne bleiben sofort sichtbar.",
-            },
-          ],
-        },
-        {
-          id: "pillbox",
-          title: "Medikamentenplan",
-          description: "Wer was wann nimmt.",
-          actionLabel: "Medikamentenplan öffnen",
-          actionTarget: "pillbox",
-          items: [
-            {
-              title: "Plan erstellen",
-              description:
-                "Fügen Sie ein Medikament und Zeiten hinzu und speichern Sie den Plan.",
-            },
-            {
-              title: "Einnahme markieren",
-              description:
-                "Wenn die Zeit gekommen ist, tippen Sie auf die Einnahmebestätigung.",
-            },
-            {
-              title: "Pausieren und fortsetzen",
-              description:
-                "Ein Plan kann pausiert und später ohne Verlust des Verlaufs fortgesetzt werden.",
-            },
-          ],
-        },
-        {
-          id: "cabinet",
-          title: "Hausapotheke",
-          description: "Medikamente zu Hause, Haltbarkeit und Bestand.",
-          actionLabel: "Hausapotheke öffnen",
-          actionTarget: "cabinet",
-          items: [
-            {
-              title: "Packung hinzufügen",
-              description: "Im Katalog suchen oder manuell hinzufügen.",
-            },
-            {
-              title: "Ablaufdaten prüfen",
-              description: "Sie sehen sofort, was bald abläuft.",
-            },
-            {
-              title: "In Beobachtungen verwenden",
-              description:
-                "Ein Medikament kann direkt in einer Episode ausgewählt werden.",
-            },
-          ],
-        },
-        {
-          id: "family",
-          title: "Familie und Zugriffe",
-          description:
-            "Wer Kinder, Journal, Einnahmen und Hausapotheke sehen darf.",
-          actionLabel: "Familie öffnen",
-          actionTarget: "family",
-          items: [
-            {
-              title: "Zugriff einrichten",
-              description:
-                "Im Bereich Familie können Sie Kindern, Medikamentenplan und Hausapotheke getrennte Rechte geben.",
-            },
-            {
-              title: "Kinder auswählen",
-              description:
-                "Wenn Kinderzugriff offen ist, wählen Sie alle oder nur einzelne Kinder.",
-            },
-            {
-              title: "Nicht jeder braucht Vollzugriff",
-              description:
-                "Für Medikamentenpläne können Sie Lesen oder Einnahme-Bestätigung getrennt lassen.",
-            },
-          ],
-        },
-        {
-          id: "live-activities",
-          title: "Live Activity und Benachrichtigungen",
-          description:
-            "Schneller iPhone-Status und Push für wichtige Aktionen.",
-          actionLabel: "Einstellungen öffnen",
-          actionTarget: "settings",
-          items: [
-            {
-              title: "Was aktiviert werden kann",
-              description:
-                "In den Einstellungen lassen sich Schlaf, Füttern und Krankheitsbeobachtung getrennt aktivieren.",
-            },
-            {
-              title: "Wo es erscheint",
-              description:
-                "Auf dem iPhone sehen Sie es als große Karte auf dem Sperrbildschirm und kompakt in der Dynamic Island.",
-            },
-            {
-              title: "Wer Signale erhält",
-              description:
-                "Push geht nur an Mitglieder mit passendem Zugriff und aktivierten Benachrichtigungen.",
-            },
-          ],
-        },
-        {
-          id: "analytics",
-          title: "Analyse der Verlaufshistorie",
-          description:
-            "Wo Sie die Analyse in der Historie des Kindes finden und was sie zeigt.",
-          items: [
-            {
-              title: "Wo die Analyse ist",
-              description:
-                "Öffnen Sie ein Kind und dann seinen Verlauf. Dort gibt es eine Zusammenfassung und eine Detailansicht jeder Episode.",
-            },
-            {
-              title: "Was die Zusammenfassung zeigt",
-              description:
-                "Sie hilft zu verstehen, wie oft das Kind krank war, wie sich die Häufigkeit verändert hat und wie lang die Episoden waren.",
-            },
-            {
-              title: "Was die Detailansicht zeigt",
-              description:
-                "Innerhalb einer Episode sehen Sie Temperatur, wichtige Ereignisse, Medikamente und ein kurzes Bild der Einträge.",
-            },
-          ],
-        },
-      ],
-    };
-  }
-
-  if (isPl) {
-    return {
-      backLabel: "Więcej",
-      title: "Pomoc",
-      subtitle:
-        "Krótki przewodnik po najważniejszych modułach i przydatnych działaniach.",
-      sections: [
-        {
-          id: "first-step",
-          title: "Pierwszy krok",
-          description: "Od czego zacząć i gdzie przejść dalej.",
-          actionLabel: "Do dzieci",
-          actionTarget: "children",
-          items: [
-            {
-              title: "Od czego zacząć",
-              description:
-                "Jeśli otwierasz aplikację po raz pierwszy, zacznij od sekcji Dzieci.",
-            },
-            {
-              title: "Możesz wrócić później",
-              description:
-                "To tylko pomoc. Zamknij ekran w dowolnym momencie i korzystaj dalej.",
-            },
-          ],
-        },
-        {
-          id: "children",
-          title: "Dzieci",
-          description: "Profile dzieci, historia i wejście do obserwacji.",
-          actionLabel: "Otwórz dzieci",
-          actionTarget: "children",
-          items: [
-            {
-              title: "Dodaj dziecko",
-              description:
-                "Jeśli profil jeszcze nie istnieje, zacznij tutaj.",
-            },
-            {
-              title: "Otwórz historię",
-              description: "Wejdź w dziecko i otwórz zakończone epizody.",
-            },
-          ],
-        },
-        {
-          id: "observations",
-          title: "Obserwacje",
-          description:
-            "Temperatura, podania i notatki o bieżącym stanie.",
-          actionLabel: "Otwórz obserwacje",
-          actionTarget: "journal",
-          items: [
-            {
-              title: "Rozpocznij obserwację",
-              description:
-                "Otwórz kartę dziecka i uruchom nową obserwację.",
-            },
-            {
-              title: "Dodawaj wpisy",
-              description:
-                "W środku obserwacji możesz zapisywać temperaturę, podania i notatki.",
-            },
-            {
-              title: "Sprawdź przypomnienia",
-              description:
-                "Najbliższe działania i plany są od razu widoczne.",
-            },
-          ],
-        },
-        {
-          id: "pillbox",
-          title: "Tabletki",
-          description: "Plany leków: kto, co i kiedy przyjmuje.",
-          actionLabel: "Otwórz plany leków",
-          actionTarget: "pillbox",
-          items: [
-            {
-              title: "Utwórz plan",
-              description: "Dodaj lek, godziny przyjęcia i zapisz plan.",
-            },
-            {
-              title: "Zaznacz przyjęcie",
-              description:
-                "Gdy nadejdzie czas, stuknij zapis przyjęcia.",
-            },
-            {
-              title: "Pauza i wznowienie",
-              description:
-                "Plan można wstrzymać i wznowić później bez utraty historii.",
-            },
-          ],
-        },
-        {
-          id: "cabinet",
-          title: "Apteczka",
-          description: "Domowe leki, terminy i zapasy.",
-          actionLabel: "Otwórz apteczkę",
-          actionTarget: "cabinet",
-          items: [
-            {
-              title: "Dodaj opakowanie",
-              description: "Znajdź w katalogu albo dodaj ręcznie.",
-            },
-            {
-              title: "Pilnuj terminów",
-              description:
-                "Od razu widać, co wkrótce się przeterminuje.",
-            },
-            {
-              title: "Użyj w obserwacji",
-              description: "Lek można wybrać bezpośrednio w epizodzie.",
-            },
-          ],
-        },
-        {
-          id: "family",
-          title: "Rodzina i dostępy",
-          description:
-            "Kto widzi dzieci, dziennik, podania i apteczkę.",
-          actionLabel: "Otwórz rodzinę",
-          actionTarget: "family",
-          items: [
-            {
-              title: "Ustaw dostęp",
-              description:
-                "W sekcji Rodzina można osobno otworzyć dzieci, plany leków i apteczkę dla każdego członka.",
-            },
-            {
-              title: "Wybierz dzieci",
-              description:
-                "Jeśli dostęp do dzieci jest włączony, wybierz wszystkie albo tylko potrzebne.",
-            },
-            {
-              title: "Nie każdy potrzebuje pełnego dostępu",
-              description:
-                "Dla planów leków można zostawić tylko podgląd albo potwierdzanie podań.",
-            },
-          ],
-        },
-        {
-          id: "live-activities",
-          title: "Live Activity i powiadomienia",
-          description:
-            "Szybki status na iPhonie i push dla ważnych działań.",
-          actionLabel: "Otwórz ustawienia",
-          actionTarget: "settings",
-          items: [
-            {
-              title: "Co można włączyć",
-              description:
-                "W ustawieniach osobno włączysz sen, karmienie i obserwację choroby.",
-            },
-            {
-              title: "Gdzie to widać",
-              description:
-                "Na iPhonie pojawia się jako duża karta na ekranie blokady i mały pasek w Dynamic Island.",
-            },
-            {
-              title: "Kto dostaje sygnały",
-              description:
-                "Push trafia tylko do osób z odpowiednim dostępem i włączonymi powiadomieniami.",
-            },
-          ],
-        },
-        {
-          id: "analytics",
-          title: "Analityka historii dziecka",
-          description:
-            "Gdzie szukać analityki w historii dziecka i co pokazuje.",
-          items: [
-            {
-              title: "Gdzie szukać analityki",
-              description:
-                "Otwórz dziecko, a potem jego historię. Znajdziesz tam podsumowanie i rozbicie każdego epizodu.",
-            },
-            {
-              title: "Co pokazuje podsumowanie",
-              description:
-                "Pomaga zrozumieć, jak często dziecko chorowało, jak zmieniała się częstotliwość i jak długie były epizody.",
-            },
-            {
-              title: "Co pokazuje rozbicie",
-              description:
-                "W środku epizodu widać temperaturę, ważne wydarzenia, leki i krótki obraz zapisów.",
-            },
-          ],
-        },
-      ],
-    };
-  }
-
   return {
-    backLabel: "More",
-    title: "Help",
-    subtitle: "A quick guide to the main sections and useful actions.",
-    sections: [
-      {
-        id: "first-step",
-        title: "First step",
-        description: "Where to begin and where to go next.",
-        actionLabel: "Go to Children",
-        actionTarget: "children",
-        items: [
-          {
-            title: "Where to start",
-            description:
-              "If this is your first time here, start with the Children section.",
-          },
-          {
-            title: "You can return later",
-            description:
-              "This is just a guide. Close it anytime and continue using the app.",
-          },
-        ],
-      },
-      {
-        id: "children",
-        title: "Children",
-        description: "Child profiles, history and tracking entry.",
-        actionLabel: "Open children",
-        actionTarget: "children",
-        items: [
-          {
-            title: "Add a child",
-            description: "Start here if the profile does not exist yet.",
-          },
-          {
-            title: "Open history",
-            description: "Go into a child and open completed episodes.",
-          },
-        ],
-      },
-      {
-        id: "observations",
-        title: "Tracking",
-        description: "Temperature, doses and notes for the current state.",
-        actionLabel: "Open tracking",
-        actionTarget: "journal",
-        items: [
-          {
-            title: "Start tracking",
-            description:
-              "Open a child card and launch a new tracking session.",
-          },
-          {
-            title: "Add entries",
-            description:
-              "Inside a session you can log temperatures, doses and notes.",
-          },
-          {
-            title: "Check reminders",
-            description: "Nearest actions and plans stay visible.",
-          },
-        ],
-      },
-      {
-        id: "pillbox",
-        title: "Pillbox",
-        description: "Medication plans: who takes what and when.",
-        actionLabel: "Open pillbox",
-        actionTarget: "pillbox",
-        items: [
-          {
-            title: "Create a plan",
-            description: "Add medicine, dose times and save the plan.",
-          },
-          {
-            title: "Log a dose",
-            description: "When it is time, tap the dose confirmation.",
-          },
-          {
-            title: "Pause and resume",
-            description:
-              "Pause a plan and resume it later without losing history.",
-          },
-        ],
-      },
-      {
-        id: "cabinet",
-        title: "Cabinet",
-        description: "Home medicines, expiry and stock.",
-        actionLabel: "Open cabinet",
-        actionTarget: "cabinet",
-        items: [
-          {
-            title: "Add a pack",
-            description: "Find in catalog or add manually.",
-          },
-          {
-            title: "Watch expiry dates",
-            description: "See what expires soon at a glance.",
-          },
-          {
-            title: "Use during tracking",
-            description: "Pick a medicine directly in an episode.",
-          },
-        ],
-      },
-      {
-        id: "family",
-        title: "Family and access",
-        description: "Who can see children, tracking, pillbox, and cabinet.",
-        actionLabel: "Open family",
-        actionTarget: "family",
-        items: [
-          {
-            title: "Set access",
-            description:
-              "In Family, each member can get separate access to children, pillbox, and cabinet.",
-          },
-          {
-            title: "Choose children",
-            description:
-              "Once child access is open, choose all children or only selected ones.",
-          },
-          {
-            title: "Not everyone needs full access",
-            description:
-              "For pillbox you can keep view-only or dose logging.",
-          },
-        ],
-      },
-      {
-        id: "live-activities",
-        title: "Live Activity and reminders",
-        description: "Fast status on iPhone and push for important actions.",
-        actionLabel: "Open settings",
-        actionTarget: "settings",
-        items: [
-          {
-            title: "What can be enabled",
-            description:
-              "Settings lets you enable sleep, feeding, and illness tracking separately.",
-          },
-          {
-            title: "Where it appears",
-            description:
-              "On iPhone it appears as a large card on the lock screen and as a compact eyebrow in Dynamic Island.",
-          },
-          {
-            title: "Who receives signals",
-            description:
-              "Push reminders only go to members with the required access and notifications enabled.",
-          },
-        ],
-      },
-      {
-        id: "analytics",
-        title: "Child history analytics",
-        description:
-          "Where to find analytics in a child's history and what it shows.",
-        items: [
-          {
-            title: "Where to find analytics",
-            description:
-              "Open a child, then their history. There you get both a summary and a breakdown of each episode.",
-          },
-          {
-            title: "What the summary shows",
-            description:
-              "It helps you understand how often the child was sick, how the frequency changed and how long the episodes were.",
-          },
-          {
-            title: "What the breakdown shows",
-            description:
-              "Inside an episode you can see temperature, key events, medicines and a short picture of the record.",
-          },
-        ],
-      },
-    ],
+    backLabel: getHelpBackLabel(locale),
+    title: getHelpTitle(locale),
+    subtitle: getHelpSubtitle(locale),
+    sections: HELP_SECTION_ORDER.map((id) => ({
+      id,
+      ...getLocalizedHelpSectionCopy(id, locale),
+    })),
+  };
+}
+
+function getHelpBackLabel(locale: MobileLocale) {
+  if (locale === "ru") return "Ещё";
+  if (locale === "de") return "Mehr";
+  if (locale === "pl") return "Więcej";
+  return "More";
+}
+
+function getHelpTitle(locale: MobileLocale) {
+  if (locale === "ru") return "Помощь";
+  if (locale === "de") return "Hilfe";
+  if (locale === "pl") return "Pomoc";
+  return "Help";
+}
+
+function getHelpSubtitle(locale: MobileLocale) {
+  if (locale === "ru") {
+    return "Коротко: что это за модуль и когда он нужен.";
+  }
+  if (locale === "de") {
+    return "Kurz: wofür das Modul da ist und wann es gebraucht wird.";
+  }
+  if (locale === "pl") {
+    return "Krótko: do czego służy moduł i kiedy go używać.";
+  }
+  return "In short: what the module is for and when to use it.";
+}
+
+function getLocalizedHelpSectionCopy(
+  id: HelpSectionId,
+  locale: MobileLocale,
+): LocalizedHelpSectionCopy {
+  switch (id) {
+    case "children":
+      return getChildrenHelpCopy(locale);
+    case "journal":
+      return getJournalHelpCopy(locale);
+    case "pillbox":
+      return getPillboxHelpCopy(locale);
+    case "cabinet":
+      return getCabinetHelpCopy(locale);
+    case "family":
+      return getFamilyHelpCopy(locale);
+    case "settings":
+      return getSettingsHelpCopy(locale);
+  }
+}
+
+function getChildrenHelpCopy(locale: MobileLocale): LocalizedHelpSectionCopy {
+  if (locale === "ru") {
+    return {
+      title: "Дети",
+      description:
+        "Главный вход в работу по каждому ребёнку: профиль, история, обзор, сон, кормления, рост и вес.",
+      caseExample:
+        "«Например: для каждого ребёнка держите отдельный профиль, чтобы болезни, заметки и измерения не смешивались.»",
+      actionLabel: "Открыть детей",
+    };
+  }
+  if (locale === "de") {
+    return {
+      title: "Kinder",
+      description:
+        "Der Haupteinstieg pro Kind: Profil, Verlauf, Überblick, Schlaf, Füttern, Größe und Gewicht.",
+      caseExample:
+        "„Zum Beispiel: Jedes Kind hat ein eigenes Profil, damit Krankheiten, Notizen und Messungen nicht vermischt werden.“",
+      actionLabel: "Kinder öffnen",
+    };
+  }
+  if (locale === "pl") {
+    return {
+      title: "Dzieci",
+      description:
+        "Główne wejście do pracy z każdym dzieckiem: profil, historia, przegląd, sen, karmienia, wzrost i waga.",
+      caseExample:
+        "„Na przykład: każde dziecko ma osobny profil, żeby choroby, notatki i pomiary się nie mieszały.”",
+      actionLabel: "Otwórz dzieci",
+    };
+  }
+  return {
+    title: "Children",
+    description:
+      "The main entry point for each child: profile, history, overview, sleep, feeding, growth, and weight.",
+    caseExample:
+      '"For example: each child gets a separate profile so illnesses, notes, and measurements do not mix together."',
+    actionLabel: "Open children",
+  };
+}
+
+function getJournalHelpCopy(locale: MobileLocale): LocalizedHelpSectionCopy {
+  if (locale === "ru") {
+    return {
+      title: "Журнал",
+      description:
+        "Журнал нужен для текущей болезни: сюда попадают температура, приёмы, заметки и напоминания в одной ленте. Раздел доступен, когда у ребёнка активно наблюдение.",
+      caseExample:
+        "«Например: ночью записали 38.7, дали ибупрофен и утром уже видите всю последовательность событий по времени.»",
+      actionLabel: "Открыть журнал",
+    };
+  }
+  if (locale === "de") {
+    return {
+      title: "Journal",
+      description:
+        "Das Journal ist für die aktuelle Krankheit: Temperatur, Gaben, Notizen und Erinnerungen laufen hier in einer Zeitleiste zusammen. Der Bereich ist verfügbar, wenn für das Kind eine aktive Beobachtung läuft.",
+      caseExample:
+        "„Zum Beispiel: Nachts notieren Sie 38,7, geben Ibuprofen und sehen morgens die ganze Abfolge direkt nach Uhrzeit sortiert.“",
+      actionLabel: "Journal öffnen",
+    };
+  }
+  if (locale === "pl") {
+    return {
+      title: "Dziennik",
+      description:
+        "Dziennik służy do bieżącej choroby: temperatura, podania, notatki i przypomnienia zbierają się tu w jednej osi czasu. Moduł jest dostępny, gdy u dziecka aktywna jest obserwacja.",
+      caseExample:
+        "„Na przykład: w nocy zapisujesz 38,7, podajesz ibuprofen i rano widzisz już cały przebieg ułożony po godzinach.”",
+      actionLabel: "Otwórz dziennik",
+    };
+  }
+  return {
+    title: "Journal",
+    description:
+      "Journal is for the current illness: temperatures, doses, notes, and reminders all stay in one timeline. It appears when the child has an active observation.",
+    caseExample:
+      '"For example: at night you log 38.7, give ibuprofen, and in the morning the whole sequence is already there in time order."',
+    actionLabel: "Open journal",
+  };
+}
+
+function getPillboxHelpCopy(locale: MobileLocale): LocalizedHelpSectionCopy {
+  if (locale === "ru") {
+    return {
+      title: "Таблетница",
+      description:
+        "Это отдельные планы лекарств с расписанием, ближайшими приёмами и отметками выполнения для семьи.",
+      caseExample:
+        "«Например: заводите курс антибиотика на 7 дней и сразу видно, когда следующий приём и кто уже его отметил.»",
+      actionLabel: "Открыть таблетницу",
+    };
+  }
+  if (locale === "de") {
+    return {
+      title: "Medikamentenplan",
+      description:
+        "Hier liegen eigenständige Medikamentenpläne mit Zeiten, nächsten Einnahmen und Markierungen für die Familie.",
+      caseExample:
+        "„Zum Beispiel: Sie legen einen Antibiotikakurs für 7 Tage an und sehen sofort, wann die nächste Einnahme fällig ist.“",
+      actionLabel: "Medikamentenplan öffnen",
+    };
+  }
+  if (locale === "pl") {
+    return {
+      title: "Tabletki",
+      description:
+        "To osobne plany leków z harmonogramem, kolejnymi podaniami i oznaczeniami wykonania dla rodziny.",
+      caseExample:
+        "„Na przykład: tworzysz 7-dniowy kurs antybiotyku i od razu widać, kiedy wypada kolejne podanie.”",
+      actionLabel: "Otwórz tabletki",
+    };
+  }
+  return {
+    title: "Pillbox",
+    description:
+      "This module is for separate medication plans with schedules, next intakes, and completion marks for the family.",
+    caseExample:
+      '"For example: you create a 7-day antibiotic course and can immediately see when the next intake is due."',
+    actionLabel: "Open pillbox",
+  };
+}
+
+function getCabinetHelpCopy(locale: MobileLocale): LocalizedHelpSectionCopy {
+  if (locale === "ru") {
+    return {
+      title: "Аптечка",
+      description:
+        "Здесь хранится домашний запас лекарств: что есть дома, что вскрыто, что проверить и что просрочено.",
+      caseExample:
+        "«Например: перед ночью проверяете, есть ли дома жаропонижающее и не просрочен ли уже открытый сироп.»",
+      actionLabel: "Открыть аптечку",
+    };
+  }
+  if (locale === "de") {
+    return {
+      title: "Hausapotheke",
+      description:
+        "Hier sehen Sie den Vorrat zu Hause: was da ist, was geöffnet wurde, was geprüft werden sollte und was abgelaufen ist.",
+      caseExample:
+        "„Zum Beispiel: Vor der Nacht prüfen Sie, ob Fiebermittel da sind und ob ein geöffneter Sirup noch verwendbar ist.“",
+      actionLabel: "Hausapotheke öffnen",
+    };
+  }
+  if (locale === "pl") {
+    return {
+      title: "Apteczka",
+      description:
+        "Tutaj widać domowy zapas leków: co jest w domu, co zostało otwarte, co trzeba sprawdzić i co jest przeterminowane.",
+      caseExample:
+        "„Na przykład: przed nocą sprawdzasz, czy w domu jest lek przeciwgorączkowy i czy otwarty syrop nadal nadaje się do użycia.”",
+      actionLabel: "Otwórz apteczkę",
+    };
+  }
+  return {
+    title: "Cabinet",
+    description:
+      "Here you see the home medicine stock: what is at home, what is opened, what needs checking, and what is expired.",
+    caseExample:
+      '"For example: before the night you check whether fever medicine is at home and whether an opened syrup is still okay to use."',
+    actionLabel: "Open cabinet",
+  };
+}
+
+function getFamilyHelpCopy(locale: MobileLocale): LocalizedHelpSectionCopy {
+  if (locale === "ru") {
+    return {
+      title: "Семья",
+      description:
+        "Модуль для участников, ролей, приглашений и доступа к детям, журналу, аптечке и таблетнице.",
+      caseExample:
+        "«Например: приглашаете бабушку и открываете ей доступ только к одному ребёнку и просмотру журнала.»",
+      actionLabel: "Открыть семью",
+    };
+  }
+  if (locale === "de") {
+    return {
+      title: "Familie",
+      description:
+        "Dieses Modul verwaltet Mitglieder, Rollen, Einladungen und Zugriffe auf Kinder, Journal, Hausapotheke und Medikamentenpläne.",
+      caseExample:
+        "„Zum Beispiel: Sie laden eine Großmutter ein und geben ihr Zugriff nur auf ein Kind und das Journal.“",
+      actionLabel: "Familie öffnen",
+    };
+  }
+  if (locale === "pl") {
+    return {
+      title: "Rodzina",
+      description:
+        "Ten moduł zarządza członkami, rolami, zaproszeniami i dostępem do dzieci, dziennika, apteczki oraz planów leków.",
+      caseExample:
+        "„Na przykład: zapraszasz babcię i dajesz jej dostęp tylko do jednego dziecka oraz podglądu dziennika.”",
+      actionLabel: "Otwórz rodzinę",
+    };
+  }
+  return {
+    title: "Family",
+    description:
+      "This module manages members, roles, invites, and access to children, journal, cabinet, and medication plans.",
+    caseExample:
+      '"For example: you invite a grandparent and give access only to one child and journal viewing."',
+    actionLabel: "Open family",
+  };
+}
+
+function getSettingsHelpCopy(locale: MobileLocale): LocalizedHelpSectionCopy {
+  if (locale === "ru") {
+    return {
+      title: "Настройки",
+      description:
+        "Здесь меняются язык, уведомления, Live Activity, параметры подписки и защита аккаунта.",
+      caseExample:
+        "«Например: включаете push и Live Activity для болезни, чтобы важные действия были видны на iPhone без открытия приложения.»",
+      actionLabel: "Открыть настройки",
+    };
+  }
+  if (locale === "de") {
+    return {
+      title: "Einstellungen",
+      description:
+        "Hier ändern Sie Sprache, Benachrichtigungen, Live Activity, Abo-Einstellungen und Kontoschutz.",
+      caseExample:
+        "„Zum Beispiel: Sie aktivieren Push und Live Activity für Krankheit, damit wichtige Schritte direkt auf dem iPhone sichtbar bleiben.“",
+      actionLabel: "Einstellungen öffnen",
+    };
+  }
+  if (locale === "pl") {
+    return {
+      title: "Ustawienia",
+      description:
+        "Tutaj zmieniasz język, powiadomienia, Live Activity, subskrypcję i bezpieczeństwo konta.",
+      caseExample:
+        "„Na przykład: włączasz push i Live Activity dla choroby, żeby ważne działania były widoczne na iPhonie bez otwierania aplikacji.”",
+      actionLabel: "Otwórz ustawienia",
+    };
+  }
+  return {
+    title: "Settings",
+    description:
+      "Here you change language, notifications, Live Activity, subscription options, and account security.",
+    caseExample:
+      '"For example: you turn on push and Live Activity for illness so key actions stay visible on iPhone without opening the app."',
+    actionLabel: "Open settings",
   };
 }
