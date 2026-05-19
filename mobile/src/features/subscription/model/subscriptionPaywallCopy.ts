@@ -29,6 +29,7 @@ export type SubscriptionPaywallCopy = {
   restoreInactive: string;
   unavailable: string;
   purchaseUnavailable: string;
+  purchaseNotActivated: string;
   purchaseFailed: string;
   restoreFailed: string;
 };
@@ -104,7 +105,7 @@ export function buildSubscriptionPaywallCopy(
           : "Free to start. Plus for shared family care and advanced features.",
     freeTitle: isRu ? "Старт" : isDe ? "Start" : isPl ? "Start" : "Start",
     plusTitle: isRu ? "Семья" : isDe ? "Familie" : isPl ? "Rodzina" : "Family",
-    freeBadge: "Free",
+    freeBadge: isRu ? "Бесплатно" : isDe ? "Kostenlos" : isPl ? "Darmowy" : "Free",
     plusBadge: "Plus",
     freeForever: isRu ? "Навсегда бесплатно" : isDe ? "Dauerhaft kostenlos" : isPl ? "Darmowy na zawsze" : "Free forever",
     plusMore: isRu ? "И многое другое" : isDe ? "Und vieles mehr" : isPl ? "I wiele więcej" : "And much more",
@@ -222,6 +223,13 @@ export function buildSubscriptionPaywallCopy(
         : isPl
           ? "Zakup jest teraz niedostępny. Spróbuj ponownie później."
           : "Purchase is unavailable right now. Please try again later.",
+    purchaseNotActivated: isRu
+      ? "Покупка завершена, но доступ Plus не активировался. Попробуйте восстановить покупки."
+      : isDe
+        ? "Der Kauf wurde abgeschlossen, aber Plus wurde nicht aktiviert. Bitte versuchen Sie, Käufe wiederherzustellen."
+        : isPl
+          ? "Zakup został zakończony, ale dostęp Plus nie został aktywowany. Spróbuj przywrócić zakupy."
+          : "Purchase completed, but Plus access did not activate. Please try Restore purchases.",
     purchaseFailed: isRu
       ? "Не удалось оформить подписку. Попробуйте ещё раз."
       : isDe

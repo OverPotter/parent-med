@@ -39,8 +39,8 @@ export function usePillboxPlanOnboardingController({
   onPlanSaved: (payload: { plan: MobilePillboxPlan; participantId: string }) => void;
 }) {
   const participants = useMemo(
-    () => buildParticipantOptions(familyMembers),
-    [familyMembers],
+    () => buildParticipantOptions(familyMembers, { currentAccountId, locale }),
+    [currentAccountId, familyMembers, locale],
   );
   const [step, setStep] = useState<PillboxPlanFlowStep>("participant");
   const [draft, setDraft] = useState(() => createInitialPlanDraft());
@@ -80,8 +80,12 @@ export function usePillboxPlanOnboardingController({
     step === "participant" ? 1 : step === "review" ? 3 : 2;
   const participantTitle = resolvePlanParticipantTitle(draft.participantId, participants);
   const recipientSheetMembers = useMemo(
-    () => buildPillboxRecipientSheetMembers(familyMembers, participants),
-    [familyMembers, participants],
+    () =>
+      buildPillboxRecipientSheetMembers(familyMembers, participants, {
+        currentAccountId,
+        locale,
+      }),
+    [currentAccountId, familyMembers, locale, participants],
   );
   const eligibleRecipientIds = useMemo(
     () => recipientSheetMembers.map((member) => member.id),

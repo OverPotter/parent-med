@@ -339,4 +339,60 @@ describe("usePillboxPlanOnboardingController", () => {
     });
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("falls back to the current account instead of mock family members", async () => {
+    const onClose = jest.fn();
+    const onPlanSaved = jest.fn();
+
+    await act(async () => {
+      TestRenderer.create(
+        React.createElement(Probe, {
+          familyMembers: [],
+          onClose,
+          onPlanSaved,
+        }),
+      );
+    });
+
+    expect(latestController?.participants).toEqual([
+      expect.objectContaining({
+        id: "acc-1",
+        title: "Вы",
+      }),
+    ]);
+    expect(latestController?.recipientSheetMembers).toEqual([
+      expect.objectContaining({
+        id: "acc-1",
+        displayName: "Вы",
+      }),
+    ]);
+  });
+
+  it("deduplicates family members by account id", async () => {
+    const onClose = jest.fn();
+    const onPlanSaved = jest.fn();
+
+    await act(async () => {
+      TestRenderer.create(
+        React.createElement(Probe, {
+          familyMembers: [
+            makeFamilyMember("acc-1", "Мила"),
+            makeFamilyMember("acc-1", "Мила"),
+            makeFamilyMember("acc-2", "Артём"),
+          ],
+          onClose,
+          onPlanSaved,
+        }),
+      );
+    });
+
+    expect(latestController?.participants.map((item) => item.id)).toEqual([
+      "acc-1",
+      "acc-2",
+    ]);
+    expect(latestController?.recipientSheetMembers.map((item) => item.id)).toEqual([
+      "acc-1",
+      "acc-2",
+    ]);
+  });
 });

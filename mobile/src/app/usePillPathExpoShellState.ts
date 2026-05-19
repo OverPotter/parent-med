@@ -690,8 +690,14 @@ export function usePillPathExpoShellState() {
     applySettingsBundleToShell(nextBundle);
   }, [applySettingsBundleToShell, authSession]);
   const handlePaywallPurchased = useCallback(async () => {
-    await refreshPremiumAccessAfterPurchase();
     closePaywall();
+    try {
+      await refreshPremiumAccessAfterPurchase();
+    } catch (error) {
+      if (__DEV__) {
+        console.warn("[paywall] Shell premium refresh failed", error);
+      }
+    }
   }, [closePaywall, refreshPremiumAccessAfterPurchase]);
   const {
     handleSubmitChildCreate,

@@ -551,8 +551,12 @@ export function useSettingsScreenController({
       return;
     }
 
-    const nextBundle = await loadSettingsBundle(session);
-    applySettingsBundle(nextBundle);
+    try {
+      const nextBundle = await loadSettingsBundle(session);
+      applySettingsBundle(nextBundle);
+    } catch {
+      setError(content.saveErrorLabel);
+    }
   };
 
   const handleManageSubscription = async () => {

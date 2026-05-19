@@ -582,12 +582,16 @@ export function buildSettingsScreenContent(
       ? "Это удалит всю семью и ваш аккаунт. Действие необратимо."
       : isDe
         ? "Dadurch werden die ganze Familie und Ihr Konto gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+      : isPl
+        ? "To usunie całą rodzinę i Twoje konto. Tej operacji nie można cofnąć."
       : "This deletes the entire family and your account. This action cannot be undone.",
     confirmDeleteMemberTitle: isRu ? "Точно удалить?" : isDe ? "Wirklich löschen?" : isPl ? "Na pewno usunąć?" : "Are you sure?",
     confirmDeleteMemberMessage: isRu
       ? "Это удалит только ваш аккаунт. Действие необратимо."
       : isDe
         ? "Dadurch wird nur Ihr Konto gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."
+      : isPl
+        ? "To usunie tylko Twoje konto. Tej operacji nie można cofnąć."
       : "This deletes only your account. This action cannot be undone.",
     confirmDeleteAction: isRu ? "Да, удалить" : isDe ? "Ja, löschen" : isPl ? "Tak, usuń" : "Yes, delete",
     passwordsMismatch: isRu ? "Пароли не совпадают." : isDe ? "Die Passwörter stimmen nicht überein." : isPl ? "Hasła nie są takie same." : "Passwords must match.",

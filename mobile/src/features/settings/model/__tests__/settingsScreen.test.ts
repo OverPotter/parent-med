@@ -13,6 +13,12 @@ describe("buildSettingsScreenContent", () => {
     ]);
     expect(content.pushMasterTitle).toBe("Wszystkie powiadomienia");
     expect(content.subscriptionManageLabel).toBe("Zarządzaj subskrypcją");
+    expect(content.confirmDeleteOwnerMessage).toBe(
+      "To usunie całą rodzinę i Twoje konto. Tej operacji nie można cofnąć.",
+    );
+    expect(content.confirmDeleteMemberMessage).toBe(
+      "To usunie tylko Twoje konto. Tej operacji nie można cofnąć.",
+    );
   });
 
   it("returns german copy for app and notification settings", () => {

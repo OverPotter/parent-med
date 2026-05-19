@@ -26,6 +26,7 @@ type UseRevenueCatPaywallControllerArgs = {
   restoreInactiveMessage: string;
   unavailableMessage: string;
   purchaseUnavailableMessage: string;
+  purchaseNotActivatedMessage: string;
   purchaseFailedMessage: string;
   restoreFailedMessage: string;
   onClose?: () => void;
@@ -40,6 +41,22 @@ function describeUnknownError(error: unknown) {
   return typeof error === "string" ? error : "Unknown error";
 }
 
+export async function finalizeSuccessfulPaywallPurchase(args: {
+  onClose?: () => void;
+  onPurchased?: () => Promise<void> | void;
+}) {
+  args.onClose?.();
+  try {
+    await args.onPurchased?.();
+  } catch (error) {
+    if (__DEV__) {
+      console.warn(
+        `[paywall] Post-purchase refresh failed: ${describeUnknownError(error)}`,
+      );
+    }
+  }
+}
+
 export function useRevenueCatPaywallController({
   visible,
   session,
@@ -47,6 +64,7 @@ export function useRevenueCatPaywallController({
   restoreInactiveMessage,
   unavailableMessage,
   purchaseUnavailableMessage,
+  purchaseNotActivatedMessage,
   purchaseFailedMessage,
   restoreFailedMessage,
   onClose,
@@ -145,7 +163,7 @@ export function useRevenueCatPaywallController({
     return () => {
       cancelled = true;
     };
-  }, [session, visible]);
+  }, [session, unavailableMessage, visible]);
 
   const handleSnapshotSync = async (snapshot: RevenueCatCustomerSnapshot | null) => {
     if (!snapshot || !session?.accessToken) {
@@ -185,16 +203,14 @@ export function useRevenueCatPaywallController({
       }
 
       if (!result.customerSnapshot?.entitlementActive) {
-        const message =
-          "Purchase completed, but Plus access did not activate. Please try Restore purchases.";
+        const message = purchaseNotActivatedMessage;
         setInlineMessage(message);
         onError?.(message);
         return;
       }
 
       await handleSnapshotSync(result.customerSnapshot);
-      await onPurchased?.();
-      onClose?.();
+      await finalizeSuccessfulPaywallPurchase({ onClose, onPurchased });
     } catch (error) {
       if (__DEV__) {
         console.warn(
@@ -227,8 +243,7 @@ export function useRevenueCatPaywallController({
         setInlineMessage(restoreInactiveMessage);
         return;
       }
-      await onPurchased?.();
-      setInlineMessage(restoreSuccessMessage);
+      await finalizeSuccessfulPaywallPurchase({ onClose, onPurchased });
     } catch (error) {
       if (__DEV__) {
         console.warn(

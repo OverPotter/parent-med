@@ -13,6 +13,11 @@ export type PillboxParticipantOption = {
   avatarText: string;
 };
 
+type ParticipantFallback = {
+  currentAccountId: string;
+  locale: MobileLocale;
+};
+
 export type PillboxDraftMedicine = {
   id: string;
   name: string;
@@ -34,9 +39,12 @@ let medicineDraftSequence = 0;
 
 export function buildParticipantOptions(
   familyMembers: MobileFamilyMember[],
+  fallback?: ParticipantFallback,
 ): PillboxParticipantOption[] {
-  if (familyMembers.length > 0) {
-    return familyMembers.map((member) => ({
+  const uniqueMembers = dedupeFamilyMembers(familyMembers);
+
+  if (uniqueMembers.length > 0) {
+    return uniqueMembers.map((member) => ({
       id: member.id,
       title: member.displayName,
       subtitle: member.relationshipLabel?.trim() || null,
@@ -44,13 +52,18 @@ export function buildParticipantOptions(
     }));
   }
 
+  if (!fallback?.currentAccountId) {
+    return [];
+  }
+
+  const fallbackTitle = fallback.locale === "ru" ? "Вы" : "You";
   return [
-    { id: "father_artem", title: "Папа Артём", subtitle: null, avatarText: "П" },
-    { id: "mother", title: "Мама", subtitle: null, avatarText: "М" },
-    { id: "grandmother", title: "Бабушка", subtitle: null, avatarText: "Б" },
-    { id: "grandfather", title: "Дедушка", subtitle: null, avatarText: "Д" },
-    { id: "nanny_irina", title: "Няня Ирина", subtitle: null, avatarText: "Н" },
-    { id: "child_dima", title: "Ребёнок Дима", subtitle: null, avatarText: "Р" },
+    {
+      id: fallback.currentAccountId,
+      title: fallbackTitle,
+      subtitle: null,
+      avatarText: resolveAvatarText(fallbackTitle),
+    },
   ];
 }
 
@@ -114,9 +127,36 @@ export function resolvePlanParticipantTitle(
 export function buildPillboxRecipientSheetMembers(
   familyMembers: MobileFamilyMember[],
   participants: PillboxParticipantOption[],
+  fallback?: ParticipantFallback,
 ): MobileFamilyMember[] {
-  if (familyMembers.length > 0) {
-    return familyMembers;
+  const uniqueMembers = dedupeFamilyMembers(familyMembers);
+
+  if (uniqueMembers.length > 0) {
+    return uniqueMembers;
+  }
+
+  if (fallback?.currentAccountId) {
+    const fallbackTitle = fallback.locale === "ru" ? "Вы" : "You";
+    return [
+      {
+        id: fallback.currentAccountId,
+        email: null,
+        familyId: "local-family",
+        displayName: fallbackTitle,
+        relationshipLabel: null,
+        phone: null,
+        preferredLanguage: fallback.locale,
+        familyRole: "member",
+        accessPolicy: {
+          allChildren: false,
+          childIds: [],
+          childrenAccess: "view",
+          cabinetAccess: "none",
+          pillboxAccess: "none",
+          cabinetPushEnabled: false,
+        },
+      },
+    ];
   }
 
   return participants.map((item) => ({
@@ -238,6 +278,17 @@ export function buildNotificationRecipientSummary(input: {
 function resolveAvatarText(label: string): string {
   const first = label.trim().charAt(0);
   return first ? first.toUpperCase() : "•";
+}
+
+function dedupeFamilyMembers(familyMembers: MobileFamilyMember[]) {
+  const seenIds = new Set<string>();
+  return familyMembers.filter((member) => {
+    if (seenIds.has(member.id)) {
+      return false;
+    }
+    seenIds.add(member.id);
+    return true;
+  });
 }
 
 function mapMealRelationToApi(

@@ -58,6 +58,7 @@ export function SubscriptionPaywallSheet({
     restoreInactiveMessage: copy.restoreInactive,
     unavailableMessage: copy.unavailable,
     purchaseUnavailableMessage: copy.purchaseUnavailable,
+    purchaseNotActivatedMessage: copy.purchaseNotActivated,
     purchaseFailedMessage: copy.purchaseFailed,
     restoreFailedMessage: copy.restoreFailed,
     onClose,
