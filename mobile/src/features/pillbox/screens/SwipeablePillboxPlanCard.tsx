@@ -21,6 +21,75 @@ import { pillboxHomeScreenStyles as styles } from "./pillboxHomeScreenStyles";
 
 const SWIPE_DELETE_ACTION_WIDTH = 92;
 
+function getDeletePlanA11yLabel(locale: MobileLocale, title: string) {
+  if (locale === "ru") {
+    return `Удалить план ${title}`;
+  }
+  if (locale === "de") {
+    return `Plan ${title} löschen`;
+  }
+  if (locale === "pl") {
+    return `Usuń plan ${title}`;
+  }
+  return `Delete plan ${title}`;
+}
+
+function getDeletePlanActionLabel(locale: MobileLocale, deleting: boolean) {
+  if (deleting) {
+    return "...";
+  }
+  if (locale === "ru") {
+    return "Удалить";
+  }
+  if (locale === "de") {
+    return "Löschen";
+  }
+  if (locale === "pl") {
+    return "Usuń";
+  }
+  return "Delete";
+}
+
+function getExpandedPlanText(
+  locale: MobileLocale,
+  key: "loading" | "loadError" | "saving" | "markIntake" | "recipients",
+) {
+  if (locale === "ru") {
+    return {
+      loading: "Загружаем лекарства...",
+      loadError: "Не получилось загрузить план.",
+      saving: "Сохраняем...",
+      markIntake: "Отметить приём",
+      recipients: "Получатели",
+    }[key];
+  }
+  if (locale === "de") {
+    return {
+      loading: "Medikamente werden geladen...",
+      loadError: "Der Plan konnte nicht geladen werden.",
+      saving: "Wird gespeichert...",
+      markIntake: "Einnahme markieren",
+      recipients: "Empfänger",
+    }[key];
+  }
+  if (locale === "pl") {
+    return {
+      loading: "Ładowanie leków...",
+      loadError: "Nie udało się załadować planu.",
+      saving: "Zapisywanie...",
+      markIntake: "Oznacz przyjęcie",
+      recipients: "Odbiorcy",
+    }[key];
+  }
+  return {
+    loading: "Loading medicines...",
+    loadError: "Could not load the plan.",
+    saving: "Saving...",
+    markIntake: "Mark intake",
+    recipients: "Recipients",
+  }[key];
+}
+
 export function SwipeablePillboxPlanCard({
   locale,
   item,
@@ -137,7 +206,7 @@ export function SwipeablePillboxPlanCard({
         <View style={styles.swipeDeleteActionWrap}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Удалить план ${item.title}`}
+            accessibilityLabel={getDeletePlanA11yLabel(locale, item.title)}
             onPress={onDelete}
             disabled={deleting}
             style={({ pressed }) => [
@@ -148,7 +217,7 @@ export function SwipeablePillboxPlanCard({
           >
             <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
             <Text style={styles.swipeDeleteActionText}>
-              {deleting ? "..." : "Удалить"}
+              {getDeletePlanActionLabel(locale, deleting)}
             </Text>
           </Pressable>
         </View>
@@ -215,7 +284,7 @@ export function SwipeablePillboxPlanCard({
           <View style={styles.planExpandedSection}>
             {isLoadingExpanded ? (
               <Text style={styles.planExpandedLoading}>
-                {locale === "ru" ? "Загружаем лекарства..." : "Loading medicines..."}
+                {getExpandedPlanText(locale, "loading")}
               </Text>
             ) : expandedPlan ? (
               <View style={styles.planExpandedMedicineList}>
@@ -279,9 +348,7 @@ export function SwipeablePillboxPlanCard({
               </View>
             ) : (
               <Text style={styles.planExpandedLoading}>
-                {locale === "ru"
-                  ? "Не получилось загрузить план."
-                  : "Could not load the plan."}
+                {getExpandedPlanText(locale, "loadError")}
               </Text>
             )}
 
@@ -298,12 +365,8 @@ export function SwipeablePillboxPlanCard({
                 >
                   <Text style={styles.planExpandedPrimaryActionText}>
                     {taking
-                      ? locale === "ru"
-                        ? "Сохраняем..."
-                        : "Saving..."
-                      : locale === "ru"
-                        ? "Отметить приём"
-                        : "Mark intake"}
+                      ? getExpandedPlanText(locale, "saving")
+                      : getExpandedPlanText(locale, "markIntake")}
                   </Text>
                 </Pressable>
               ) : null}
@@ -319,12 +382,8 @@ export function SwipeablePillboxPlanCard({
               >
                 <Text style={styles.planExpandedSecondaryActionText}>
                   {updating
-                    ? locale === "ru"
-                      ? "Сохраняем..."
-                      : "Saving..."
-                    : locale === "ru"
-                      ? "Получатели"
-                      : "Recipients"}
+                    ? getExpandedPlanText(locale, "saving")
+                    : getExpandedPlanText(locale, "recipients")}
                 </Text>
               </Pressable>
             </View>

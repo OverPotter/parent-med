@@ -46,6 +46,38 @@ function formatJournalDelta(
   return `+${value} ${unit}`;
 }
 
+function getJournalEmptyValue() {
+  return "—";
+}
+
+function getJournalEmptyNote(
+  locale: MobileLocale,
+  kind: "sleep" | "weight" | "height",
+) {
+  if (locale === "ru") {
+    if (kind === "sleep") {
+      return "Добавьте детали сна, если хотите сохранить их в записи.";
+    }
+    return "Добавьте комментарий к измерению, если это важно.";
+  }
+  if (locale === "de") {
+    if (kind === "sleep") {
+      return "Fügen Sie Schlafdetails hinzu, wenn sie im Eintrag gespeichert werden sollen.";
+    }
+    return "Fügen Sie bei Bedarf einen Kommentar zur Messung hinzu.";
+  }
+  if (locale === "pl") {
+    if (kind === "sleep") {
+      return "Dodaj szczegóły snu, jeśli chcesz zapisać je we wpisie.";
+    }
+    return "W razie potrzeby dodaj komentarz do pomiaru.";
+  }
+  if (kind === "sleep") {
+    return "Add sleep details if you want them saved in the entry.";
+  }
+  return "Add a measurement note if needed.";
+}
+
 export function buildJournalEntryScreenContent(
   kind: JournalEntryKind,
   locale: MobileLocale,
@@ -111,27 +143,21 @@ export function buildJournalEntryScreenContent(
         {
           id: "start",
           label: isRu ? "Начало" : isDe ? "Beginn" : isPl ? "Początek" : "Start",
-          value: "13:10",
+          value: getJournalEmptyValue(),
         },
         {
           id: "end",
           label: isRu ? "Окончание" : isDe ? "Ende" : isPl ? "Koniec" : "End",
-          value: "14:25",
+          value: getJournalEmptyValue(),
         },
         {
           id: "duration",
           label: isRu ? "Длительность" : isDe ? "Dauer" : isPl ? "Czas trwania" : "Duration",
-          value: isRu ? "1 ч 15 мин" : isPl ? "1 godz. 15 min" : "1 h 15 min",
+          value: getJournalEmptyValue(),
         },
       ],
       notesTitle: isRu ? "Заметка ко сну" : isDe ? "Notiz zum Schlaf" : isPl ? "Notatka do snu" : "Sleep note",
-      notesBody: isRu
-        ? "Уснул быстро, проснулся спокойно."
-        : isDe
-          ? "Ist schnell eingeschlafen und ruhig aufgewacht."
-        : isPl
-          ? "Zasnął szybko i obudził się spokojnie."
-        : "Fell asleep quickly and woke up calmly.",
+      notesBody: getJournalEmptyNote(locale, "sleep"),
       primaryActionLabel: common.primaryActionLabel,
     };
   }
@@ -152,28 +178,22 @@ export function buildJournalEntryScreenContent(
         {
           id: "value",
           label: isRu ? "Вес" : isDe ? "Gewicht" : isPl ? "Waga" : "Weight",
-          value: formatJournalWeight(locale, "13.4"),
+          value: getJournalEmptyValue(),
         },
         {
           id: "date",
           label: isRu ? "Дата" : isDe ? "Datum" : isPl ? "Data" : "Date",
-          value: isRu ? "9 мая" : isDe ? "9. Mai" : isPl ? "9 maja" : "May 9",
+          value: getJournalEmptyValue(),
         },
         {
           id: "delta",
           label: isRu ? "Изменение" : isDe ? "Änderung" : isPl ? "Zmiana" : "Change",
-          value: formatJournalDelta(locale, "0.2", "kg"),
+          value: getJournalEmptyValue(),
           helper: isRu ? "с прошлого измерения" : isDe ? "seit der letzten Messung" : isPl ? "od poprzedniego pomiaru" : "since previous measurement",
         },
       ],
       notesTitle: isRu ? "Заметка к весу" : isDe ? "Notiz zum Gewicht" : isPl ? "Notatka do wagi" : "Weight note",
-      notesBody: isRu
-        ? "Измерение после завтрака, ребёнок спокоен."
-        : isDe
-          ? "Messung nach dem Frühstück, das Kind war ruhig."
-        : isPl
-          ? "Pomiar po śniadaniu, dziecko było spokojne."
-        : "Measured after breakfast, child was calm.",
+      notesBody: getJournalEmptyNote(locale, "weight"),
       primaryActionLabel: common.primaryActionLabel,
     };
   }
@@ -193,28 +213,22 @@ export function buildJournalEntryScreenContent(
       {
         id: "value",
         label: isRu ? "Рост" : isDe ? "Größe" : isPl ? "Wzrost" : "Height",
-        value: formatJournalHeight(locale, "92"),
+        value: getJournalEmptyValue(),
       },
       {
         id: "date",
         label: isRu ? "Дата" : isDe ? "Datum" : isPl ? "Data" : "Date",
-        value: isRu ? "9 мая" : isDe ? "9. Mai" : isPl ? "9 maja" : "May 9",
+        value: getJournalEmptyValue(),
       },
       {
         id: "delta",
         label: isRu ? "Изменение" : isDe ? "Änderung" : isPl ? "Zmiana" : "Change",
-        value: formatJournalDelta(locale, "1", "cm"),
+        value: getJournalEmptyValue(),
         helper: isRu ? "с прошлого измерения" : isDe ? "seit der letzten Messung" : isPl ? "od poprzedniego pomiaru" : "since previous measurement",
       },
     ],
     notesTitle: isRu ? "Заметка к росту" : isDe ? "Notiz zur Größe" : isPl ? "Notatka do wzrostu" : "Height note",
-    notesBody: isRu
-      ? "Измерение днём, стоял ровно у стены."
-      : isDe
-        ? "Messung tagsüber, stand gerade an der Wand."
-      : isPl
-        ? "Pomiar w ciągu dnia, stał prosto przy ścianie."
-      : "Measured during the day while standing straight.",
+    notesBody: getJournalEmptyNote(locale, "height"),
     primaryActionLabel: common.primaryActionLabel,
   };
 }

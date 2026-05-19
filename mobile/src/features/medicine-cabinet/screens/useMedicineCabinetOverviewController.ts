@@ -48,7 +48,7 @@ export function useMedicineCabinetOverviewController({
   const [expandedMedicineId, setExpandedMedicineId] = useState<string | null>(null);
   const [pendingRenewItem, setPendingRenewItem] = useState<MedicineCardItem | null>(null);
   const list = useMedicineCabinetListController({ authSession, locale });
-  const recipients = useCabinetRecipientsController({ authSession, familyMembers });
+  const recipients = useCabinetRecipientsController({ authSession, familyMembers, locale });
 
   const tabBarMode: CabinetTabBarMode =
     isAddChoiceSheetOpen ||

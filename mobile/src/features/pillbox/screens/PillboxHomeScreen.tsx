@@ -21,7 +21,10 @@ import type { MobilePillboxMedication } from "../api/mobilePillboxPlansApi";
 import { InstantReminderRecipientsSheet } from "../../illness/screens/ReminderRecipientsSheet";
 import { pillboxTimeIcons } from "../assets/time";
 import { buildPillboxHomeScreenContent } from "../model/pillboxHomeScreen";
-import type { PillboxDraftMedicine } from "../model/pillboxPlanOnboarding";
+import {
+  PILLBOX_WEEKDAY_IDS,
+  type PillboxDraftMedicine,
+} from "../model/pillboxPlanOnboarding";
 import { pillboxHomeScreenStyles as styles } from "./pillboxHomeScreenStyles";
 import { PillboxPlanMedicineEditorOverlay } from "./PillboxPlanMedicineEditorOverlay";
 import { PillboxPlanOnboardingFlow } from "./PillboxPlanOnboardingFlow";
@@ -41,6 +44,96 @@ function getCreatePlanLockedHint(locale: string) {
     return "W wersji bezpłatnej dostępny jest 1 plan. Aby dodać więcej, potrzebny jest Plus.";
   }
   return "Free includes 1 plan. Upgrade to Plus to add more.";
+}
+
+function getCurrentUserLabel(locale: string) {
+  if (locale === "ru") {
+    return "Вы";
+  }
+  if (locale === "de") {
+    return "Du";
+  }
+  if (locale === "pl") {
+    return "Ty";
+  }
+  return "You";
+}
+
+function getUnknownRecipientLabel(locale: string, index: number) {
+  if (locale === "ru") {
+    return `Участник семьи ${index + 1}`;
+  }
+  if (locale === "de") {
+    return `Familienmitglied ${index + 1}`;
+  }
+  if (locale === "pl") {
+    return `Członek rodziny ${index + 1}`;
+  }
+  return `Family member ${index + 1}`;
+}
+
+function getDeletePlanTitle(locale: string) {
+  if (locale === "ru") {
+    return "Удалить план?";
+  }
+  if (locale === "de") {
+    return "Plan löschen?";
+  }
+  if (locale === "pl") {
+    return "Usunąć plan?";
+  }
+  return "Delete plan?";
+}
+
+function getDeletePlanMessage(locale: string, title: string) {
+  if (locale === "ru") {
+    return `План «${title}» удалится вместе с историей, восстановить его не получится.`;
+  }
+  if (locale === "de") {
+    return `Der Plan „${title}“ wird zusammen mit dem Verlauf gelöscht und kann nicht wiederhergestellt werden.`;
+  }
+  if (locale === "pl") {
+    return `Plan „${title}” zostanie usunięty razem z historią i nie będzie można go przywrócić.`;
+  }
+  return `The plan "${title}" will be deleted together with its history and cannot be restored.`;
+}
+
+function getDeletePlanCancelLabel(locale: string) {
+  if (locale === "ru") {
+    return "Отмена";
+  }
+  if (locale === "de") {
+    return "Abbrechen";
+  }
+  if (locale === "pl") {
+    return "Anuluj";
+  }
+  return "Cancel";
+}
+
+function getDeletePlanConfirmLabel(locale: string, deleting: boolean) {
+  if (deleting) {
+    if (locale === "ru") {
+      return "Удаляем...";
+    }
+    if (locale === "de") {
+      return "Wird gelöscht...";
+    }
+    if (locale === "pl") {
+      return "Usuwanie...";
+    }
+    return "Deleting...";
+  }
+  if (locale === "ru") {
+    return "Удалить";
+  }
+  if (locale === "de") {
+    return "Löschen";
+  }
+  if (locale === "pl") {
+    return "Usuń";
+  }
+  return "Delete";
 }
 
 export function PillboxHomeScreen({
@@ -136,14 +229,17 @@ export function PillboxHomeScreen({
     familyMembers.length > 0
       ? familyMembers
       : recipientsPlan
-        ? recipientsPlan.memberAccountIds.map((memberId) => ({
+        ? recipientsPlan.memberAccountIds.map((memberId, index) => ({
             id: memberId,
             email: null,
             familyId: recipientsPlan.familyId,
-            displayName: memberId,
+            displayName:
+              memberId === currentAccountId
+                ? getCurrentUserLabel(locale)
+                : getUnknownRecipientLabel(locale, index),
             relationshipLabel: null,
             phone: null,
-            preferredLanguage: "ru" as const,
+            preferredLanguage: locale,
             familyRole: "member" as const,
             accessPolicy: {
               allChildren: true,
@@ -720,15 +816,30 @@ export function PillboxHomeScreen({
       />
 
       <InstantReminderRecipientsSheet
-        title="Кому придут уведомления"
-        subtitle="Если снять всех, по умолчанию останетесь вы."
-        currentUserLabel="Вы"
+        title={
+          locale === "ru"
+            ? "Кому придут уведомления"
+            : locale === "de"
+              ? "Wer Benachrichtigungen erhält"
+              : locale === "pl"
+                ? "Kto dostanie powiadomienia"
+                : "Who will get notifications"
+        }
+        subtitle={
+          locale === "ru"
+            ? "Если снять всех, по умолчанию останетесь вы."
+            : locale === "de"
+              ? "Wenn Sie alle entfernen, bleiben Sie standardmäßig ausgewählt."
+              : locale === "pl"
+                ? "Jeśli usuniesz wszystkich, domyślnie pozostaniesz tylko Ty."
+                : "If everyone is removed, you will remain selected by default."
+        }
+        currentUserLabel={getCurrentUserLabel(locale)}
         visible={recipientsPlan !== null}
         isSaving={recipientsPlanId !== null && updatingPlanId === recipientsPlanId}
         members={recipientSheetMembers}
         currentAccountId={currentAccountId}
         selectedIds={recipientsPlan?.memberAccountIds ?? []}
-        instantHint="Изменения сохраняются сразу."
         onToggleMember={(memberId) => {
           if (!recipientsPlanId || !recipientsPlan) {
             return;
@@ -748,10 +859,8 @@ export function PillboxHomeScreen({
       {pendingDeletePlan ? (
         <View style={styles.overlayScrim}>
           <View style={styles.alertCard}>
-            <Text style={styles.alertTitle}>Удалить план?</Text>
-            <Text style={styles.alertText}>
-              {`План «${pendingDeletePlan.title}» удалится вместе с историей, восстановить его не получится.`}
-            </Text>
+            <Text style={styles.alertTitle}>{getDeletePlanTitle(locale)}</Text>
+            <Text style={styles.alertText}>{getDeletePlanMessage(locale, pendingDeletePlan.title)}</Text>
             <View style={styles.alertActions}>
               <Pressable
                 onPress={handleCancelDeletePlan}
@@ -761,7 +870,7 @@ export function PillboxHomeScreen({
                   pressed ? styles.buttonPressed : null,
                 ]}
               >
-                <Text style={styles.alertActionSecondaryText}>Отмена</Text>
+                <Text style={styles.alertActionSecondaryText}>{getDeletePlanCancelLabel(locale)}</Text>
               </Pressable>
               <Pressable
                 onPress={handleConfirmDeletePlan}
@@ -774,7 +883,7 @@ export function PillboxHomeScreen({
                 ]}
               >
                 <Text style={styles.alertActionPrimaryText}>
-                  {deletingPlanId === pendingDeletePlan.id ? "Удаляем..." : "Удалить"}
+                  {getDeletePlanConfirmLabel(locale, deletingPlanId === pendingDeletePlan.id)}
                 </Text>
               </Pressable>
             </View>
@@ -784,8 +893,6 @@ export function PillboxHomeScreen({
     </View>
   );
 }
-
-const WEEKDAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
 
 function buildDraftMedicineFromMedication(
   medication: MobilePillboxMedication,
@@ -802,8 +909,12 @@ function buildDraftMedicineFromMedication(
     ),
     mealRelation: mapMealRuleFromApi(medication.mealRule),
     weekdays: medication.repeatDays
-      .map((day) => WEEKDAYS_RU[day - 1])
-      .filter((day): day is (typeof WEEKDAYS_RU)[number] => day !== undefined),
+      .map((day) => PILLBOX_WEEKDAY_IDS[day - 1])
+      .filter(
+        (
+          day,
+        ): day is (typeof PILLBOX_WEEKDAY_IDS)[number] => day !== undefined,
+      ),
   };
 }
 
@@ -825,7 +936,7 @@ function buildUpdatedMedication(input: {
     doseAmount: draft.dose.trim(),
     mealRule: mapMealRuleToApi(draft.mealRelation),
     repeatDays: draft.weekdays
-      .map((day) => (WEEKDAYS_RU as readonly string[]).indexOf(day) + 1)
+      .map((day) => PILLBOX_WEEKDAY_IDS.indexOf(day) + 1)
       .filter((day) => day > 0),
     times: sortTimes(draft.times),
     courseMode: draft.intakeMode === "course" ? "period" : "continuous",

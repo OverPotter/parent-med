@@ -45,8 +45,8 @@ export type SummaryStat = {
 const summaryStatTemplates: Omit<SummaryStat, "value">[] = [
   {
     key: "all",
-    title: "Все",
-    hint: "Полный список домашних препаратов",
+    title: "All",
+    hint: "Full list of home medicines",
     backgroundColor: "#F1EBFF",
     activeBackgroundColor: "#E3D8FF",
     activeBorderColor: "#D1BFFB",
@@ -54,8 +54,8 @@ const summaryStatTemplates: Omit<SummaryStat, "value">[] = [
   },
   {
     key: "ready",
-    title: "Можно",
-    hint: "Сейчас выглядят безопасными",
+    title: "Ready",
+    hint: "Currently look safe",
     backgroundColor: "#EEF9F3",
     activeBackgroundColor: "#DDF3E7",
     activeBorderColor: "#BCE4CE",
@@ -63,8 +63,8 @@ const summaryStatTemplates: Omit<SummaryStat, "value">[] = [
   },
   {
     key: "attention",
-    title: "Проверить",
-    hint: "Срок подходит к концу",
+    title: "Check",
+    hint: "Expiry is coming up",
     backgroundColor: "#FFF3E6",
     activeBackgroundColor: "#FFE4C8",
     activeBorderColor: "#F6D0A0",
@@ -72,14 +72,94 @@ const summaryStatTemplates: Omit<SummaryStat, "value">[] = [
   },
   {
     key: "expired",
-    title: "Просрочено",
-    hint: "Упаковки с истекшим сроком",
+    title: "Expired",
+    hint: "Packs past their expiry date",
     backgroundColor: "#FFF0F0",
     activeBackgroundColor: "#FFDCDC",
     activeBorderColor: "#F0B1B1",
     iconSource: require("../assets/summary/warning_ui.png"),
   },
 ];
+
+function getCabinetStatTitle(
+  key: CabinetFilterKey,
+  locale: MobileLocale,
+) {
+  if (key === "all") {
+    return locale === "ru"
+      ? "Все"
+      : locale === "de"
+        ? "Alle"
+        : locale === "pl"
+          ? "Wszystkie"
+          : "All";
+  }
+  if (key === "ready") {
+    return locale === "ru"
+      ? "Можно"
+      : locale === "de"
+        ? "Okay"
+        : locale === "pl"
+          ? "Można"
+          : "Ready";
+  }
+  if (key === "attention") {
+    return locale === "ru"
+      ? "Проверить"
+      : locale === "de"
+        ? "Prüfen"
+        : locale === "pl"
+          ? "Sprawdź"
+          : "Check";
+  }
+  return locale === "ru"
+    ? "Просрочено"
+    : locale === "de"
+      ? "Abgelaufen"
+      : locale === "pl"
+        ? "Przetermin."
+        : "Expired";
+}
+
+function getCabinetStatHint(
+  key: CabinetFilterKey,
+  locale: MobileLocale,
+) {
+  if (key === "all") {
+    return locale === "ru"
+      ? "Полный список домашних препаратов"
+      : locale === "de"
+        ? "Alle Medikamente zu Hause"
+        : locale === "pl"
+          ? "Pełna lista domowych leków"
+          : "Full list of home medicines";
+  }
+  if (key === "ready") {
+    return locale === "ru"
+      ? "Сейчас выглядят безопасными"
+      : locale === "de"
+        ? "Wirken derzeit unbedenklich"
+        : locale === "pl"
+          ? "Obecnie wyglądają bezpiecznie"
+          : "Currently look safe";
+  }
+  if (key === "attention") {
+    return locale === "ru"
+      ? "Срок подходит к концу"
+      : locale === "de"
+        ? "Ablaufdatum nähert sich"
+        : locale === "pl"
+          ? "Termin wkrótce upływa"
+          : "Expiry is coming up";
+  }
+  return locale === "ru"
+    ? "Упаковки с истекшим сроком"
+    : locale === "de"
+      ? "Packungen mit abgelaufenem Datum"
+      : locale === "pl"
+        ? "Opakowania po terminie"
+        : "Packs past their expiry date";
+}
 
 function getDateLocale(locale: MobileLocale) {
   if (locale === "ru") return "ru-RU";
@@ -194,70 +274,8 @@ export function buildCabinetSummaryStats(
 
   return summaryStatTemplates.map((stat) => ({
     ...stat,
-    title:
-      stat.key === "all"
-        ? locale === "ru"
-          ? "Все"
-          : locale === "de"
-            ? "Alle"
-            : locale === "pl"
-              ? "Wszystkie"
-              : "All"
-        : stat.key === "ready"
-          ? locale === "ru"
-            ? "Можно"
-            : locale === "de"
-              ? "Okay"
-              : locale === "pl"
-                ? "Można"
-                : "Ready"
-          : stat.key === "attention"
-            ? locale === "ru"
-              ? "Проверить"
-              : locale === "de"
-                ? "Prüfen"
-                : locale === "pl"
-                  ? "Sprawdź"
-                  : "Check"
-            : locale === "ru"
-              ? "Просрочено"
-              : locale === "de"
-                ? "Abgelaufen"
-                : locale === "pl"
-                  ? "Przetermin."
-                  : "Expired",
-    hint:
-      stat.key === "all"
-        ? locale === "ru"
-          ? "Полный список домашних препаратов"
-          : locale === "de"
-            ? "Alle Medikamente zu Hause"
-            : locale === "pl"
-              ? "Pełna lista domowych leków"
-              : "Full list of home medicines"
-        : stat.key === "ready"
-          ? locale === "ru"
-            ? "Сейчас выглядят безопасными"
-            : locale === "de"
-              ? "Wirken derzeit unbedenklich"
-              : locale === "pl"
-                ? "Obecnie wyglądają bezpiecznie"
-                : "Currently look safe"
-          : stat.key === "attention"
-            ? locale === "ru"
-              ? "Срок подходит к концу"
-              : locale === "de"
-                ? "Ablaufdatum nähert sich"
-                : locale === "pl"
-                  ? "Termin wkrótce upływa"
-                  : "Expiry is coming up"
-            : locale === "ru"
-              ? "Упаковки с истекшим сроком"
-              : locale === "de"
-                ? "Packungen mit abgelaufenem Datum"
-                : locale === "pl"
-                  ? "Opakowania po terminie"
-                  : "Packs past their expiry date",
+    title: getCabinetStatTitle(stat.key, locale),
+    hint: getCabinetStatHint(stat.key, locale),
     value: String(values[stat.key]),
   }));
 }

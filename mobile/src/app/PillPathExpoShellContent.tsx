@@ -6,6 +6,7 @@ import { ChildCreateScreen } from "../features/children/screens/ChildCreateScree
 import { ChildProfileEditScreen } from "../features/child-profile-edit/screens/ChildProfileEditScreen";
 import { ChildProfileRedesignScreen } from "../features/child-profile/screens/ChildProfileRedesignScreen";
 import { FamilyScreen } from "../features/family/screens/FamilyScreen";
+import { HelpScreen } from "../features/help/screens/HelpScreen";
 import {
   getChildAvatarGenderByKey,
   getChildAvatarPresetSources,
@@ -81,6 +82,7 @@ type RootTabContentProps = {
   onLogout: () => Promise<void>;
   onOpenFamily: () => void;
   onOpenSettings: () => void;
+  onOpenHelp: () => void;
   onOpenSupport: () => void;
   onOpenTermsOfUse: () => void;
   onOpenPrivacyPolicy: () => void;
@@ -227,9 +229,16 @@ type IllnessFlowProps = {
 
 type UtilityFlowProps = {
   onBackFamily: () => void;
+  onBackHelp: () => void;
   onOpenChildrenFromFamily: () => void;
+  onOpenChildrenFromHelp: () => void;
   onOpenLockedChild: () => void;
   onOpenLockedFamilyInvite: () => void;
+  onOpenFamilyFromHelp: () => void;
+  onOpenJournalFromHelp: () => void;
+  onOpenCabinetFromHelp: () => void;
+  onOpenPillboxFromHelp: () => void;
+  onOpenSettingsFromHelp: () => void;
   onOpenPillboxFromFamily: () => void;
   onOpenTermsOfUse: () => void;
   onOpenPrivacyPolicy: () => void;
@@ -276,6 +285,7 @@ export function RootTabContent({
   onLogout,
   onOpenFamily,
   onOpenSettings,
+  onOpenHelp,
   onOpenSupport,
   onOpenTermsOfUse,
   onOpenPrivacyPolicy,
@@ -355,6 +365,7 @@ export function RootTabContent({
             onLogout={onLogout}
             onOpenFamily={onOpenFamily}
             onOpenSettings={onOpenSettings}
+            onOpenHelp={onOpenHelp}
             onOpenSupport={onOpenSupport}
             onOpenTerms={onOpenTermsOfUse}
             onOpenPrivacy={onOpenPrivacyPolicy}
@@ -765,6 +776,16 @@ function UtilityOverlays({
         routinesCount={familyRoutinesCount}
         childrenCards={childrenCards}
         session={authSession}
+      />
+      <HelpScreen
+        visible={activeScreen === "help"}
+        onBack={utilityFlow.onBackHelp}
+        onOpenChildren={utilityFlow.onOpenChildrenFromHelp}
+        onOpenJournal={utilityFlow.onOpenJournalFromHelp}
+        onOpenPillbox={utilityFlow.onOpenPillboxFromHelp}
+        onOpenCabinet={utilityFlow.onOpenCabinetFromHelp}
+        onOpenFamily={utilityFlow.onOpenFamilyFromHelp}
+        onOpenSettings={utilityFlow.onOpenSettingsFromHelp}
       />
       <SubscriptionPaywallSheet
         visible={activeScreen === "family" && utilityFlow.familyPaywallVisible}

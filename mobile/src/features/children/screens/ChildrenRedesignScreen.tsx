@@ -68,7 +68,7 @@ export function ChildrenRedesignScreen({
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
   const childrenScreenContent = buildChildrenScreenContent(locale, "children");
-  const cardsToRender = cards ?? childrenScreenContent.cards;
+  const cardsToRender = cards ?? [];
   const handleOpenChildProfile = onOpenChildProfile ?? noop;
   const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
   const handleOpenObservation = onOpenObservation ?? noop;

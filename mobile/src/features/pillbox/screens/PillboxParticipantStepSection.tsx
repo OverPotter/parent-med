@@ -15,11 +15,22 @@ export function PillboxParticipantStepSection({
   participantId: string | null;
   onSelectParticipant: (participantId: string) => void;
 }) {
-  const title = locale === "ru" ? "Для кого этот план?" : "Who is this plan for?";
+  const title =
+    locale === "ru"
+      ? "Для кого этот план?"
+      : locale === "de"
+        ? "Für wen ist dieser Plan?"
+        : locale === "pl"
+          ? "Dla kogo jest ten plan?"
+          : "Who is this plan for?";
   const subtitle =
     locale === "ru"
       ? "Выберите участника, для которого мы составим план приёма."
-      : "Choose the person for whom we will create the medication plan.";
+      : locale === "de"
+        ? "Wählen Sie die Person aus, für die wir den Einnahmeplan erstellen."
+        : locale === "pl"
+          ? "Wybierz osobę, dla której przygotujemy plan przyjmowania."
+          : "Choose the person for whom we will create the medication plan.";
   return (
     <>
       <Hero title={title} subtitle={subtitle} />

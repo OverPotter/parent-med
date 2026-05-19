@@ -44,6 +44,12 @@ type SourceChildrenScreenSpec = {
   };
 };
 
+type FallbackStatsParts = {
+  years: number | null;
+  weightKg: number | null;
+  heightCm: number | null;
+};
+
 export type ChildQuickActionKind =
   | "sleep"
   | "feeding"
@@ -561,6 +567,99 @@ function formatHeightValue(
   return `${Math.round(valueCm)} ${locale === "ru" ? "см" : "cm"}`;
 }
 
+function formatFallbackAgeYears(
+  years: number | null,
+  locale: MobileLocale,
+) {
+  if (years === null) {
+    return null;
+  }
+  if (locale === "ru") {
+    return `${years} ${years === 1 ? "год" : years < 5 ? "года" : "лет"}`;
+  }
+  if (locale === "de") {
+    return `${years} ${years === 1 ? "Jahr" : "Jahre"}`;
+  }
+  if (locale === "pl") {
+    return `${years} ${years === 1 ? "rok" : years < 5 ? "lata" : "lat"}`;
+  }
+  return `${years} ${years === 1 ? "year" : "years"}`;
+}
+
+function parseFallbackStatsLabel(value: string): FallbackStatsParts {
+  const yearsMatch = value.match(/(\d+)\s+год/);
+  const weightMatch = value.match(/(\d+(?:[.,]\d+)?)\s*кг/);
+  const heightMatch = value.match(/(\d+(?:[.,]\d+)?)\s*см/);
+
+  return {
+    years: yearsMatch ? Number.parseInt(yearsMatch[1] ?? "", 10) : null,
+    weightKg: weightMatch
+      ? Number.parseFloat((weightMatch[1] ?? "").replace(",", "."))
+      : null,
+    heightCm: heightMatch
+      ? Number.parseFloat((heightMatch[1] ?? "").replace(",", "."))
+      : null,
+  };
+}
+
+function localizeFallbackStatsLabel(
+  statsText: string,
+  locale: MobileLocale,
+) {
+  if (locale === "ru") {
+    return statsText;
+  }
+
+  const parsed = parseFallbackStatsLabel(statsText);
+  const parts = [
+    formatFallbackAgeYears(parsed.years, locale),
+    formatWeightValue(parsed.weightKg, locale) || null,
+    formatHeightValue(parsed.heightCm, locale) || null,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" • ") : statsText;
+}
+
+function getChildrenTabLabel(
+  locale: MobileLocale,
+  key: MobileBottomTabKey,
+) {
+  if (key === "children") {
+    return locale === "ru"
+      ? "Дети"
+      : locale === "de"
+        ? "Kinder"
+        : locale === "pl"
+          ? "Dzieci"
+          : "Children";
+  }
+  if (key === "pillbox") {
+    return locale === "ru"
+      ? "Таблетница"
+      : locale === "de"
+        ? "Pillenbox"
+        : locale === "pl"
+          ? "Pudełko leków"
+          : "Pillbox";
+  }
+  if (key === "cabinet") {
+    return locale === "ru"
+      ? "Аптечка"
+      : locale === "de"
+        ? "Hausapotheke"
+        : locale === "pl"
+          ? "Apteczka"
+          : "Cabinet";
+  }
+  return locale === "ru"
+    ? "Ещё"
+    : locale === "de"
+      ? "Mehr"
+      : locale === "pl"
+        ? "Więcej"
+        : "More";
+}
+
 function mapTabKey(tab: SourceBottomTabSpec): MobileBottomTabKey {
   return tabKeyBySourceNodeId[tab.nodeId] ?? "more";
 }
@@ -573,40 +672,14 @@ export function buildChildrenScreenContent(
   const isDe = locale === "de";
   const isPl = locale === "pl";
   const quickActionByTitle = buildQuickActionMap(locale);
-  const sourceTabs = screenSpec.bottomNavigation.tabs.map((tab) => ({
-    ...tab,
-    label: isRu
-      ? tab.label
-      : isDe
-        ? tab.label === "Дети"
-          ? "Kinder"
-          : tab.label === "Ещё"
-            ? "Mehr"
-            : tab.label === "Таблетница"
-              ? "Pillenbox"
-              : tab.label === "Аптечка"
-                ? "Hausapotheke"
-                : tab.label
-        : isPl
-          ? tab.label === "Дети"
-            ? "Dzieci"
-            : tab.label === "Ещё"
-              ? "Więcej"
-              : tab.label === "Таблетница"
-                ? "Pudełko leków"
-                : tab.label === "Аптечка"
-                  ? "Apteczka"
-                  : tab.label
-          : tab.label === "Дети"
-            ? "Children"
-            : tab.label === "Ещё"
-              ? "More"
-              : tab.label === "Таблетница"
-                ? "Pillbox"
-                : tab.label === "Аптечка"
-                  ? "Cabinet"
-                  : tab.label,
-  }));
+  const sourceTabs = screenSpec.bottomNavigation.tabs.map((tab) => {
+    const key = mapTabKey(tab);
+    return {
+      ...tab,
+      key,
+      label: getChildrenTabLabel(locale, key),
+    };
+  });
 
   return {
     backgroundSource: childrenScreenAssets.background,
@@ -634,7 +707,7 @@ export function buildChildrenScreenContent(
     cards: screenSpec.childrenCards.map((card, index) => ({
       nodeId: card.nodeId,
       name: card.info.nameText,
-      stats: card.info.statsText,
+      stats: localizeFallbackStatsLabel(card.info.statsText, locale),
       isLocked: false,
       child: {
         id: card.nodeId,
@@ -656,9 +729,9 @@ export function buildChildrenScreenContent(
     })),
     tabs: sourceTabs.map(
       (tab): MobileBottomTabItem => ({
-        key: mapTabKey(tab),
+        key: tab.key,
         label: tab.label,
-        active: mapTabKey(tab) === activeTabKey,
+        active: tab.key === activeTabKey,
       }),
     ),
   } satisfies {

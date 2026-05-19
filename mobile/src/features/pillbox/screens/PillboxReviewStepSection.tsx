@@ -18,18 +18,46 @@ export function PillboxReviewStepSection({
   onOpenRecipients: () => void;
   buildMedicineLines: (medicine: PillboxDraftMedicine) => string[];
 }) {
-  const title = locale === "ru" ? "Проверьте план" : "Review the plan";
+  const title =
+    locale === "ru"
+      ? "Проверьте план"
+      : locale === "de"
+        ? "Plan prüfen"
+        : locale === "pl"
+          ? "Sprawdź plan"
+          : "Review the plan";
   const subtitle =
     locale === "ru"
       ? "Убедитесь, что всё верно. Вы сможете изменить план в любое время."
-      : "Make sure everything looks right. You can edit the plan later.";
+      : locale === "de"
+        ? "Prüfen Sie, ob alles stimmt. Sie können den Plan später jederzeit ändern."
+        : locale === "pl"
+          ? "Upewnij się, że wszystko się zgadza. Plan można później zmienić."
+          : "Make sure everything looks right. You can edit the plan later.";
   const notificationsTitle =
-    locale === "ru" ? "Кому придут уведомления" : "Who will get notifications";
-  const medicinesTitle = locale === "ru" ? "Лекарства в плане" : "Medicines in plan";
+    locale === "ru"
+      ? "Кому придут уведомления"
+      : locale === "de"
+        ? "Wer Benachrichtigungen erhält"
+        : locale === "pl"
+          ? "Kto dostanie powiadomienia"
+          : "Who will get notifications";
+  const medicinesTitle =
+    locale === "ru"
+      ? "Лекарства в плане"
+      : locale === "de"
+        ? "Medikamente im Plan"
+        : locale === "pl"
+          ? "Leki w planie"
+          : "Medicines in plan";
   const privacyText =
     locale === "ru"
       ? "План сохраняется только у вас и не передаётся третьим лицам."
-      : "The plan is stored only in your account and is not shared with third parties.";
+      : locale === "de"
+        ? "Der Plan wird nur in Ihrem Konto gespeichert und nicht an Dritte weitergegeben."
+        : locale === "pl"
+          ? "Plan jest zapisany tylko na Twoim koncie i nie jest udostępniany osobom trzecim."
+          : "The plan is stored only in your account and is not shared with third parties.";
   return (
     <>
       <Hero title={title} subtitle={subtitle} />

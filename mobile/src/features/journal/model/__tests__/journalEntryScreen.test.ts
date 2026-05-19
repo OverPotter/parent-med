@@ -19,9 +19,11 @@ describe("buildJournalEntryScreenContent", () => {
     const englishWeight = buildJournalEntryScreenContent("weight", "en");
     const russianHeight = buildJournalEntryScreenContent("height", "ru");
 
-    expect(englishWeight.rows[0]?.value).toBe("13.4 kg");
-    expect(englishWeight.rows[2]?.value).toBe("+0.2 kg");
-    expect(russianHeight.rows[0]?.value).toBe("92 см");
-    expect(russianHeight.rows[2]?.value).toBe("+1 см");
+    expect(englishWeight.rows[0]?.label).toBe("Weight");
+    expect(englishWeight.rows[2]?.label).toBe("Change");
+    expect(russianHeight.rows[0]?.label).toBe("Рост");
+    expect(russianHeight.rows[2]?.helper).toBe("с прошлого измерения");
+    expect(englishWeight.rows.every((row) => row.value === "—")).toBe(true);
+    expect(russianHeight.rows.every((row) => row.value === "—")).toBe(true);
   });
 });

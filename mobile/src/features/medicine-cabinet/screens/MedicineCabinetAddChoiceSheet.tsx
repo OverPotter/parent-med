@@ -48,10 +48,10 @@ export function MedicineCabinetAddChoiceSheet({
               {locale === "ru"
                 ? "Как добавить препарат"
                 : locale === "de"
-                  ? "Wie ein Medikament hinzufügen"
+                  ? "Wie möchten Sie ein Medikament hinzufügen?"
                   : locale === "pl"
-                    ? "Jak dodać lek"
-                    : "How to add a medicine"}
+                    ? "Jak chcesz dodać lek?"
+                    : "How would you like to add a medicine?"}
             </Text>
             <Text style={styles.addChoiceSubtitle}>
               {locale === "ru"

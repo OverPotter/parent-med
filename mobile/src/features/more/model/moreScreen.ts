@@ -2,7 +2,7 @@ import type { MobileAuthSession } from "../../auth/api/authApi";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 
 type MoreNavItem = {
-  key: "family" | "settings" | "support" | "terms" | "privacy";
+  key: "family" | "settings" | "help" | "support" | "terms" | "privacy";
   title: string;
   subtitle: string;
 };
@@ -110,6 +110,17 @@ export function buildMoreScreenContent(
           : isPl
             ? "Język, powiadomienia i aplikacja."
           : "Language, notifications, and app preferences.",
+      },
+      {
+        key: "help",
+        title: isRu ? "Помощь" : isDe ? "Hilfe" : isPl ? "Pomoc" : "Help",
+        subtitle: isRu
+          ? "Как пользоваться основными модулями."
+          : isDe
+            ? "Wie die wichtigsten Bereiche genutzt werden."
+          : isPl
+            ? "Jak korzystać z głównych modułów."
+          : "How to use the main app sections.",
       },
       {
         key: "support",

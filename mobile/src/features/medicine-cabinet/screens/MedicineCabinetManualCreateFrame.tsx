@@ -152,7 +152,7 @@ export function MedicineCabinetManualCreateFrame({
             </Text>
           </View>
 
-          <StepIndicator step={step} />
+          <StepIndicator step={step} locale={locale} />
 
           {step === 1 ? (
             <Step1BasicSection

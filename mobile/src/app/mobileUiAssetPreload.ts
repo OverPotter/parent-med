@@ -213,6 +213,7 @@ function collectAssetsForScreenBranch(
     case "settings":
       collectSettingsBranchAssets(modules);
       return;
+    case "help":
     case "support":
     case "privacyPolicy":
     case "termsOfUse":

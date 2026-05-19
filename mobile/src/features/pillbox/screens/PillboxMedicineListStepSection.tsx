@@ -25,27 +25,86 @@ export function PillboxMedicineListStepSection({
   onRemoveMedicine: (medicineId: string) => void;
 }) {
   const [openMedicineId, setOpenMedicineId] = useState<string | null>(null);
-  const title = locale === "ru" ? "Что будем принимать?" : "What will we take?";
+  const title =
+    locale === "ru"
+      ? "Что будем принимать?"
+      : locale === "de"
+        ? "Was werden wir einnehmen?"
+        : locale === "pl"
+          ? "Co będziemy przyjmować?"
+          : "What will we take?";
   const subtitle =
     locale === "ru"
       ? "Добавьте все лекарства и витамины, которые нужно принимать."
-      : "Add all medicines and vitamins that should be taken.";
+      : locale === "de"
+        ? "Fügen Sie alle Medikamente und Vitamine hinzu, die eingenommen werden sollen."
+        : locale === "pl"
+          ? "Dodaj wszystkie leki i witaminy, które trzeba przyjmować."
+          : "Add all medicines and vitamins that should be taken.";
   const inPlanLabel =
-    locale === "ru" ? `В плане (${medicines.length})` : `In plan (${medicines.length})`;
-  const addLabel = locale === "ru" ? "Добавить лекарство" : "Add medicine";
-  const emptyTitle = locale === "ru" ? "Пока пусто" : "Nothing here yet";
+    locale === "ru"
+      ? `В плане (${medicines.length})`
+      : locale === "de"
+        ? `Im Plan (${medicines.length})`
+        : locale === "pl"
+          ? `W planie (${medicines.length})`
+          : `In plan (${medicines.length})`;
+  const addLabel =
+    locale === "ru"
+      ? "Добавить лекарство"
+      : locale === "de"
+        ? "Medikament hinzufügen"
+        : locale === "pl"
+          ? "Dodaj lek"
+          : "Add medicine";
+  const emptyTitle =
+    locale === "ru"
+      ? "Пока пусто"
+      : locale === "de"
+        ? "Noch leer"
+        : locale === "pl"
+          ? "Na razie pusto"
+          : "Nothing here yet";
   const emptyHint =
     locale === "ru"
       ? "Сначала добавьте первое лекарство, и оно появится в этом списке."
-      : "Add the first medicine and it will appear in this list.";
+      : locale === "de"
+        ? "Fügen Sie zuerst das erste Medikament hinzu, dann erscheint es in dieser Liste."
+        : locale === "pl"
+          ? "Najpierw dodaj pierwszy lek, a pojawi się on na tej liście."
+          : "Add the first medicine and it will appear in this list.";
   const deleteDialogTitle =
-    locale === "ru" ? "Удалить лекарство?" : "Delete medicine?";
+    locale === "ru"
+      ? "Удалить лекарство?"
+      : locale === "de"
+        ? "Medikament löschen?"
+        : locale === "pl"
+          ? "Usunąć lek?"
+          : "Delete medicine?";
   const deleteDialogMessage = (medicineName: string) =>
     locale === "ru"
       ? `Карточка «${medicineName}» исчезнет из этого плана.`
-      : `"${medicineName}" will be removed from this plan.`;
-  const cancelLabel = locale === "ru" ? "Отмена" : "Cancel";
-  const deleteLabel = locale === "ru" ? "Удалить" : "Delete";
+      : locale === "de"
+        ? `Die Karte „${medicineName}“ wird aus diesem Plan entfernt.`
+        : locale === "pl"
+          ? `Karta „${medicineName}” zostanie usunięta z tego planu.`
+          : `"${medicineName}" will be removed from this plan.`;
+  const cancelLabel =
+    locale === "ru"
+      ? "Отмена"
+      : locale === "de"
+        ? "Abbrechen"
+        : locale === "pl"
+          ? "Anuluj"
+          : "Cancel";
+  const deleteLabel =
+    locale === "ru"
+      ? "Удалить"
+      : locale === "de"
+        ? "Löschen"
+        : locale === "pl"
+          ? "Usuń"
+          : "Delete";
 
   const handleRequestDeleteMedicine = (medicine: PillboxDraftMedicine) => {
     Alert.alert(deleteDialogTitle, deleteDialogMessage(medicine.name), [
@@ -125,7 +184,7 @@ export function PillboxMedicineListStepSection({
                     <View style={styles.medicineCopy}>
                       <Text style={styles.medicineTitle}>{medicine.name}</Text>
                       <Text style={styles.medicineSubtitle}>
-                        {formatMedicineSummary(medicine)}
+                        {formatMedicineSummary(medicine, locale)}
                       </Text>
                     </View>
                     <Text style={styles.chevronText}>›</Text>

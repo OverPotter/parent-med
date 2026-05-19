@@ -86,12 +86,7 @@ function usePaywallController() {
 
 export function usePillPathExpoShellState() {
   const { copy, locale, setLocale } = useMobileI18n();
-  const childrenScreenContent = useMemo(
-    () => buildChildrenScreenContent(locale),
-    [locale],
-  );
   const settingsContent = useMemo(() => buildSettingsScreenContent(locale), [locale]);
-  const fallbackChildrenCards = childrenScreenContent.cards;
   const [authSession, setAuthSession] = useState<MobileAuthSession | null>(
     null,
   );
@@ -101,9 +96,7 @@ export function usePillPathExpoShellState() {
     useState<MobileBottomTabKey>("children");
   const [activeScreen, setActiveScreen] =
     useState<PillPathActiveScreen>("children");
-  const [selectedChildId, setSelectedChildId] = useState(
-    childrenScreenContent.cards[0]?.nodeId ?? "",
-  );
+  const [selectedChildId, setSelectedChildId] = useState("");
   const [selectedEpisode, setSelectedEpisode] =
     useState<AnalyticsEpisodeCard | null>(null);
   const [selectedJournalKind, setSelectedJournalKind] =
@@ -219,7 +212,7 @@ export function usePillPathExpoShellState() {
 
   const childrenCards = useMemo(() => {
     if (!authSession) {
-      return fallbackChildrenCards;
+      return [];
     }
 
     if (!authSession.account.familyId) {
@@ -240,7 +233,6 @@ export function usePillPathExpoShellState() {
     authSession?.account.familyId,
     childAccess.lockedChildIds,
     children,
-    fallbackChildrenCards,
     latestChildMetricsByCardId,
     locale,
   ]);
@@ -590,12 +582,14 @@ export function usePillPathExpoShellState() {
   });
   const {
     handleCloseFamily,
+    handleCloseHelp,
     handleClosePrivacyPolicy,
     handleCloseSettings,
     handleCloseSupport,
     handleCloseTermsOfUse,
     handleOpenFamily,
     handleOpenChildrenFromFamily,
+    handleOpenHelp,
     handleOpenPillboxFromFamily,
     handleOpenPrivacyPolicy,
     handleOpenSettings,
@@ -742,6 +736,7 @@ export function usePillPathExpoShellState() {
     onLogout: handleLogout,
     onOpenFamily: handleOpenFamily,
     onOpenSettings: handleOpenSettings,
+    onOpenHelp: handleOpenHelp,
     onOpenSupport: handleOpenSupport,
     onOpenTermsOfUse: handleOpenTermsOfUse,
     onOpenPrivacyPolicy: handleOpenPrivacyPolicy,
@@ -873,10 +868,29 @@ export function usePillPathExpoShellState() {
           onPushPreferencesChanged: handlePushPreferencesChanged,
           onFamilyAccessChanged: handleFamilyAccessChanged,
           onSettingsBundleChanged: applySettingsBundleToShell,
+          onBackHelp: handleCloseHelp,
           onBackPrivacyPolicy: handleClosePrivacyPolicy,
           onBackSupport: handleCloseSupport,
           onBackSettings: handleCloseSettings,
           onBackTermsOfUse: handleCloseTermsOfUse,
+          onOpenChildrenFromHelp: handleOpenChildrenRoot,
+          onOpenFamilyFromHelp: handleOpenFamily,
+          onOpenJournalFromHelp: () => {
+            const activeIllnessChildId = resolveActiveIllnessChildId(
+              activeIllnessObservationsByChildId,
+              selectedChildId,
+            );
+
+            if (activeIllnessChildId) {
+              handleOpenIllnessJournalRoot(activeIllnessChildId);
+              return;
+            }
+
+            handleOpenChildrenRoot();
+          },
+          onOpenCabinetFromHelp: handleOpenCabinetRoot,
+          onOpenPillboxFromHelp: handleOpenPillboxFromFamily,
+          onOpenSettingsFromHelp: handleOpenSettings,
           familyPaywallVisible,
           onCloseFamilyPaywall: closePaywall,
           onFamilyPaywallPurchased: handlePaywallPurchased,

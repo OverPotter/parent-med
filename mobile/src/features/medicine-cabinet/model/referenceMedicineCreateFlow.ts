@@ -26,7 +26,7 @@ const referenceCategoryTemplates: Array<{
 }> = [
   {
     key: "all",
-    label: "Все",
+    label: "All",
     backgroundColor: "#FBF8FF",
     activeBackgroundColor: "#E7DEFF",
     borderColor: "#DCCFF8",
@@ -35,7 +35,7 @@ const referenceCategoryTemplates: Array<{
   },
   {
     key: "temperature_pain",
-    label: "Температура и боль",
+    label: "Fever and pain",
     imageSource: require("../assets/reference-categories/optimized/temperature_pain_category.png"),
     backgroundColor: "#FFF4EE",
     activeBackgroundColor: "#FFDCD3",
@@ -45,7 +45,7 @@ const referenceCategoryTemplates: Array<{
   },
   {
     key: "cold_cough",
-    label: "Простуда и кашель",
+    label: "Cold and cough",
     imageSource: require("../assets/reference-categories/optimized/cold_cough_category.png"),
     backgroundColor: "#F5F9FF",
     activeBackgroundColor: "#DCEBFF",
@@ -55,7 +55,7 @@ const referenceCategoryTemplates: Array<{
   },
   {
     key: "nose_throat",
-    label: "Нос и горло",
+    label: "Nose and throat",
     imageSource: require("../assets/reference-categories/optimized/nose_throat_category.png"),
     backgroundColor: "#EFF7FF",
     activeBackgroundColor: "#D6EAFF",
@@ -65,7 +65,7 @@ const referenceCategoryTemplates: Array<{
   },
   {
     key: "allergy",
-    label: "Аллергия",
+    label: "Allergy",
     imageSource: require("../assets/reference-categories/optimized/allergy_category.png"),
     backgroundColor: "#FFF8EA",
     activeBackgroundColor: "#FFE9BD",
@@ -75,7 +75,7 @@ const referenceCategoryTemplates: Array<{
   },
   {
     key: "gut",
-    label: "ЖКТ",
+    label: "Gut",
     imageSource: require("../assets/reference-categories/optimized/gut_category.png"),
     backgroundColor: "#FFF6EF",
     activeBackgroundColor: "#FFE1CF",
@@ -85,7 +85,7 @@ const referenceCategoryTemplates: Array<{
   },
   {
     key: "eyes",
-    label: "Глаза",
+    label: "Eyes",
     imageSource: require("../assets/reference-categories/optimized/eyes_category.png"),
     backgroundColor: "#F2FBF7",
     activeBackgroundColor: "#D8F1E4",
@@ -95,7 +95,7 @@ const referenceCategoryTemplates: Array<{
   },
   {
     key: "ears",
-    label: "Уши",
+    label: "Ears",
     imageSource: require("../assets/reference-categories/optimized/ears_category.png"),
     backgroundColor: "#FFF8EF",
     activeBackgroundColor: "#FFE5CC",
@@ -105,7 +105,7 @@ const referenceCategoryTemplates: Array<{
   },
   {
     key: "skin_wounds",
-    label: "Кожа и раны",
+    label: "Skin and wounds",
     imageSource: require("../assets/reference-categories/optimized/skin_wounds_category.png"),
     backgroundColor: "#F5FCF8",
     activeBackgroundColor: "#D7EFE3",
@@ -115,81 +115,95 @@ const referenceCategoryTemplates: Array<{
   },
 ];
 
+function getReferenceCategoryLabel(
+  key: ReferenceCategoryKey,
+  locale: MobileLocale,
+) {
+  if (key === "all") {
+    return locale === "ru"
+      ? "Все"
+      : locale === "de"
+        ? "Alle"
+        : locale === "pl"
+          ? "Wszystkie"
+          : "All";
+  }
+  if (key === "temperature_pain") {
+    return locale === "ru"
+      ? "Температура и боль"
+      : locale === "de"
+        ? "Fieber und Schmerz"
+        : locale === "pl"
+          ? "Gorączka i ból"
+          : "Fever and pain";
+  }
+  if (key === "cold_cough") {
+    return locale === "ru"
+      ? "Простуда и кашель"
+      : locale === "de"
+        ? "Erkältung und Husten"
+        : locale === "pl"
+          ? "Przeziębienie i kaszel"
+          : "Cold and cough";
+  }
+  if (key === "nose_throat") {
+    return locale === "ru"
+      ? "Нос и горло"
+      : locale === "de"
+        ? "Nase und Hals"
+        : locale === "pl"
+          ? "Nos i gardło"
+          : "Nose and throat";
+  }
+  if (key === "allergy") {
+    return locale === "ru"
+      ? "Аллергия"
+      : locale === "de"
+        ? "Allergie"
+        : locale === "pl"
+          ? "Alergia"
+          : "Allergy";
+  }
+  if (key === "gut") {
+    return locale === "ru"
+      ? "ЖКТ"
+      : locale === "de"
+        ? "Magen-Darm"
+        : locale === "pl"
+          ? "Jelita"
+          : "Gut";
+  }
+  if (key === "eyes") {
+    return locale === "ru"
+      ? "Глаза"
+      : locale === "de"
+        ? "Augen"
+        : locale === "pl"
+          ? "Oczy"
+          : "Eyes";
+  }
+  if (key === "ears") {
+    return locale === "ru"
+      ? "Уши"
+      : locale === "de"
+        ? "Ohren"
+        : locale === "pl"
+          ? "Uszy"
+          : "Ears";
+  }
+  return locale === "ru"
+    ? "Кожа и раны"
+    : locale === "de"
+      ? "Haut und Wunden"
+      : locale === "pl"
+        ? "Skóra i rany"
+        : "Skin and wounds";
+}
+
 export function getReferenceCategories(locale: MobileLocale) {
   return referenceCategoryTemplates.map((category) => ({
     ...category,
-    label:
-      category.key === "all"
-        ? locale === "ru"
-          ? "Все"
-          : locale === "de"
-            ? "Alle"
-            : locale === "pl"
-              ? "Wszystkie"
-              : "All"
-        : category.key === "temperature_pain"
-          ? locale === "ru"
-            ? "Температура и боль"
-            : locale === "de"
-              ? "Fieber und Schmerz"
-              : locale === "pl"
-                ? "Gorączka i ból"
-                : "Fever and pain"
-          : category.key === "cold_cough"
-            ? locale === "ru"
-              ? "Простуда и кашель"
-              : locale === "de"
-                ? "Erkältung und Husten"
-                : locale === "pl"
-                  ? "Przeziębienie i kaszel"
-                  : "Cold and cough"
-            : category.key === "nose_throat"
-              ? locale === "ru"
-                ? "Нос и горло"
-                : locale === "de"
-                  ? "Nase und Hals"
-                  : locale === "pl"
-                    ? "Nos i gardło"
-                    : "Nose and throat"
-              : category.key === "allergy"
-                ? locale === "ru"
-                  ? "Аллергия"
-                  : locale === "de"
-                    ? "Allergie"
-                    : locale === "pl"
-                      ? "Alergia"
-                      : "Allergy"
-                : category.key === "gut"
-                  ? locale === "ru"
-                    ? "ЖКТ"
-                    : locale === "de"
-                      ? "Magen-Darm"
-                      : locale === "pl"
-                        ? "Jelita"
-                        : "Gut"
-                  : category.key === "eyes"
-                    ? locale === "ru"
-                      ? "Глаза"
-                      : locale === "de"
-                        ? "Augen"
-                        : locale === "pl"
-                          ? "Oczy"
-                          : "Eyes"
-                    : category.key === "ears"
-                      ? locale === "ru"
-                        ? "Уши"
-                        : locale === "de"
-                          ? "Ohren"
-                          : locale === "pl"
-                            ? "Uszy"
-                            : "Ears"
-                      : locale === "ru"
-                        ? "Кожа и раны"
-                        : locale === "de"
-                          ? "Haut und Wunden"
-                          : locale === "pl"
-                            ? "Skóra i rany"
-                            : "Skin and wounds",
+    label: getReferenceCategoryLabel(category.key, locale),
   }));
 }
 

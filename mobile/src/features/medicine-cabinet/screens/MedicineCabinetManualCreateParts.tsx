@@ -3,6 +3,7 @@ import { Image, Pressable, Text, TextInput, View } from "react-native";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import {
   getManualCategoryPreviewImageSource,
+  getManualCategoryLabel,
   manualCategoryOptions,
   type ManualCategory,
 } from "../model/manualMedicineFlow";
@@ -12,9 +13,19 @@ export type FlowStep = 1 | 2 | 3;
 
 export function StepIndicator({
   step,
+  locale = "en",
 }: {
   step: FlowStep;
+  locale?: MobileLocale;
 }) {
+  const labels =
+    locale === "ru"
+      ? ["Основное", "Примен.", "Хранение"]
+      : locale === "de"
+        ? ["Grundl.", "Anwend.", "Lagerung"]
+        : locale === "pl"
+          ? ["Podst.", "Użycie", "Przech."]
+          : ["Basics", "Usage", "Storage"];
   const items: Array<{
     number: FlowStep;
     label: string;
@@ -22,17 +33,17 @@ export function StepIndicator({
   }> = [
     {
       number: 1,
-      label: "Основное",
+      label: labels[0],
       state: step === 1 ? "active" : step > 1 ? "completed" : "inactive",
     },
     {
       number: 2,
-      label: "Примен.",
+      label: labels[1],
       state: step === 2 ? "active" : step > 2 ? "completed" : "inactive",
     },
     {
       number: 3,
-      label: "Хранение",
+      label: labels[2],
       state: step === 3 ? "active" : "inactive",
     },
   ];
@@ -247,41 +258,7 @@ export function Step1BasicSection({
                   ) : null}
                 </View>
                 <Text style={styles.categoryCardLabel}>
-                  {locale === "ru"
-                    ? option.labelRu
-                    : locale === "de"
-                      ? option.value === "oral"
-                        ? "Oral"
-                        : option.value === "nose"
-                          ? "Nase"
-                          : option.value === "throat"
-                            ? "Hals"
-                            : option.value === "eyes"
-                              ? "Augen"
-                              : option.value === "ears"
-                                ? "Ohren"
-                                : option.value === "skin"
-                                  ? "Haut"
-                                  : option.value === "inhalation"
-                                    ? "Inhalation"
-                                    : "Andere"
-                      : locale === "pl"
-                        ? option.value === "oral"
-                          ? "Doustnie"
-                          : option.value === "nose"
-                            ? "Nos"
-                            : option.value === "throat"
-                              ? "Gardło"
-                              : option.value === "eyes"
-                                ? "Oczy"
-                                : option.value === "ears"
-                                  ? "Uszy"
-                                  : option.value === "skin"
-                                    ? "Skóra"
-                                    : option.value === "inhalation"
-                                      ? "Inhalacja"
-                                      : "Inne"
-                        : option.labelEn}
+                  {getManualCategoryLabel(option.value, locale)}
                 </Text>
               </Pressable>
             );

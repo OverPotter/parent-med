@@ -32,6 +32,10 @@ export function useShellUtilityNavigationController({
     setActiveScreen("privacyPolicy");
   }, [setActiveScreen]);
 
+  const handleOpenHelp = useCallback(() => {
+    setActiveScreen("help");
+  }, [setActiveScreen]);
+
   const handleOpenSupport = useCallback(() => {
     setActiveScreen("support");
   }, [setActiveScreen]);
@@ -45,6 +49,10 @@ export function useShellUtilityNavigationController({
   }, [setActiveScreen]);
 
   const handleCloseSupport = useCallback(() => {
+    setActiveScreen("children");
+  }, [setActiveScreen]);
+
+  const handleCloseHelp = useCallback(() => {
     setActiveScreen("children");
   }, [setActiveScreen]);
 
@@ -62,12 +70,14 @@ export function useShellUtilityNavigationController({
 
   return {
     handleCloseFamily,
+    handleCloseHelp,
     handleClosePrivacyPolicy,
     handleCloseSettings,
     handleCloseSupport,
     handleCloseTermsOfUse,
     handleOpenFamily,
     handleOpenChildrenFromFamily,
+    handleOpenHelp,
     handleOpenPillboxFromFamily,
     handleOpenPrivacyPolicy,
     handleOpenSettings,

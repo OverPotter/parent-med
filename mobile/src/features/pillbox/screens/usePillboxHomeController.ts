@@ -20,6 +20,81 @@ import {
   buildPillboxSummaryStatsFromSummaries,
 } from "../model/pillboxHomeScreen";
 
+function getPillboxHomeErrorText(
+  locale: MobileLocale,
+  key:
+    | "loadPlansMessage"
+    | "deletePlanMessage"
+    | "deletePlanTitle"
+    | "openPlanMessage"
+    | "openPlanTitle"
+    | "updateNotificationsMessage"
+    | "updateNotificationsTitle"
+    | "markIntakeMessage"
+    | "markIntakeTitle"
+    | "saveMedicineMessage"
+    | "saveMedicineTitle",
+) {
+  if (locale === "ru") {
+    return {
+      loadPlansMessage: "Не удалось загрузить планы.",
+      deletePlanMessage: "Не удалось удалить план.",
+      deletePlanTitle: "Не удалось удалить",
+      openPlanMessage: "Не удалось открыть план.",
+      openPlanTitle: "Не удалось открыть",
+      updateNotificationsMessage: "Не удалось обновить уведомления.",
+      updateNotificationsTitle: "Не удалось обновить",
+      markIntakeMessage: "Не удалось отметить приём.",
+      markIntakeTitle: "Не удалось отметить",
+      saveMedicineMessage: "Не удалось сохранить лекарство.",
+      saveMedicineTitle: "Не удалось сохранить",
+    }[key];
+  }
+  if (locale === "de") {
+    return {
+      loadPlansMessage: "Die Pläne konnten nicht geladen werden.",
+      deletePlanMessage: "Der Plan konnte nicht gelöscht werden.",
+      deletePlanTitle: "Löschen nicht möglich",
+      openPlanMessage: "Der Plan konnte nicht geöffnet werden.",
+      openPlanTitle: "Öffnen nicht möglich",
+      updateNotificationsMessage: "Die Benachrichtigungen konnten nicht aktualisiert werden.",
+      updateNotificationsTitle: "Aktualisierung nicht möglich",
+      markIntakeMessage: "Die Einnahme konnte nicht markiert werden.",
+      markIntakeTitle: "Markierung nicht möglich",
+      saveMedicineMessage: "Das Medikament konnte nicht gespeichert werden.",
+      saveMedicineTitle: "Speichern nicht möglich",
+    }[key];
+  }
+  if (locale === "pl") {
+    return {
+      loadPlansMessage: "Nie udało się załadować planów.",
+      deletePlanMessage: "Nie udało się usunąć planu.",
+      deletePlanTitle: "Nie można usunąć",
+      openPlanMessage: "Nie udało się otworzyć planu.",
+      openPlanTitle: "Nie można otworzyć",
+      updateNotificationsMessage: "Nie udało się zaktualizować powiadomień.",
+      updateNotificationsTitle: "Nie można zaktualizować",
+      markIntakeMessage: "Nie udało się oznaczyć przyjęcia.",
+      markIntakeTitle: "Nie można oznaczyć",
+      saveMedicineMessage: "Nie udało się zapisać leku.",
+      saveMedicineTitle: "Nie można zapisać",
+    }[key];
+  }
+  return {
+    loadPlansMessage: "Could not load plans.",
+    deletePlanMessage: "Could not delete the plan.",
+    deletePlanTitle: "Could not delete",
+    openPlanMessage: "Could not open the plan.",
+    openPlanTitle: "Could not open",
+    updateNotificationsMessage: "Could not update notifications.",
+    updateNotificationsTitle: "Could not update",
+    markIntakeMessage: "Could not mark the intake.",
+    markIntakeTitle: "Could not mark",
+    saveMedicineMessage: "Could not save the medicine.",
+    saveMedicineTitle: "Could not save",
+  }[key];
+}
+
 export function usePillboxHomeController({
   accessToken,
   currentAccountId,
@@ -86,9 +161,7 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : locale === "ru"
-              ? "Не удалось загрузить планы."
-              : "Could not load plans.";
+            : getPillboxHomeErrorText(locale, "loadPlansMessage");
         setPlansError(message);
       });
   };
@@ -139,11 +212,9 @@ export function usePillboxHomeController({
         const errorMessage =
           error instanceof Error && error.message
             ? error.message
-            : locale === "ru"
-              ? "Не удалось удалить план."
-              : "Could not delete the plan.";
+            : getPillboxHomeErrorText(locale, "deletePlanMessage");
         Alert.alert(
-          locale === "ru" ? "Не удалось удалить" : "Could not delete",
+          getPillboxHomeErrorText(locale, "deletePlanTitle"),
           errorMessage,
         );
       })
@@ -179,10 +250,8 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : locale === "ru"
-              ? "Не удалось открыть план."
-              : "Could not open the plan.";
-        Alert.alert(locale === "ru" ? "Не удалось открыть" : "Could not open", message);
+            : getPillboxHomeErrorText(locale, "openPlanMessage");
+        Alert.alert(getPillboxHomeErrorText(locale, "openPlanTitle"), message);
       })
       .finally(() => {
         setOpeningPlanId(null);
@@ -232,10 +301,8 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : locale === "ru"
-              ? "Не удалось обновить уведомления."
-              : "Could not update notifications.";
-        Alert.alert(locale === "ru" ? "Не удалось обновить" : "Could not update", message);
+            : getPillboxHomeErrorText(locale, "updateNotificationsMessage");
+        Alert.alert(getPillboxHomeErrorText(locale, "updateNotificationsTitle"), message);
       })
       .finally(() => {
         setUpdatingPlanId(null);
@@ -278,10 +345,8 @@ export function usePillboxHomeController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : locale === "ru"
-              ? "Не удалось отметить приём."
-              : "Could not mark the intake.";
-        Alert.alert(locale === "ru" ? "Не удалось отметить" : "Could not mark", message);
+            : getPillboxHomeErrorText(locale, "markIntakeMessage");
+        Alert.alert(getPillboxHomeErrorText(locale, "markIntakeTitle"), message);
       })
       .finally(() => {
         setTakingPlanId(null);
@@ -334,10 +399,8 @@ export function usePillboxHomeController({
       const message =
         error instanceof Error && error.message
           ? error.message
-          : locale === "ru"
-            ? "Не удалось сохранить лекарство."
-            : "Could not save the medicine.";
-      Alert.alert(locale === "ru" ? "Не удалось сохранить" : "Could not save", message);
+          : getPillboxHomeErrorText(locale, "saveMedicineMessage");
+      Alert.alert(getPillboxHomeErrorText(locale, "saveMedicineTitle"), message);
     } finally {
       setUpdatingPlanId(null);
     }

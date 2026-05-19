@@ -16,7 +16,10 @@ import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import type { ReminderNumberSheetOption } from "../../illness/screens/reminderNumberOptions";
 import { ReminderNumberOptionsSheet } from "../../illness/screens/ReminderNumberOptionsSheet";
 import { redesignBackgrounds } from "../../../redesign/shared/backgrounds";
-import type { PillboxDraftMedicine } from "../model/pillboxPlanOnboarding";
+import type {
+  PillboxDraftMedicine,
+  PillboxWeekdayId,
+} from "../model/pillboxPlanOnboarding";
 import { PillboxMedicineEditorStepSection } from "./PillboxMedicineEditorStepSection";
 import {
   PrimaryButton,
@@ -24,13 +27,160 @@ import {
 } from "./pillboxPlanOnboardingParts";
 import { pillboxPlanOnboardingStyles as styles } from "./pillboxPlanOnboardingStyles";
 
-const PICKER_DAY = 15;
-const PICKER_MONTH_INDEX = 4;
-const PICKER_YEAR = 2026;
 const COURSE_OPTIONS: ReminderNumberSheetOption[] = [14, 30, 40].map((value) => ({
   value,
   label: `${value} дн.`,
 }));
+
+function getCurrentPickerDateParts() {
+  const now = new Date();
+  return {
+    day: now.getDate(),
+    monthIndex: now.getMonth(),
+    year: now.getFullYear(),
+  };
+}
+
+function getCourseOptionLabel(locale: MobileLocale, value: number) {
+  if (locale === "de") {
+    return `${value} Tg.`;
+  }
+  if (locale === "pl") {
+    return `${value} dni`;
+  }
+  if (locale === "en") {
+    return `${value} d`;
+  }
+  return `${value} дн.`;
+}
+
+function getPillboxEditorTitle(locale: MobileLocale) {
+  if (locale === "ru") {
+    return "Изменить лекарство";
+  }
+  if (locale === "de") {
+    return "Medikament bearbeiten";
+  }
+  if (locale === "pl") {
+    return "Edytuj lek";
+  }
+  return "Edit medicine";
+}
+
+function getPillboxCourseDurationTitle(locale: MobileLocale) {
+  if (locale === "ru") {
+    return "Сколько дней курс";
+  }
+  if (locale === "de") {
+    return "Wie viele Tage dauert die Kur";
+  }
+  if (locale === "pl") {
+    return "Ile dni trwa kuracja";
+  }
+  return "Course duration";
+}
+
+function getPillboxCustomDaysLabel(locale: MobileLocale) {
+  if (locale === "ru") {
+    return "Свои дни";
+  }
+  if (locale === "de") {
+    return "Eigene Tage";
+  }
+  if (locale === "pl") {
+    return "Własna liczba dni";
+  }
+  return "Custom days";
+}
+
+function getPillboxCustomDaysSubtitle(locale: MobileLocale) {
+  if (locale === "ru") {
+    return "Сколько дней длится курс.";
+  }
+  if (locale === "de") {
+    return "Wie viele Tage die Kur dauert.";
+  }
+  if (locale === "pl") {
+    return "Ile dni trwa kuracja.";
+  }
+  return "How many days the course lasts.";
+}
+
+function getPillboxCancelLabel(locale: MobileLocale) {
+  if (locale === "ru") {
+    return "Отмена";
+  }
+  if (locale === "de") {
+    return "Abbrechen";
+  }
+  if (locale === "pl") {
+    return "Anuluj";
+  }
+  return "Cancel";
+}
+
+function getPillboxSaveLabel(locale: MobileLocale) {
+  if (locale === "ru") {
+    return "Сохранить";
+  }
+  if (locale === "de") {
+    return "Speichern";
+  }
+  if (locale === "pl") {
+    return "Zapisz";
+  }
+  return "Save";
+}
+
+function getPillboxOverlaySaveStateLabel(
+  locale: MobileLocale,
+  key:
+    | "enterMedicine"
+    | "enterDose"
+    | "addAtLeastOneTime"
+    | "chooseCourseDuration"
+    | "saving"
+    | "saveChanges",
+) {
+  if (locale === "ru") {
+    return {
+      enterMedicine: "Укажите препарат",
+      enterDose: "Укажите дозу",
+      addAtLeastOneTime: "Добавьте хотя бы одно время приёма",
+      chooseCourseDuration: "Выберите срок курса",
+      saving: "Сохраняем...",
+      saveChanges: "Сохранить изменения",
+    }[key];
+  }
+  if (locale === "de") {
+    return {
+      enterMedicine: "Medikament eingeben",
+      enterDose: "Dosis eingeben",
+      addAtLeastOneTime: "Fügen Sie mindestens eine Uhrzeit hinzu",
+      chooseCourseDuration: "Wählen Sie die Kursdauer",
+      saving: "Wird gespeichert...",
+      saveChanges: "Änderungen speichern",
+    }[key];
+  }
+  if (locale === "pl") {
+    return {
+      enterMedicine: "Wpisz lek",
+      enterDose: "Wpisz dawkę",
+      addAtLeastOneTime: "Dodaj co najmniej jedną godzinę",
+      chooseCourseDuration: "Wybierz czas kuracji",
+      saving: "Zapisywanie...",
+      saveChanges: "Zapisz zmiany",
+    }[key];
+  }
+  return {
+    enterMedicine: "Enter medicine",
+    enterDose: "Enter dose",
+    addAtLeastOneTime: "Add at least one intake time",
+    chooseCourseDuration: "Choose course duration",
+    saving: "Saving...",
+    saveChanges: "Save changes",
+  }[key];
+}
 
 export function PillboxPlanMedicineEditorOverlay({
   visible,
@@ -86,7 +236,7 @@ export function PillboxPlanMedicineEditorOverlay({
   onRemoveTime: (time: string) => void;
   onSelectContinuousMode: () => void;
   onSelectCourseMode: () => void;
-  onToggleWeekday: (day: string) => void;
+  onToggleWeekday: (day: PillboxWeekdayId) => void;
   onSelectMealRelation: (mealRelation: PillboxDraftMedicine["mealRelation"]) => void;
   onConfirmTime: () => void;
   onCloseTimePicker: () => void;
@@ -103,6 +253,11 @@ export function PillboxPlanMedicineEditorOverlay({
     return null;
   }
 
+  const pickerDateParts = getCurrentPickerDateParts();
+  const courseOptions = COURSE_OPTIONS.map((option) => ({
+    ...option,
+    label: getCourseOptionLabel(locale, option.value),
+  }));
   const { width } = useWindowDimensions();
   const { panHandlers, swipeCaptureWidth, translateX } = useEdgeSwipeBack({
     enabled: visible,
@@ -114,28 +269,16 @@ export function PillboxPlanMedicineEditorOverlay({
 
   const saveLabel =
     !medicineDraft.name.trim()
-      ? locale === "ru"
-        ? "Укажите препарат"
-        : "Enter medicine"
+      ? getPillboxOverlaySaveStateLabel(locale, "enterMedicine")
       : !medicineDraft.dose.trim()
-        ? locale === "ru"
-          ? "Укажите дозу"
-          : "Enter dose"
+        ? getPillboxOverlaySaveStateLabel(locale, "enterDose")
         : medicineDraft.times.length === 0
-          ? locale === "ru"
-            ? "Добавьте хотя бы одно время приёма"
-            : "Add at least one intake time"
+          ? getPillboxOverlaySaveStateLabel(locale, "addAtLeastOneTime")
           : medicineDraft.intakeMode === "course" && !medicineDraft.courseDurationDays
-            ? locale === "ru"
-              ? "Выберите срок курса"
-              : "Choose course duration"
+            ? getPillboxOverlaySaveStateLabel(locale, "chooseCourseDuration")
             : saving
-              ? locale === "ru"
-                ? "Сохраняем..."
-                : "Saving..."
-              : locale === "ru"
-                ? "Сохранить изменения"
-                : "Save changes";
+              ? getPillboxOverlaySaveStateLabel(locale, "saving")
+              : getPillboxOverlaySaveStateLabel(locale, "saveChanges");
 
   return (
     <Animated.View
@@ -170,7 +313,7 @@ export function PillboxPlanMedicineEditorOverlay({
           <PillboxMedicineEditorStepSection
             locale={locale}
             participantTitle={planTitle}
-            title={locale === "ru" ? "Изменить лекарство" : "Edit medicine"}
+            title={getPillboxEditorTitle(locale)}
             medicineDraft={medicineDraft}
             onChangeName={onChangeName}
             onChangeDose={onChangeDose}
@@ -191,9 +334,9 @@ export function PillboxPlanMedicineEditorOverlay({
           visible={activePickerVisible}
           locale={locale}
           activePickerField="time"
-          pickerDay={PICKER_DAY}
-          pickerMonthIndex={PICKER_MONTH_INDEX}
-          pickerYear={PICKER_YEAR}
+          pickerDay={pickerDateParts.day}
+          pickerMonthIndex={pickerDateParts.monthIndex}
+          pickerYear={pickerDateParts.year}
           pickerHour={pickerHour}
           pickerMinute={pickerMinute}
           setPickerDay={() => {}}
@@ -207,15 +350,15 @@ export function PillboxPlanMedicineEditorOverlay({
 
         <ReminderNumberOptionsSheet
           visible={isCourseSheetOpen}
-          title={locale === "ru" ? "Сколько дней курс" : "Course duration"}
+          title={getPillboxCourseDurationTitle(locale)}
           value={currentCourseDurationDays}
-          options={COURSE_OPTIONS}
+          options={courseOptions}
           columns={2}
           customActionActive={
             currentCourseDurationDays !== null &&
-            !COURSE_OPTIONS.some((option) => option.value === currentCourseDurationDays)
+            !courseOptions.some((option) => option.value === currentCourseDurationDays)
           }
-          customActionLabel={locale === "ru" ? "Свои дни" : "Custom days"}
+          customActionLabel={getPillboxCustomDaysLabel(locale)}
           onClose={() => onSetCourseSheetOpen(false)}
           onSelect={onSelectCourseOption}
           onCustomPress={() => {
@@ -238,14 +381,8 @@ export function PillboxPlanMedicineEditorOverlay({
             <>
               <View style={styles.sheetDragZone} {...panHandlers}>
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>
-                  {locale === "ru" ? "Свои дни" : "Custom days"}
-                </Text>
-                <Text style={styles.sheetSubtitle}>
-                  {locale === "ru"
-                    ? "Сколько дней длится курс."
-                    : "How many days the course lasts."}
-                </Text>
+                <Text style={styles.sheetTitle}>{getPillboxCustomDaysLabel(locale)}</Text>
+                <Text style={styles.sheetSubtitle}>{getPillboxCustomDaysSubtitle(locale)}</Text>
               </View>
 
               <TextInput
@@ -266,9 +403,7 @@ export function PillboxPlanMedicineEditorOverlay({
                     pressed ? styles.secondaryButtonPressed : null,
                   ]}
                 >
-                  <Text style={styles.customValueCancelText}>
-                    {locale === "ru" ? "Отмена" : "Cancel"}
-                  </Text>
+                  <Text style={styles.customValueCancelText}>{getPillboxCancelLabel(locale)}</Text>
                 </Pressable>
 
                 <Pressable
@@ -290,9 +425,7 @@ export function PillboxPlanMedicineEditorOverlay({
                     end={{ x: 1, y: 1 }}
                     style={styles.customValueSaveGradient}
                   />
-                  <Text style={styles.customValueSaveText}>
-                    {locale === "ru" ? "Сохранить" : "Save"}
-                  </Text>
+                  <Text style={styles.customValueSaveText}>{getPillboxSaveLabel(locale)}</Text>
                 </Pressable>
               </View>
             </>

@@ -239,15 +239,28 @@ export function buildPillboxSummaryStatsFromSummaries(input: {
   const plansCount = input.summaries.length;
   const todayCount = input.summaries.filter((item) => isSameDay(item.nextDoseAt, now)).length;
 
-  return input.locale === "ru"
-    ? [
-        { id: "plans", number: String(plansCount), label: "активных\nплана" },
-        { id: "today", number: String(todayCount), label: "приёма\nна сегодня" },
-      ]
-    : [
-        { id: "plans", number: String(plansCount), label: "active\nplans" },
-        { id: "today", number: String(todayCount), label: "intakes\nfor today" },
-      ];
+  if (input.locale === "ru") {
+    return [
+      { id: "plans", number: String(plansCount), label: "активных\nплана" },
+      { id: "today", number: String(todayCount), label: "приёма\nна сегодня" },
+    ];
+  }
+  if (input.locale === "de") {
+    return [
+      { id: "plans", number: String(plansCount), label: "aktive\nPläne" },
+      { id: "today", number: String(todayCount), label: "Einnahmen\nheute" },
+    ];
+  }
+  if (input.locale === "pl") {
+    return [
+      { id: "plans", number: String(plansCount), label: "aktywnych\nplanów" },
+      { id: "today", number: String(todayCount), label: "przyjęć\ndziś" },
+    ];
+  }
+  return [
+    { id: "plans", number: String(plansCount), label: "active\nplans" },
+    { id: "today", number: String(todayCount), label: "intakes\nfor today" },
+  ];
 }
 
 export function buildPillboxPlanDetailFromEntity(input: {
@@ -482,20 +495,40 @@ function formatClock(value: string | null, locale: MobileLocale) {
 
 function buildRelativeDate(value: string | null, locale: MobileLocale, now: Date) {
   if (!value) {
-    return locale === "ru" ? "Без даты" : "No date";
+    return locale === "ru"
+      ? "Без даты"
+      : locale === "de"
+        ? "Kein Datum"
+        : locale === "pl"
+          ? "Brak daty"
+          : "No date";
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return locale === "ru" ? "Без даты" : "No date";
+    return locale === "ru"
+      ? "Без даты"
+      : locale === "de"
+        ? "Kein Datum"
+        : locale === "pl"
+          ? "Brak daty"
+          : "No date";
   }
   const dayLabel = isSameDay(value, now)
     ? locale === "ru"
       ? "Сегодня"
-      : "Today"
+      : locale === "de"
+        ? "Heute"
+        : locale === "pl"
+          ? "Dziś"
+          : "Today"
     : isTomorrow(value, now)
       ? locale === "ru"
         ? "Завтра"
-        : "Tomorrow"
+        : locale === "de"
+          ? "Morgen"
+          : locale === "pl"
+            ? "Jutro"
+            : "Tomorrow"
       : new Intl.DateTimeFormat(
           locale === "ru" ? "ru-RU" : locale === "de" ? "de-DE" : locale === "pl" ? "pl-PL" : "en-US",
           {
@@ -517,15 +550,33 @@ function buildRelativeDate(value: string | null, locale: MobileLocale, now: Date
 
 function buildCountdown(value: string | null, locale: MobileLocale, now: Date) {
   if (!value) {
-    return locale === "ru" ? "без времени" : "no time";
+    return locale === "ru"
+      ? "без времени"
+      : locale === "de"
+        ? "ohne Uhrzeit"
+        : locale === "pl"
+          ? "bez godziny"
+          : "no time";
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return locale === "ru" ? "без времени" : "no time";
+    return locale === "ru"
+      ? "без времени"
+      : locale === "de"
+        ? "ohne Uhrzeit"
+        : locale === "pl"
+          ? "bez godziny"
+          : "no time";
   }
   const diffMs = date.getTime() - now.getTime();
   if (diffMs <= 0) {
-    return locale === "ru" ? "сейчас" : "now";
+    return locale === "ru"
+      ? "сейчас"
+      : locale === "de"
+        ? "jetzt"
+        : locale === "pl"
+          ? "teraz"
+          : "now";
   }
   const totalMinutes = Math.round(diffMs / 60000);
   const hours = Math.floor(totalMinutes / 60);
@@ -538,6 +589,24 @@ function buildCountdown(value: string | null, locale: MobileLocale, now: Date) {
       return `через ${hours} ч`;
     }
     return `через ${hours} ч ${minutes} мин`;
+  }
+  if (locale === "de") {
+    if (hours <= 0) {
+      return `in ${minutes} Min`;
+    }
+    if (minutes === 0) {
+      return `in ${hours} Std`;
+    }
+    return `in ${hours} Std ${minutes} Min`;
+  }
+  if (locale === "pl") {
+    if (hours <= 0) {
+      return `za ${minutes} min`;
+    }
+    if (minutes === 0) {
+      return `za ${hours} godz.`;
+    }
+    return `za ${hours} godz. ${minutes} min`;
   }
   if (hours <= 0) {
     return `in ${minutes} min`;
@@ -564,5 +633,14 @@ function isLateDose(summary: MobilePillboxPlanSummary, now: Date) {
 }
 
 function fallbackMedicineLabel(locale: MobileLocale) {
-  return locale === "ru" ? "Лекарство по плану" : "Medication in plan";
+  if (locale === "ru") {
+    return "Лекарство по плану";
+  }
+  if (locale === "de") {
+    return "Medikament im Plan";
+  }
+  if (locale === "pl") {
+    return "Lek w planie";
+  }
+  return "Medication in plan";
 }

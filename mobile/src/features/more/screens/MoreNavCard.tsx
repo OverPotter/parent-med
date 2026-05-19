@@ -31,6 +31,14 @@ function getNavItemIcon(key: MoreNavKey) {
     };
   }
 
+  if (key === "help") {
+    return {
+      icon: "book-open-variant-outline" as const,
+      wrapStyle: styles.navItemLeadSupport,
+      color: "#A46E38",
+    };
+  }
+
   if (key === "terms") {
     return {
       icon: "file-document-outline" as const,
@@ -50,6 +58,7 @@ export function MoreNavCard({
   items,
   onOpenFamily,
   onOpenSettings,
+  onOpenHelp,
   onOpenSupport,
   onOpenTerms,
   onOpenPrivacy,
@@ -57,6 +66,7 @@ export function MoreNavCard({
   items: MoreScreenContent["navItems"];
   onOpenFamily: () => void;
   onOpenSettings: () => void;
+  onOpenHelp: () => void;
   onOpenSupport: () => void;
   onOpenTerms: () => void;
   onOpenPrivacy: () => void;
@@ -80,6 +90,8 @@ export function MoreNavCard({
             ? onOpenFamily
             : item.key === "settings"
               ? onOpenSettings
+              : item.key === "help"
+                ? onOpenHelp
               : item.key === "support"
                 ? onOpenSupport
                 : item.key === "terms"

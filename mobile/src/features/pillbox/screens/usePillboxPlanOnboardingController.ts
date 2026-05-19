@@ -17,6 +17,7 @@ import {
   createInitialPlanDraft,
   resolvePlanParticipantTitle,
   type PillboxDraftMedicine,
+  type PillboxWeekdayId,
 } from "../model/pillboxPlanOnboarding";
 
 export type PillboxPlanFlowStep = "participant" | "list" | "medicine" | "review";
@@ -78,7 +79,7 @@ export function usePillboxPlanOnboardingController({
 
   const currentStepIndex =
     step === "participant" ? 1 : step === "review" ? 3 : 2;
-  const participantTitle = resolvePlanParticipantTitle(draft.participantId, participants);
+  const participantTitle = resolvePlanParticipantTitle(draft.participantId, participants, locale);
   const recipientSheetMembers = useMemo(
     () =>
       buildPillboxRecipientSheetMembers(familyMembers, participants, {
@@ -195,6 +196,7 @@ export function usePillboxPlanOnboardingController({
       draft,
       participantTitle,
       recipientIds: resolvedRecipientIds,
+      locale,
     });
 
     setIsSavingPlan(true);
@@ -210,10 +212,23 @@ export function usePillboxPlanOnboardingController({
         const message =
           error instanceof Error && error.message
             ? error.message
-            : locale === "ru"
-              ? "Не удалось сохранить план."
-              : "Could not save the plan.";
-        Alert.alert(locale === "ru" ? "Не удалось сохранить" : "Could not save", message);
+            : locale === "de"
+              ? "Der Plan konnte nicht gespeichert werden."
+              : locale === "pl"
+                ? "Nie udało się zapisać planu."
+                : locale === "ru"
+                  ? "Не удалось сохранить план."
+                  : "Could not save the plan.";
+        Alert.alert(
+          locale === "de"
+            ? "Speichern nicht möglich"
+            : locale === "pl"
+              ? "Nie można zapisać"
+              : locale === "ru"
+                ? "Не удалось сохранить"
+                : "Could not save",
+          message,
+        );
       })
       .finally(() => {
         setIsSavingPlan(false);
@@ -234,8 +249,15 @@ export function usePillboxPlanOnboardingController({
   };
 
   const handleConfirmTime = () => {
+    const now = new Date();
     const nextTime = formatBackdatedTime(
-      new Date(2026, 4, 9, pickerHour, pickerMinute),
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        pickerHour,
+        pickerMinute,
+      ),
     );
     setMedicineDraft((current) => {
       if (!current) {
@@ -299,7 +321,7 @@ export function usePillboxPlanOnboardingController({
     return true;
   };
 
-  const handleToggleWeekday = (day: string) => {
+  const handleToggleWeekday = (day: PillboxWeekdayId) => {
     setMedicineDraft((current) => {
       if (!current) {
         return current;

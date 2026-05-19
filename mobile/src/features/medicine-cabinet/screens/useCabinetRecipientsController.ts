@@ -10,9 +10,11 @@ import { filterEligibleCabinetRecipientIds } from "../model/medicineCabinetOverv
 export function useCabinetRecipientsController({
   authSession,
   familyMembers,
+  locale = "en",
 }: {
   authSession: MobileAuthSession | null;
   familyMembers: MobileFamilyMember[];
+  locale?: "ru" | "en" | "de" | "pl";
 }) {
   const [isRecipientsSheetOpen, setIsRecipientsSheetOpen] = useState(false);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
@@ -83,7 +85,13 @@ export function useCabinetRecipientsController({
     .map((member) => member.displayName);
   const recipientsSummary = selectedRecipientLabels.length
     ? selectedRecipientLabels.join(", ")
-    : "никто";
+    : locale === "ru"
+      ? "никто"
+      : locale === "de"
+        ? "niemand"
+        : locale === "pl"
+          ? "nikt"
+          : "nobody";
 
   const handleOpenRecipients = () => {
     if (!canManageRecipients) {

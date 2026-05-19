@@ -36,13 +36,219 @@ import { PillboxReviewStepSection } from "./PillboxReviewStepSection";
 import { pillboxPlanOnboardingStyles as styles } from "./pillboxPlanOnboardingStyles";
 import { usePillboxPlanOnboardingController } from "./usePillboxPlanOnboardingController";
 
-const PICKER_DAY = 15;
-const PICKER_MONTH_INDEX = 4;
-const PICKER_YEAR = 2026;
 const COURSE_OPTIONS: ReminderNumberSheetOption[] = [14, 30, 40].map((value) => ({
   value,
   label: `${value} дн.`,
 }));
+
+function getCurrentPickerDateParts() {
+  const now = new Date();
+  return {
+    day: now.getDate(),
+    monthIndex: now.getMonth(),
+    year: now.getFullYear(),
+  };
+}
+
+function getCourseOptionLabel(locale: "ru" | "en" | "de" | "pl", value: number) {
+  if (locale === "de") {
+    return `${value} Tg.`;
+  }
+  if (locale === "pl") {
+    return `${value} dni`;
+  }
+  if (locale === "en") {
+    return `${value} d`;
+  }
+  return `${value} дн.`;
+}
+
+function getOnboardingActionLabel(
+  locale: "ru" | "en" | "de" | "pl",
+  key:
+    | "next"
+    | "chooseParticipant"
+    | "addAtLeastOneMedicine"
+    | "enterMedicine"
+    | "enterDose"
+    | "addAtLeastOneTime"
+    | "chooseCourseDuration"
+    | "saveMedicine"
+    | "saving"
+    | "savePlan",
+) {
+  if (locale === "ru") {
+    return {
+      next: "Далее",
+      chooseParticipant: "Выберите участника",
+      addAtLeastOneMedicine: "Добавьте хотя бы одно лекарство",
+      enterMedicine: "Укажите препарат",
+      enterDose: "Укажите дозу",
+      addAtLeastOneTime: "Добавьте хотя бы одно время приёма",
+      chooseCourseDuration: "Выберите срок курса",
+      saveMedicine: "Сохранить лекарство",
+      saving: "Сохраняем...",
+      savePlan: "Сохранить план",
+    }[key];
+  }
+  if (locale === "de") {
+    return {
+      next: "Weiter",
+      chooseParticipant: "Teilnehmer auswählen",
+      addAtLeastOneMedicine: "Fügen Sie mindestens ein Medikament hinzu",
+      enterMedicine: "Medikament eingeben",
+      enterDose: "Dosis eingeben",
+      addAtLeastOneTime: "Fügen Sie mindestens eine Uhrzeit hinzu",
+      chooseCourseDuration: "Wählen Sie die Kursdauer",
+      saveMedicine: "Medikament speichern",
+      saving: "Wird gespeichert...",
+      savePlan: "Plan speichern",
+    }[key];
+  }
+  if (locale === "pl") {
+    return {
+      next: "Dalej",
+      chooseParticipant: "Wybierz uczestnika",
+      addAtLeastOneMedicine: "Dodaj co najmniej jeden lek",
+      enterMedicine: "Wpisz lek",
+      enterDose: "Wpisz dawkę",
+      addAtLeastOneTime: "Dodaj co najmniej jedną godzinę",
+      chooseCourseDuration: "Wybierz czas kuracji",
+      saveMedicine: "Zapisz lek",
+      saving: "Zapisywanie...",
+      savePlan: "Zapisz plan",
+    }[key];
+  }
+  return {
+    next: "Next",
+    chooseParticipant: "Choose a participant",
+    addAtLeastOneMedicine: "Add at least one medicine",
+    enterMedicine: "Enter medicine",
+    enterDose: "Enter dose",
+    addAtLeastOneTime: "Add at least one intake time",
+    chooseCourseDuration: "Choose course duration",
+    saveMedicine: "Save medicine",
+    saving: "Saving...",
+    savePlan: "Save plan",
+  }[key];
+}
+
+function getCourseDurationTitle(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Сколько дней курс";
+  }
+  if (locale === "de") {
+    return "Wie viele Tage dauert die Kur";
+  }
+  if (locale === "pl") {
+    return "Ile dni trwa kuracja";
+  }
+  return "Course duration";
+}
+
+function getCustomDaysLabel(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Свои дни";
+  }
+  if (locale === "de") {
+    return "Eigene Tage";
+  }
+  if (locale === "pl") {
+    return "Własna liczba dni";
+  }
+  return "Custom days";
+}
+
+function getCustomDaysSubtitle(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Сколько дней длится курс.";
+  }
+  if (locale === "de") {
+    return "Wie viele Tage die Kur dauert.";
+  }
+  if (locale === "pl") {
+    return "Ile dni trwa kuracja.";
+  }
+  return "How many days the course lasts.";
+}
+
+function getCancelLabel(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Отмена";
+  }
+  if (locale === "de") {
+    return "Abbrechen";
+  }
+  if (locale === "pl") {
+    return "Anuluj";
+  }
+  return "Cancel";
+}
+
+function getSaveLabel(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Сохранить";
+  }
+  if (locale === "de") {
+    return "Speichern";
+  }
+  if (locale === "pl") {
+    return "Zapisz";
+  }
+  return "Save";
+}
+
+function getDiscardPlanTitle(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Не сохранять план?";
+  }
+  if (locale === "de") {
+    return "Plan nicht speichern?";
+  }
+  if (locale === "pl") {
+    return "Nie zapisywać planu?";
+  }
+  return "Discard plan?";
+}
+
+function getDiscardPlanText(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Введённые данные будут потеряны.";
+  }
+  if (locale === "de") {
+    return "Die eingegebenen Daten gehen verloren.";
+  }
+  if (locale === "pl") {
+    return "Wprowadzone dane zostaną utracone.";
+  }
+  return "Entered data will be lost.";
+}
+
+function getContinueEditingLabel(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Продолжить";
+  }
+  if (locale === "de") {
+    return "Weiter bearbeiten";
+  }
+  if (locale === "pl") {
+    return "Kontynuuj edycję";
+  }
+  return "Continue editing";
+}
+
+function getDiscardLabel(locale: "ru" | "en" | "de" | "pl") {
+  if (locale === "ru") {
+    return "Не сохранять";
+  }
+  if (locale === "de") {
+    return "Nicht speichern";
+  }
+  if (locale === "pl") {
+    return "Nie zapisuj";
+  }
+  return "Discard";
+}
 
 export function PillboxPlanOnboardingFlow({
   visible,
@@ -62,6 +268,11 @@ export function PillboxPlanOnboardingFlow({
   const { locale } = useMobileI18n();
   const surfaceTheme = useMobileSurfaceTheme();
   const { width } = useWindowDimensions();
+  const pickerDateParts = getCurrentPickerDateParts();
+  const courseOptions = COURSE_OPTIONS.map((option) => ({
+    ...option,
+    label: getCourseOptionLabel(locale, option.value),
+  }));
   const {
     step,
     setStep,
@@ -222,7 +433,7 @@ export function PillboxPlanOnboardingFlow({
               recipientTitle={notificationRecipientTitle}
               medicines={draft.medicines}
               onOpenRecipients={handleOpenRecipients}
-              buildMedicineLines={buildReviewMedicineLines}
+              buildMedicineLines={(medicine) => buildReviewMedicineLines(medicine, locale)}
             />
           ) : null}
         </ScrollView>
@@ -232,12 +443,8 @@ export function PillboxPlanOnboardingFlow({
             <PrimaryButton
               label={
                 canGoNextFromParticipant
-                  ? locale === "ru"
-                    ? "Далее"
-                    : "Next"
-                  : locale === "ru"
-                    ? "Выберите участника"
-                    : "Choose a participant"
+                  ? getOnboardingActionLabel(locale, "next")
+                  : getOnboardingActionLabel(locale, "chooseParticipant")
               }
               disabled={!canGoNextFromParticipant}
               onPress={() => setStep("list")}
@@ -247,12 +454,8 @@ export function PillboxPlanOnboardingFlow({
             <PrimaryButton
               label={
                 canGoNextFromList
-                  ? locale === "ru"
-                    ? "Далее"
-                    : "Next"
-                  : locale === "ru"
-                    ? "Добавьте хотя бы одно лекарство"
-                    : "Add at least one medicine"
+                  ? getOnboardingActionLabel(locale, "next")
+                  : getOnboardingActionLabel(locale, "addAtLeastOneMedicine")
               }
               disabled={!canGoNextFromList}
               onPress={() => setStep("review")}
@@ -262,25 +465,15 @@ export function PillboxPlanOnboardingFlow({
             <PrimaryButton
               label={
                 !medicineDraft?.name.trim()
-                  ? locale === "ru"
-                    ? "Укажите препарат"
-                    : "Enter medicine"
+                  ? getOnboardingActionLabel(locale, "enterMedicine")
                   : !medicineDraft.dose.trim()
-                    ? locale === "ru"
-                      ? "Укажите дозу"
-                      : "Enter dose"
+                    ? getOnboardingActionLabel(locale, "enterDose")
                     : medicineDraft.times.length === 0
-                      ? locale === "ru"
-                        ? "Добавьте хотя бы одно время приёма"
-                        : "Add at least one intake time"
+                      ? getOnboardingActionLabel(locale, "addAtLeastOneTime")
                       : medicineDraft.intakeMode === "course" &&
                           !medicineDraft.courseDurationDays
-                        ? locale === "ru"
-                          ? "Выберите срок курса"
-                          : "Choose course duration"
-                        : locale === "ru"
-                          ? "Сохранить лекарство"
-                          : "Save medicine"
+                        ? getOnboardingActionLabel(locale, "chooseCourseDuration")
+                        : getOnboardingActionLabel(locale, "saveMedicine")
               }
               disabled={!canSaveMedicine}
               onPress={handleSaveMedicine}
@@ -290,12 +483,8 @@ export function PillboxPlanOnboardingFlow({
             <PrimaryButton
               label={
                 isSavingPlan
-                  ? locale === "ru"
-                    ? "Сохраняем..."
-                    : "Saving..."
-                  : locale === "ru"
-                    ? "Сохранить план"
-                    : "Save plan"
+                  ? getOnboardingActionLabel(locale, "saving")
+                  : getOnboardingActionLabel(locale, "savePlan")
               }
               disabled={isSavingPlan}
               onPress={handleCompletePlan}
@@ -307,13 +496,9 @@ export function PillboxPlanOnboardingFlow({
           <View style={styles.overlayScrim}>
             <View style={styles.alertCard}>
               <Text style={styles.alertTitle}>
-                {locale === "ru" ? "Не сохранять план?" : "Discard plan?"}
+                {getDiscardPlanTitle(locale)}
               </Text>
-              <Text style={styles.alertText}>
-                {locale === "ru"
-                  ? "Введённые данные будут потеряны."
-                  : "Entered data will be lost."}
-              </Text>
+              <Text style={styles.alertText}>{getDiscardPlanText(locale)}</Text>
               <View style={styles.alertActions}>
                 <Pressable
                   onPress={() => setShowDiscardAlert(false)}
@@ -322,9 +507,7 @@ export function PillboxPlanOnboardingFlow({
                     pressed ? styles.backLinkPressed : null,
                   ]}
                 >
-                  <Text style={styles.alertActionText}>
-                    {locale === "ru" ? "Продолжить" : "Continue editing"}
-                  </Text>
+                  <Text style={styles.alertActionText}>{getContinueEditingLabel(locale)}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
@@ -338,7 +521,7 @@ export function PillboxPlanOnboardingFlow({
                   ]}
                 >
                   <Text style={[styles.alertActionText, styles.alertActionTextDanger]}>
-                    {locale === "ru" ? "Не сохранять" : "Discard"}
+                    {getDiscardLabel(locale)}
                   </Text>
                 </Pressable>
               </View>
@@ -350,9 +533,9 @@ export function PillboxPlanOnboardingFlow({
           visible={activePickerField !== null}
           locale={locale}
           activePickerField={activePickerField ?? "time"}
-          pickerDay={PICKER_DAY}
-          pickerMonthIndex={PICKER_MONTH_INDEX}
-          pickerYear={PICKER_YEAR}
+          pickerDay={pickerDateParts.day}
+          pickerMonthIndex={pickerDateParts.monthIndex}
+          pickerYear={pickerDateParts.year}
           pickerHour={pickerHour}
           pickerMinute={pickerMinute}
           setPickerDay={() => {}}
@@ -369,15 +552,15 @@ export function PillboxPlanOnboardingFlow({
 
         <ReminderNumberOptionsSheet
           visible={isCourseSheetOpen}
-          title={locale === "ru" ? "Сколько дней курс" : "Course duration"}
+          title={getCourseDurationTitle(locale)}
           value={currentCourseDurationDays}
-          options={COURSE_OPTIONS}
+          options={courseOptions}
           columns={2}
           customActionActive={
             currentCourseDurationDays !== null &&
-            !COURSE_OPTIONS.some((option) => option.value === currentCourseDurationDays)
+            !courseOptions.some((option) => option.value === currentCourseDurationDays)
           }
-          customActionLabel={locale === "ru" ? "Свои дни" : "Custom days"}
+          customActionLabel={getCustomDaysLabel(locale)}
           onClose={() => setIsCourseSheetOpen(false)}
           onSelect={handleSelectCourseOption}
           onCustomPress={() => {
@@ -403,14 +586,8 @@ export function PillboxPlanOnboardingFlow({
             <>
               <View style={styles.sheetDragZone} {...sheetPanHandlers}>
                 <View style={styles.sheetHandle} />
-                <Text style={styles.sheetTitle}>
-                  {locale === "ru" ? "Свои дни" : "Custom days"}
-                </Text>
-                <Text style={styles.sheetSubtitle}>
-                  {locale === "ru"
-                    ? "Сколько дней длится курс."
-                    : "How many days the course lasts."}
-                </Text>
+                <Text style={styles.sheetTitle}>{getCustomDaysLabel(locale)}</Text>
+                <Text style={styles.sheetSubtitle}>{getCustomDaysSubtitle(locale)}</Text>
               </View>
 
               <TextInput
@@ -431,9 +608,7 @@ export function PillboxPlanOnboardingFlow({
                     pressed ? styles.secondaryButtonPressed : null,
                   ]}
                 >
-                  <Text style={styles.customValueCancelText}>
-                    {locale === "ru" ? "Отмена" : "Cancel"}
-                  </Text>
+                  <Text style={styles.customValueCancelText}>{getCancelLabel(locale)}</Text>
                 </Pressable>
 
                 <Pressable
@@ -455,9 +630,7 @@ export function PillboxPlanOnboardingFlow({
                     end={{ x: 1, y: 1 }}
                     style={styles.customValueSaveGradient}
                   />
-                  <Text style={styles.customValueSaveText}>
-                    {locale === "ru" ? "Сохранить" : "Save"}
-                  </Text>
+                  <Text style={styles.customValueSaveText}>{getSaveLabel(locale)}</Text>
                 </Pressable>
               </View>
             </>
@@ -468,25 +641,30 @@ export function PillboxPlanOnboardingFlow({
           title={
             locale === "ru"
               ? "Кому придут уведомления"
+              : locale === "de"
+                ? "Wer Benachrichtigungen erhält"
+                : locale === "pl"
+                  ? "Kto dostanie powiadomienia"
               : "Who will get notifications"
           }
           subtitle={
             locale === "ru"
               ? "По умолчанию выбран участник плана."
+              : locale === "de"
+                ? "Die Person aus dem Plan ist standardmäßig ausgewählt."
+                : locale === "pl"
+                  ? "Domyślnie wybrana jest osoba z planu."
               : "The plan participant is selected by default."
           }
-          currentUserLabel={locale === "ru" ? "Вы" : "You"}
+          currentUserLabel={
+            locale === "ru" ? "Вы" : locale === "de" ? "Du" : locale === "pl" ? "Ty" : "You"
+          }
           visible={isRecipientSheetOpen}
           isSaving={isSavingPlan}
           members={recipientSheetMembers}
           currentAccountId={currentAccountId}
           selectedIds={resolvedRecipientIds}
           onToggleMember={handleToggleRecipient}
-          instantHint={
-            locale === "ru"
-              ? "Изменения сохраняются сразу."
-              : "Changes apply immediately."
-          }
           onClose={() => setIsRecipientSheetOpen(false)}
         />
 

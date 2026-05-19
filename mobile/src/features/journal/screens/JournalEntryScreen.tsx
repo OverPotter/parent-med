@@ -42,6 +42,10 @@ type JournalEntryScreenProps = {
 
 const noop = () => {};
 
+function createJournalDefaultBackdatedDate() {
+  return new Date();
+}
+
 export function JournalEntryScreen({
   kind,
   visible = true,
@@ -64,8 +68,8 @@ export function JournalEntryScreen({
   const [feedingType, setFeedingType] = useState<FeedingType>("breast");
   const [feedingTiming, setFeedingTiming] = useState<FeedingTiming>("now");
   const [breastSide, setBreastSide] = useState<BreastSide>("left");
-  const [formulaAmount, setFormulaAmount] = useState("180");
-  const [backdatedDuration, setBackdatedDuration] = useState("12");
+  const [formulaAmount, setFormulaAmount] = useState("");
+  const [backdatedDuration, setBackdatedDuration] = useState("");
   const {
     selectedDate: backdatedAt,
     activePickerField,
@@ -83,7 +87,7 @@ export function JournalEntryScreen({
     openPicker,
     closePicker,
     confirmPicker,
-  } = useBackdatedDateTimePicker(new Date(2026, 4, 9, 8, 40));
+  } = useBackdatedDateTimePicker(createJournalDefaultBackdatedDate());
 
   useEffect(() => {
     if (kind !== "feeding") {
@@ -93,9 +97,9 @@ export function JournalEntryScreen({
     setFeedingType("breast");
     setFeedingTiming("now");
     setBreastSide("left");
-    setFormulaAmount("180");
-    setBackdatedDuration("12");
-    resetBackdatedPicker(new Date(2026, 4, 9, 8, 40));
+    setFormulaAmount("");
+    setBackdatedDuration("");
+    resetBackdatedPicker(createJournalDefaultBackdatedDate());
   }, [kind, resetBackdatedPicker, visible]);
 
   const uiLocale = isRu ? "ru" : isDe ? "de" : isPl ? "pl" : "en";

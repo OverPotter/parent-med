@@ -16,6 +16,7 @@ export type PillPathActiveScreen =
   | "family"
   | "feedingHistory"
   | "growthHistory"
+  | "help"
   | "privacyPolicy"
   | "overview"
   | "settings"
@@ -108,6 +109,7 @@ export function shouldShowRootTabBarUnderlay(
     activeScreen === "illnessOnboarding" ||
     activeScreen === "illnessReminders" ||
     activeScreen === "family" ||
+    activeScreen === "help" ||
     activeScreen === "support" ||
     activeScreen === "settings" ||
     activeScreen === "privacyPolicy" ||

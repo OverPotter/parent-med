@@ -14,6 +14,7 @@ type MoreScreenProps = {
   onLogout?: () => void | Promise<void>;
   onOpenFamily?: () => void;
   onOpenSettings?: () => void;
+  onOpenHelp?: () => void;
   onOpenSupport?: () => void;
   onOpenTerms?: () => void;
   onOpenPrivacy?: () => void;
@@ -32,6 +33,7 @@ export function MoreScreen({
   onLogout = noop,
   onOpenFamily = noop,
   onOpenSettings = noop,
+  onOpenHelp = noop,
   onOpenSupport = noop,
   onOpenTerms = noop,
   onOpenPrivacy = noop,
@@ -88,6 +90,7 @@ export function MoreScreen({
               items={content.navItems}
               onOpenFamily={onOpenFamily}
               onOpenSettings={onOpenSettings}
+              onOpenHelp={onOpenHelp}
               onOpenSupport={onOpenSupport}
               onOpenTerms={onOpenTerms}
               onOpenPrivacy={onOpenPrivacy}
