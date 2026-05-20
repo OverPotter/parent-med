@@ -10,7 +10,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/
@@ -83,6 +83,8 @@ AuthKey_*.p8
 !.env.example
 !backend/.env.example
 !frontend/.env.example
+!mobile/.env.example
+!mobile/.env.mobile-*.example
 
 # ========== Logs ==========
 logs/

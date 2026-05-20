@@ -1,0 +1,45 @@
+import { redesignSharedIcons } from "../../shared/icons";
+
+export const childrenScreenSpec = require("./child_page.json");
+
+export const childrenScreenAssets = {
+  background: require("../../shared/backgrounds/children_module_background_1179x2556.webp"),
+  icons: {
+    sleep: redesignSharedIcons.sleep,
+    feeding: redesignSharedIcons.feeding,
+    observation: redesignSharedIcons.observation,
+    profile: redesignSharedIcons.profile,
+  },
+  avatars: {
+    boy: require("./avatars/thumbs/boy_transparent_ui.png"),
+    boyBlackHair: require("./avatars/thumbs/boy_black_hair_transparent_ui.png"),
+    boyRedHair: require("./avatars/thumbs/boy_red_hair_transparent_ui.png"),
+    boyGlasses: require("./avatars/thumbs/boy_glasses_transparent_ui.png"),
+    boyCurlsDark: require("./avatars/thumbs/boy_curls_dark_transparent_ui.png"),
+    boyCurlsLight: require("./avatars/thumbs/boy_curls_light_transparent_ui.png"),
+    girl: require("./avatars/thumbs/girl_transparent_ui.png"),
+    girlBlonde: require("./avatars/thumbs/girl_blonde_transparent_ui.png"),
+    girlPigtails: require("./avatars/thumbs/girl_pigtails_transparent_ui.png"),
+    girlBraidGlasses: require("./avatars/thumbs/girl_braid_glasses_transparent_ui.png"),
+    girlHeadband: require("./avatars/thumbs/girl_headband_transparent_ui.png"),
+    girlRedCurls: require("./avatars/thumbs/girl_red_curls_transparent_ui.png"),
+    girlDarkBob: require("./avatars/thumbs/girl_dark_bob_transparent_ui.png"),
+    girlDarkCurlsBow: require("./avatars/thumbs/girl_dark_curls_bow_transparent_ui.png"),
+    babyBoy: require("./avatars/thumbs/baby_boy_transparent_ui.png"),
+    babyBoyCurls: require("./avatars/thumbs/baby_boy_curls_transparent_ui.png"),
+    babyBoyBlondeBlue: require("./avatars/thumbs/baby_boy_blonde_blue_transparent_ui.png"),
+    babyBoyDarkSide: require("./avatars/thumbs/baby_boy_dark_side_transparent_ui.png"),
+    babyBoyBlondeShort: require("./avatars/thumbs/baby_boy_blonde_short_transparent_ui.png"),
+    babyBoyBrownCurls: require("./avatars/thumbs/baby_boy_brown_curls_transparent_ui.png"),
+    babyGirlCurls: require("./avatars/thumbs/baby_girl_curls_transparent_ui.png"),
+    babyGirlBlondePigtails: require("./avatars/thumbs/baby_girl_blonde_pigtails_transparent_ui.png"),
+    babyGirlBlondePigtailsAlt: require("./avatars/thumbs/baby_girl_blonde_pigtails_alt_transparent_ui.png"),
+    babyGirlDarkSideclip: require("./avatars/thumbs/baby_girl_dark_sideclip_transparent_ui.png"),
+    babyGirlDarkPuffBuns: require("./avatars/thumbs/baby_girl_dark_puff_buns_transparent_ui.png"),
+    babyGirlCurlsBow: require("./avatars/thumbs/baby_girl_curls_bow_transparent_ui.png"),
+    babyGirlRedBobFlower: require("./avatars/thumbs/baby_girl_red_bob_flower_transparent_ui.png"),
+    child1: require("./avatars/thumbs/child_icon_transparent_1_ui.png"),
+    child2: require("./avatars/thumbs/child_icon_transparent_2_ui.png"),
+    child3: require("./avatars/thumbs/child_icon_transparent_3_ui.png"),
+  },
+} as const;

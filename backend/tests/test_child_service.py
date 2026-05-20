@@ -3,9 +3,10 @@ from uuid import uuid4
 
 import pytest
 
-from src.application.dto.child import ChildCreateDto
+from src.application.dto.auth import AuthenticatedAccount
+from src.application.dto.child import ChildCreateDto, ChildUpdateDto
 from src.application.services.child_service import ChildService
-from src.core.exceptions import ValidationError
+from src.core.exceptions import ForbiddenError, ValidationError
 from src.domain.entities.child import Child
 from src.domain.entities.family import Family
 
@@ -16,7 +17,7 @@ class StubChildRepository:
         self.children = children or []
 
     async def get_by_id(self, id):  # noqa: ANN001
-        return None
+        return next((child for child in self.children if child.id == id), None)
 
     async def get_by_family_id(self, family_id):  # noqa: ANN001
         return [child for child in self.children if child.family_id == family_id]
@@ -124,4 +125,46 @@ async def test_create_rejects_second_child_for_free_plan() -> None:
                 name="Маша",
                 birth_date=None,
             )
+        )
+
+
+def _build_authenticated_account(*, family_id, family_role: str) -> AuthenticatedAccount:
+    return AuthenticatedAccount(
+        id=uuid4(),
+        email="user@example.com",
+        family_id=family_id,
+        display_name="User",
+        family_role=family_role,
+        preferred_language="ru",
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_for_account_rejects_non_primary_child_in_free_family() -> None:
+    family = Family(id=uuid4(), name="Family", plan_code="free", subscription_status="inactive")
+    primary_child = Child(id=uuid4(), family_id=family.id, name="Миша", birth_date=None)
+    second_child = Child(id=uuid4(), family_id=family.id, name="Маша", birth_date=None)
+    family.free_primary_child_id = primary_child.id
+    service = make_service(children=[primary_child, second_child], family=family)
+
+    with pytest.raises(ForbiddenError, match="можно только просматривать"):
+        await service.update_for_account(
+            second_child.id,
+            ChildUpdateDto(name="Маша 2"),
+            _build_authenticated_account(family_id=family.id, family_role="owner"),
+        )
+
+
+@pytest.mark.asyncio
+async def test_delete_for_account_rejects_non_primary_child_in_free_family() -> None:
+    family = Family(id=uuid4(), name="Family", plan_code="free", subscription_status="inactive")
+    primary_child = Child(id=uuid4(), family_id=family.id, name="Миша", birth_date=None)
+    second_child = Child(id=uuid4(), family_id=family.id, name="Маша", birth_date=None)
+    family.free_primary_child_id = primary_child.id
+    service = make_service(children=[primary_child, second_child], family=family)
+
+    with pytest.raises(ForbiddenError, match="можно только просматривать"):
+        await service.delete_for_account(
+            second_child.id,
+            _build_authenticated_account(family_id=family.id, family_role="owner"),
         )

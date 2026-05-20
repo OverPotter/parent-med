@@ -63,6 +63,7 @@ class SqlPillboxRepository(PillboxRepository):
             family_id=model.family_id,
             title=model.title,
             status=model.status,
+            subject_account_id=model.subject_account_id,
             member_account_ids=list(model.member_account_ids or []),
             created_by_account_id=model.created_by_account_id,
             created_at=model.created_at,
@@ -108,6 +109,7 @@ class SqlPillboxRepository(PillboxRepository):
             family_id=entity.family_id,
             title=entity.title,
             status=entity.status,
+            subject_account_id=entity.subject_account_id,
             member_account_ids=list(entity.member_account_ids),
             created_by_account_id=entity.created_by_account_id,
             created_at=entity.created_at,
@@ -146,6 +148,7 @@ class SqlPillboxRepository(PillboxRepository):
 
         model.title = entity.title
         model.status = entity.status
+        model.subject_account_id = entity.subject_account_id
         model.member_account_ids = list(entity.member_account_ids)
         model.updated_at = entity.updated_at
         existing_by_id = {item.id: item for item in model.medications}

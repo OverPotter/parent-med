@@ -244,6 +244,8 @@ def _format_pillbox_meal_rule(meal_rule: str, language: str) -> str:
         return "before meal" if language == "en" else "до еды"
     if meal_rule == "with_meal":
         return "with meal" if language == "en" else "во время еды"
+    if meal_rule == "not_matter":
+        return "independent of meal" if language == "en" else "независимо от еды"
     return "after meal" if language == "en" else "после еды"
 
 

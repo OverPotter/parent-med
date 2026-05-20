@@ -1,0 +1,1057 @@
+{
+  "module_name": "ObservationReminders",
+  "app": "PillPath",
+  "language": "ru",
+  "platform": "iOS",
+  "design_version": "PillPath Warm Family Health UI / Reminders v2",
+  "decision": {
+    "selected_variant": "variant_2",
+    "reason": [
+      "Вариант спокойнее и взрослее.",
+      "Нет лишнего большого ребёнка и декоративной перегрузки.",
+      "Карточки читаются лучше.",
+      "Типсы стали контекстными и полезными.",
+      "Экран лучше подходит для мам, пап, бабушек и нянь."
+    ],
+    "polish_rules": [
+      "Заменить 'Активные напоминания' на 'Схемы приёма'.",
+      "В карточке лекарства заменить 'сегодня: 0' на 'отмечено: 0'.",
+      "Кнопка 'Отметить приём' становится коралловой только если приём уже пора.",
+      "Типсы делать маленькими контекстными пояснениями, а не большими мотивационными блоками.",
+      "Получателей показывать коротко: 'Артём, Мама' или 'Артём, Мама +2'."
+    ]
+  },
+  "global_style": {
+    "mood": [
+      "спокойный",
+      "семейный",
+      "тёплый",
+      "понятный",
+      "не технический",
+      "не игрушечный",
+      "не больничный"
+    ],
+    "visual_principles": [
+      "тёплый кремово-персиковый фон",
+      "мягкие бело-кремовые карточки",
+      "тонкие персиковые обводки",
+      "крупная тёмная типографика",
+      "коралловый цвет только для главных действий",
+      "пастельные иконки",
+      "минимум декоративных иллюстраций",
+      "без больших персонажей на этих экранах"
+    ],
+    "avoid": [
+      "старый фиолетовый фон",
+      "огромный ребёнок с игрушкой",
+      "сердечки и декоративные пятна",
+      "жёсткие чёрные рамки",
+      "слишком яркие красные кнопки",
+      "медицинский/технический язык",
+      "перегруженные типсы с лампочками"
+    ]
+  },
+  "target_device": {
+    "design_width": 393,
+    "design_height": 852,
+    "export_width": 1290,
+    "export_height": 2796,
+    "safe_area": {
+      "top": 54,
+      "bottom": 34,
+      "horizontal": 24
+    }
+  },
+  "tokens": {
+    "colors": {
+      "background_top": "#FFF4EC",
+      "background_middle": "#FFFAF6",
+      "background_bottom": "#FFFDF9",
+
+      "card_bg": "#FFFCF8",
+      "card_bg_soft": "#FFF8F3",
+      "card_border": "#EED8CE",
+      "card_border_light": "#F3E3DB",
+
+      "text_primary": "#1E2A3A",
+      "text_secondary": "#667386",
+      "text_muted": "#9AA3AF",
+      "text_on_primary": "#FFFFFF",
+
+      "primary_coral": "#F56F68",
+      "primary_coral_dark": "#E95D56",
+      "primary_coral_light": "#FFE4DD",
+
+      "button_secondary_bg": "#FFFCF8",
+      "button_secondary_border": "#EED8CE",
+      "button_secondary_text": "#1E2A3A",
+
+      "info_row_bg": "#FFF8F3",
+      "info_row_border": "#F3E3DB",
+      "info_icon": "#8A7B72",
+
+      "pill_icon_bg": "#FFE4DD",
+      "pill_icon": "#F56F68",
+
+      "interval_icon": "#18A7E0",
+      "next_icon": "#57B97C",
+      "today_icon": "#8B5CF6",
+      "limit_icon": "#F59B45",
+      "dose_icon": "#A855F7",
+
+      "success": "#57B97C",
+      "danger": "#F56F68",
+      "danger_soft_bg": "#FFE4DD",
+
+      "bottom_sheet_overlay": "rgba(30, 42, 58, 0.42)",
+      "shadow_card": "rgba(58, 35, 24, 0.06)",
+      "shadow_button": "rgba(245, 111, 104, 0.22)"
+    },
+    "typography": {
+      "font_family": "SF Pro Display / SF Pro Text",
+      "fallback": "Inter, Plus Jakarta Sans, system-ui",
+      "screen_title": {
+        "font_size": 36,
+        "line_height": 42,
+        "font_weight": 800,
+        "letter_spacing": -0.8,
+        "color": "#1E2A3A"
+      },
+      "screen_subtitle": {
+        "font_size": 17,
+        "line_height": 26,
+        "font_weight": 500,
+        "color": "#667386"
+      },
+      "section_title": {
+        "font_size": 18,
+        "line_height": 24,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "card_title": {
+        "font_size": 25,
+        "line_height": 31,
+        "font_weight": 800,
+        "letter_spacing": -0.4,
+        "color": "#1E2A3A"
+      },
+      "card_subtitle": {
+        "font_size": 16,
+        "line_height": 22,
+        "font_weight": 500,
+        "color": "#667386"
+      },
+      "body": {
+        "font_size": 16,
+        "line_height": 24,
+        "font_weight": 500,
+        "color": "#667386"
+      },
+      "small_body": {
+        "font_size": 14,
+        "line_height": 20,
+        "font_weight": 500,
+        "color": "#667386"
+      },
+      "button": {
+        "font_size": 16,
+        "line_height": 22,
+        "font_weight": 800
+      },
+      "chip": {
+        "font_size": 13,
+        "line_height": 18,
+        "font_weight": 700
+      },
+      "detail_label": {
+        "font_size": 15,
+        "line_height": 20,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "detail_value": {
+        "font_size": 15,
+        "line_height": 21,
+        "font_weight": 500,
+        "color": "#667386"
+      }
+    },
+    "radii": {
+      "circle": 999,
+      "screen_card": 28,
+      "card": 26,
+      "small_card": 18,
+      "button": 999,
+      "chip": 14,
+      "bottom_sheet": 30,
+      "tabbar": 26
+    },
+    "spacing": {
+      "screen_padding_x": 24,
+      "screen_padding_top": 72,
+      "screen_padding_bottom": 118,
+      "top_bar_height": 52,
+      "header_gap": 28,
+      "section_gap": 24,
+      "card_padding": 18,
+      "card_gap": 16,
+      "button_gap": 10
+    },
+    "shadows": {
+      "card": {
+        "x": 0,
+        "y": 8,
+        "blur": 24,
+        "spread": 0,
+        "color": "rgba(58, 35, 24, 0.06)"
+      },
+      "primary_button": {
+        "x": 0,
+        "y": 8,
+        "blur": 20,
+        "spread": 0,
+        "color": "rgba(245, 111, 104, 0.22)"
+      }
+    }
+  },
+  "shared_components": {
+    "root_scroll": {
+      "type": "scroll_view",
+      "background": {
+        "type": "linear_gradient",
+        "direction": "top_to_bottom",
+        "colors": [
+          "#FFF4EC",
+          "#FFFAF6",
+          "#FFFDF9"
+        ]
+      },
+      "padding": {
+        "left": 24,
+        "right": 24,
+        "top": 72,
+        "bottom": 118
+      }
+    },
+    "top_bar": {
+      "height": 52,
+      "layout": "horizontal",
+      "align_items": "center",
+      "justify_content": "space_between",
+      "left": {
+        "component": "back_button"
+      },
+      "right": {
+        "layout": "horizontal",
+        "gap": 12,
+        "items": [
+          "message_circle_button",
+          "profile_circle_button"
+        ]
+      }
+    },
+    "back_button": {
+      "size": 48,
+      "border_radius": 999,
+      "background": "rgba(255, 252, 248, 0.72)",
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "icon": {
+        "name": "ArrowLeft",
+        "size": 22,
+        "stroke_width": 2,
+        "color": "#F56F68"
+      },
+      "states": {
+        "pressed": {
+          "scale": 0.96,
+          "opacity": 0.75
+        }
+      }
+    },
+    "circle_icon_button": {
+      "size": 48,
+      "border_radius": 999,
+      "background": "rgba(255, 252, 248, 0.82)",
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "icon": {
+        "size": 22,
+        "stroke_width": 2,
+        "color": "#1E2A3A"
+      },
+      "states": {
+        "pressed": {
+          "scale": 0.96,
+          "opacity": 0.75
+        }
+      }
+    },
+    "primary_button": {
+      "height": 58,
+      "border_radius": 999,
+      "background": "#F56F68",
+      "text_color": "#FFFFFF",
+      "font_style": "button",
+      "shadow": "primary_button",
+      "states": {
+        "default": {
+          "background": "#F56F68"
+        },
+        "pressed": {
+          "background": "#E95D56",
+          "scale": 0.98
+        },
+        "disabled": {
+          "background": "#F3C7C2",
+          "opacity": 0.75,
+          "shadow": "none"
+        }
+      }
+    },
+    "secondary_button": {
+      "height": 58,
+      "border_radius": 999,
+      "background": "#FFFCF8",
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "text_color": "#1E2A3A",
+      "font_style": "button",
+      "states": {
+        "pressed": {
+          "background": "#FFF1E9",
+          "scale": 0.98
+        }
+      }
+    },
+    "tiny_info_text": {
+      "layout": "horizontal",
+      "gap": 8,
+      "icon": {
+        "name": "Info",
+        "size": 18,
+        "color": "#8A7B72"
+      },
+      "text_style": "small_body",
+      "color": "#667386"
+    }
+  },
+  "screens": {
+    "RemindersListScreen": {
+      "screen_name": "RemindersListScreen",
+      "purpose": "Показать активные схемы приёма лекарств в рамках текущего наблюдения.",
+      "content": {
+        "title": "Напоминания",
+        "subtitle": "Схемы приёма для текущего наблюдения.",
+        "recipients_label": "Получатели",
+        "recipients_value": "Артём",
+        "section_title": "Схемы приёма"
+      },
+      "layout": {
+        "root": "shared.root_scroll",
+        "top_bar": "shared.top_bar",
+        "header": {
+          "margin_top": 28,
+          "title": {
+            "text": "Напоминания",
+            "style": "screen_title"
+          },
+          "subtitle": {
+            "text": "Схемы приёма для текущего наблюдения.",
+            "style": "screen_subtitle",
+            "margin_top": 8
+          }
+        },
+        "action_row": {
+          "type": "horizontal",
+          "margin_top": 28,
+          "gap": 12,
+          "items": [
+            "recipients_button",
+            "add_reminder_button"
+          ]
+        },
+        "section": {
+          "margin_top": 28,
+          "title": "Схемы приёма",
+          "items": [
+            "reminder_card"
+          ]
+        },
+        "context_tip": {
+          "margin_top": 16,
+          "component": "tiny_info_text"
+        },
+        "bottom_tabbar": {
+          "position": "fixed_bottom",
+          "visible": true
+        }
+      },
+      "components": {
+        "recipients_button": {
+          "width": 150,
+          "height": 62,
+          "border_radius": 20,
+          "background": "#FFFCF8",
+          "border": {
+            "width": 1,
+            "color": "#EED8CE"
+          },
+          "layout": "horizontal",
+          "gap": 10,
+          "icon": {
+            "name": "UsersRound",
+            "size": 22,
+            "color": "#F56F68"
+          },
+          "text": {
+            "primary": "Получатели",
+            "secondary": "Артём",
+            "primary_style": "button",
+            "secondary_style": "small_body"
+          },
+          "tap_action": "open_notification_recipients_sheet"
+        },
+        "add_reminder_button": {
+          "flex": 1,
+          "height": 62,
+          "border_radius": 20,
+          "background": "#F56F68",
+          "layout": "horizontal",
+          "justify_content": "space_between",
+          "padding_x": 18,
+          "text": {
+            "value": "Добавить напоминание",
+            "color": "#FFFFFF",
+            "style": "button"
+          },
+          "icon": {
+            "name": "Plus",
+            "size": 26,
+            "color": "#FFFFFF"
+          },
+          "shadow": "primary_button",
+          "tap_action": "open_medicine_reminder_setup_screen"
+        },
+        "reminder_card": {
+          "type": "card",
+          "background": "#FFFCF8",
+          "border": {
+            "width": 1,
+            "color": "#EED8CE"
+          },
+          "border_radius": 28,
+          "padding": 18,
+          "shadow": "card",
+          "layout": {
+            "top": {
+              "type": "horizontal",
+              "gap": 14,
+              "left_icon": {
+                "size": 62,
+                "border_radius": 999,
+                "background": "#FFE4DD",
+                "icon": {
+                  "name": "Pill",
+                  "size": 30,
+                  "color": "#F56F68"
+                }
+              },
+              "content": {
+                "title": "Ибуклин",
+                "subtitle": "10 мл или 1 таб."
+              },
+              "right_chevron": {
+                "name": "ChevronRight",
+                "size": 24,
+                "color": "#F56F68"
+              }
+            },
+            "next_time_row": {
+              "margin_top": 16,
+              "height": 46,
+              "border_radius": 16,
+              "background": "#FFF8F3",
+              "padding_x": 14,
+              "layout": "horizontal",
+              "icon": {
+                "name": "Clock3",
+                "size": 18,
+                "color": "#8A7B72"
+              },
+              "text": "Следующий приём: сегодня, 16:23"
+            },
+            "chips_grid": {
+              "margin_top": 12,
+              "columns": 3,
+              "gap": 8,
+              "items": [
+                {
+                  "icon": "RefreshCw",
+                  "text": "каждые 180 мин"
+                },
+                {
+                  "icon": "CheckCircle2",
+                  "text": "отмечено: 0"
+                },
+                {
+                  "icon": "ShieldCheck",
+                  "text": "без лимита"
+                }
+              ]
+            },
+            "buttons": {
+              "margin_top": 16,
+              "type": "horizontal",
+              "gap": 10,
+              "items": [
+                {
+                  "id": "mark_intake",
+                  "text": "Отметить приём",
+                  "style": "secondary_or_primary_by_state"
+                },
+                {
+                  "id": "details",
+                  "text": "Подробнее",
+                  "style": "primary"
+                }
+              ]
+            }
+          },
+          "tap_action": "open_reminder_details_screen"
+        },
+        "reminder_card_states": {
+          "not_due_yet": {
+            "mark_intake_button": {
+              "style": "secondary",
+              "text": "Отметить сейчас"
+            },
+            "details_button": {
+              "style": "primary",
+              "text": "Подробнее"
+            },
+            "status_dot": {
+              "color": "#F56F68",
+              "visible": true
+            }
+          },
+          "due_now": {
+            "mark_intake_button": {
+              "style": "primary",
+              "text": "Отметить приём"
+            },
+            "details_button": {
+              "style": "secondary",
+              "text": "Подробнее"
+            },
+            "status_badge": {
+              "text": "Пора дать",
+              "background": "#FFE4DD",
+              "text_color": "#F56F68"
+            }
+          },
+          "completed_today_limit": {
+            "mark_intake_button": {
+              "style": "disabled",
+              "text": "Лимит на сегодня"
+            },
+            "details_button": {
+              "style": "secondary",
+              "text": "Подробнее"
+            }
+          }
+        },
+        "context_tip": {
+          "icon": "Info",
+          "text": "После отметки приёма следующее напоминание обновится автоматически."
+        }
+      },
+      "interactions": {
+        "tap_recipients": "open NotificationRecipientsSheet",
+        "tap_add_reminder": "open MedicineReminderSetupScreen",
+        "tap_reminder_card": "open ReminderDetailsScreen",
+        "tap_details": "open ReminderDetailsScreen",
+        "tap_mark_intake": {
+          "action": "mark_medicine_intake_now",
+          "confirmation": {
+            "title": "Отметить приём?",
+            "description": "Ибуклин — 10 мл или 1 таб.",
+            "primary_button": "Отметить",
+            "secondary_button": "Отмена"
+          },
+          "success": [
+            "Добавить запись о приёме в журнал наблюдения.",
+            "Увеличить 'отмечено сегодня'.",
+            "Пересчитать следующий приём.",
+            "Показать toast: Приём отмечен."
+          ]
+        }
+      }
+    },
+    "NotificationRecipientsSheet": {
+      "screen_name": "NotificationRecipientsSheet",
+      "type": "bottom_sheet",
+      "purpose": "Выбрать членов семьи, которые будут получать уведомления по текущему наблюдению.",
+      "presentation": {
+        "overlay": {
+          "color": "rgba(30, 42, 58, 0.42)"
+        },
+        "sheet": {
+          "height": "auto",
+          "min_height": 620,
+          "max_height": "88%",
+          "background": "#FFFCF8",
+          "border_radius_top": 30,
+          "handle": {
+            "width": 54,
+            "height": 6,
+            "border_radius": 999,
+            "color": "#E0D4CF"
+          }
+        }
+      },
+      "content": {
+        "title": "Кому приходят уведомления?",
+        "subtitle": "Выберите членов семьи, которые будут получать напоминания по этому наблюдению.",
+        "save_button": "Сохранить"
+      },
+      "layout": {
+        "padding": {
+          "left": 24,
+          "right": 24,
+          "top": 16,
+          "bottom": 30
+        },
+        "close_button": {
+          "position": "top_right",
+          "size": 44
+        },
+        "recipients_list": {
+          "margin_top": 24,
+          "background": "#FFFCF8",
+          "border": {
+            "width": 1,
+            "color": "#EED8CE"
+          },
+          "border_radius": 24,
+          "overflow": "hidden"
+        },
+        "context_tip": {
+          "margin_top": 18
+        },
+        "save_button": {
+          "margin_top": 24
+        }
+      },
+      "components": {
+        "close_button": {
+          "size": 44,
+          "border_radius": 999,
+          "background": "#FFFCF8",
+          "border": {
+            "width": 1,
+            "color": "#EED8CE"
+          },
+          "icon": {
+            "name": "X",
+            "size": 22,
+            "color": "#8A7B72"
+          }
+        },
+        "recipient_row": {
+          "height": 76,
+          "padding_x": 16,
+          "layout": "horizontal",
+          "gap": 12,
+          "avatar": {
+            "size": 48,
+            "border_radius": 999,
+            "style": "small family avatar"
+          },
+          "content": {
+            "name_style": "section_title",
+            "role_style": "body",
+            "self_badge": {
+              "text": "Вы",
+              "height": 26,
+              "padding_x": 10,
+              "border_radius": 999,
+              "background": "#FFE4DD",
+              "text_color": "#F56F68"
+            }
+          },
+          "checkbox": {
+            "size": 34,
+            "border_radius": 12,
+            "selected": {
+              "background": "#F56F68",
+              "icon": "Check",
+              "icon_color": "#FFFFFF",
+              "border_color": "#F56F68"
+            },
+            "unselected": {
+              "background": "#FFFCF8",
+              "border_color": "#EED8CE"
+            }
+          }
+        },
+        "recipients": [
+          {
+            "id": "user_artem",
+            "name": "Артём",
+            "role": "Папа",
+            "is_self": true,
+            "selected": true
+          },
+          {
+            "id": "user_mom",
+            "name": "Мама",
+            "role": "Мама",
+            "is_self": false,
+            "selected": true
+          },
+          {
+            "id": "user_grandma",
+            "name": "Бабушка",
+            "role": "Бабушка",
+            "is_self": false,
+            "selected": false
+          },
+          {
+            "id": "user_nanny",
+            "name": "Няня",
+            "role": "Няня",
+            "is_self": false,
+            "selected": false
+          },
+          {
+            "id": "user_ivan",
+            "name": "Иван",
+            "role": "Дядя",
+            "is_self": false,
+            "selected": true
+          }
+        ],
+        "context_tip": {
+          "icon": "Info",
+          "text": "Если у человека выключены личные уведомления в профиле, напоминания ему не придут."
+        },
+        "save_button": {
+          "component": "primary_button",
+          "text": "Сохранить"
+        }
+      },
+      "interactions": {
+        "tap_close": "dismiss_without_saving",
+        "tap_outside": "dismiss_without_saving",
+        "tap_recipient_row": "toggle_recipient_selection",
+        "tap_checkbox": "toggle_recipient_selection",
+        "tap_save": {
+          "action": "save_notification_recipients",
+          "payload": {
+            "observation_id": "{observation_id}",
+            "recipient_ids": [
+              "user_artem",
+              "user_mom",
+              "user_ivan"
+            ]
+          },
+          "success": [
+            "Закрыть bottom sheet.",
+            "Обновить строку получателей на экране списка.",
+            "Показать toast: Получатели обновлены."
+          ]
+        }
+      },
+      "states": {
+        "none_selected": {
+          "save_button": "disabled",
+          "warning_text": "Выберите хотя бы одного получателя."
+        },
+        "many_selected": {
+          "recipients_summary_format": "Артём, Мама +2"
+        }
+      }
+    },
+    "ReminderDetailsScreen": {
+      "screen_name": "ReminderDetailsScreen",
+      "purpose": "Показать подробности выбранной схемы приёма и дать действия: изменить или удалить.",
+      "content": {
+        "title": "Ибуклин",
+        "subtitle": "10 мл или 1 таб.",
+        "back_to_list": "К списку",
+        "how_it_works_title": "Как это работает?",
+        "how_it_works_text": "После отметки приёма приложение рассчитает следующее напоминание по заданному интервалу."
+      },
+      "layout": {
+        "root": "shared.root_scroll",
+        "top_bar": {
+          "height": 52,
+          "left": "back_button",
+          "right": "back_to_list_pill"
+        },
+        "header": {
+          "margin_top": 30,
+          "left_icon": {
+            "size": 64,
+            "background": "#FFE4DD",
+            "icon": "Pill"
+          },
+          "title": "Ибуклин",
+          "subtitle": "10 мл или 1 таб.",
+          "status_badge": {
+            "text": "Активно",
+            "background": "#EAF8EF",
+            "text_color": "#57B97C"
+          }
+        },
+        "next_time_banner": {
+          "margin_top": 18
+        },
+        "details_card": {
+          "margin_top": 18
+        },
+        "how_it_works": {
+          "margin_top": 18
+        },
+        "actions": {
+          "margin_top": 28
+        }
+      },
+      "components": {
+        "back_to_list_pill": {
+          "height": 48,
+          "padding_x": 18,
+          "border_radius": 999,
+          "background": "#FFFCF8",
+          "border": {
+            "width": 1,
+            "color": "#EED8CE"
+          },
+          "text": {
+            "value": "К списку",
+            "style": "button",
+            "color": "#1E2A3A"
+          },
+          "tap_action": "navigate_back_to_reminders_list"
+        },
+        "next_time_banner": {
+          "height": 54,
+          "border_radius": 18,
+          "background": "#FFF8F3",
+          "border": {
+            "width": 1,
+            "color": "#F3E3DB"
+          },
+          "padding_x": 16,
+          "layout": "horizontal",
+          "gap": 10,
+          "icon": {
+            "name": "Clock3",
+            "size": 20,
+            "color": "#8A7B72"
+          },
+          "text": "Следующий приём: сегодня, 16:23",
+          "secondary_text_optional": "через 2 ч 59 мин"
+        },
+        "details_card": {
+          "background": "#FFFCF8",
+          "border": {
+            "width": 1,
+            "color": "#EED8CE"
+          },
+          "border_radius": 28,
+          "padding": 18,
+          "shadow": "card",
+          "rows": [
+            {
+              "id": "dose",
+              "icon": "Droplet",
+              "icon_color": "#A855F7",
+              "label": "Доза",
+              "value": "10 мл или 1 таб."
+            },
+            {
+              "id": "interval",
+              "icon": "Clock3",
+              "icon_color": "#18A7E0",
+              "label": "Интервал",
+              "value": "каждые 180 мин"
+            },
+            {
+              "id": "next",
+              "icon": "CalendarDays",
+              "icon_color": "#57B97C",
+              "label": "Следующий приём",
+              "value": "сегодня, 16:23",
+              "has_chevron": true
+            },
+            {
+              "id": "today",
+              "icon": "CheckCircle2",
+              "icon_color": "#8B5CF6",
+              "label": "Сегодня отмечено",
+              "value": "0 раз"
+            },
+            {
+              "id": "limit",
+              "icon": "ShieldCheck",
+              "icon_color": "#F59B45",
+              "label": "Лимит в сутки",
+              "value": "без лимита"
+            }
+          ],
+          "row_style": {
+            "height": 64,
+            "divider_color": "#F0DDD4",
+            "label_style": "detail_label",
+            "value_style": "detail_value"
+          }
+        },
+        "how_it_works": {
+          "background": "#FFF8F3",
+          "border": {
+            "width": 1,
+            "color": "#F3E3DB"
+          },
+          "border_radius": 20,
+          "padding": 16,
+          "layout": "horizontal",
+          "gap": 12,
+          "icon": {
+            "container_size": 38,
+            "container_bg": "#FFFCF8",
+            "name": "Info",
+            "size": 20,
+            "color": "#8A7B72"
+          },
+          "text": {
+            "title": "Как это работает?",
+            "body": "После отметки приёма приложение рассчитает следующее напоминание по заданному интервалу."
+          }
+        },
+        "actions": {
+          "type": "horizontal",
+          "gap": 12,
+          "items": [
+            {
+              "id": "edit",
+              "text": "Изменить",
+              "style": "secondary",
+              "icon": "Pencil"
+            },
+            {
+              "id": "delete",
+              "text": "Удалить",
+              "style": "danger_soft",
+              "icon": "Trash2"
+            }
+          ]
+        },
+        "danger_soft_button": {
+          "height": 58,
+          "border_radius": 18,
+          "background": "#FFE4DD",
+          "border": {
+            "width": 1,
+            "color": "#F5C7C8"
+          },
+          "text_color": "#F56F68",
+          "font_style": "button"
+        }
+      },
+      "interactions": {
+        "tap_back": "navigate_back",
+        "tap_to_list": "navigate_to_RemindersListScreen",
+        "tap_next_time_row": "open_datetime_or_history_detail_optional",
+        "tap_edit": "open_MedicineReminderSetupScreen_in_edit_mode",
+        "tap_delete": {
+          "action": "show_delete_confirmation",
+          "confirmation": {
+            "title": "Удалить напоминание?",
+            "description": "Схема приёма будет удалена, но уже отмеченные приёмы останутся в истории наблюдения.",
+            "primary_button": "Удалить",
+            "secondary_button": "Отмена",
+            "danger": true
+          },
+          "success": [
+            "Удалить напоминание.",
+            "Вернуться к списку напоминаний.",
+            "Показать toast: Напоминание удалено."
+          ]
+        }
+      }
+    }
+  },
+  "data_model": {
+    "reminder": {
+      "id": "reminder_ibuklin_001",
+      "observation_id": "obs_edik_001",
+      "child_id": "child_edik",
+      "medicine_name": "Ибуклин",
+      "dose": "10 мл или 1 таб.",
+      "interval_minutes": 180,
+      "next_intake_at": "2026-05-10T16:23:00",
+      "taken_today_count": 0,
+      "daily_limit": null,
+      "status": "active",
+      "recipients": [
+        {
+          "id": "user_artem",
+          "name": "Артём",
+          "role": "Папа",
+          "is_self": true,
+          "selected": true
+        },
+        {
+          "id": "user_mom",
+          "name": "Мама",
+          "role": "Мама",
+          "selected": true
+        }
+      ]
+    },
+    "recipients_summary_rules": {
+      "one": "{name}",
+      "two": "{name1}, {name2}",
+      "more": "{name1}, {name2} +{count_more}"
+    }
+  },
+  "copy_rules": {
+    "preferred_terms": [
+      "Напоминания",
+      "Схемы приёма",
+      "Получатели",
+      "Добавить напоминание",
+      "Отметить приём",
+      "Подробнее",
+      "Следующий приём",
+      "Сегодня отмечено",
+      "Лимит в сутки"
+    ],
+    "avoid_terms": [
+      "Параметры и история",
+      "Список схем",
+      "Кратность",
+      "Медикаментозная схема",
+      "Пациент",
+      "Приём препарата по протоколу"
+    ],
+    "tips": {
+      "list_screen": "После отметки приёма следующее напоминание обновится автоматически.",
+      "recipients_sheet": "Если у человека выключены личные уведомления в профиле, напоминания ему не придут.",
+      "details_screen": "После отметки приёма приложение рассчитает следующее напоминание по заданному интервалу."
+    }
+  },
+  "ai_generation_prompt": {
+    "prompt": "Create three separate high-fidelity iPhone screens for PillPath in Russian, using the established warm family health app style: cream/peach gradient background, dark navy typography, soft rounded cards, thin warm peach borders, coral primary actions, minimal decoration, no large child illustration. Screen 1: 'Напоминания' with subtitle 'Схемы приёма для текущего наблюдения.', action buttons 'Получатели' and coral 'Добавить напоминание', section 'Схемы приёма', one medication reminder card for 'Ибуклин' with dose '10 мл или 1 таб.', next intake today 16:23, chips 'каждые 180 мин', 'отмечено: 0', 'без лимита', buttons 'Отметить приём' and 'Подробнее', small info text under card. Screen 2: bottom sheet 'Кому приходят уведомления?' with family member rows and checkboxes, selected Артём and Мама, save button. Screen 3: details screen for 'Ибуклин' with next intake banner, clean details card rows: Доза, Интервал, Следующий приём, Сегодня отмечено, Лимит в сутки, small 'Как это работает?' block, buttons 'Изменить' and 'Удалить'. Keep it simple, adult, calm, not toy-like.",
+    "negative_prompt": "Do not use old purple background. Do not add large child with teddy bear. Do not use hearts or excessive decorative illustrations. Do not use black borders. Do not make it clinical or technical. Do not crop text. Do not use English UI."
+  }
+}

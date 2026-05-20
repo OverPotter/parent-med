@@ -63,7 +63,7 @@ import {
   parseChildIllnessRoute,
   resolveChildIllnessGuard,
 } from "./child-illness/navigation";
-import { SummaryCard, formatWeightValue } from "./child-illness/shared";
+import { SummaryCard, formatWeightValue, illnessFlatPanelClass } from "./child-illness/shared";
 
 export function ChildIllnessPage() {
   const { language } = useI18n();
@@ -535,7 +535,7 @@ function ChildIllnessShellSummary({
 
   return (
     <section
-      className={`soft-panel soft-hero relative overflow-hidden rounded-[28px] ${
+      className={`${illnessFlatPanelClass} relative overflow-hidden ${
         compactForHistory ? "hidden lg:block" : ""
       }`}
     >

@@ -1,0 +1,748 @@
+{
+  "meta": {
+    "project": "PillPath",
+    "screen_id": "sleep_history_period_summary",
+    "screen_name": "SleepHistoryAndPeriodSummary",
+    "screen_title_ru": "Сон • Эдик",
+    "language": "ru",
+    "platform": "iOS",
+    "device_target": "iPhone 15 / 16 Pro Max",
+    "canvas_px": {
+      "width": 1290,
+      "height": 2796
+    },
+    "scale": "3x",
+    "logical_size_pt": {
+      "width": 430,
+      "height": 932
+    },
+    "version": "1.0",
+    "purpose": "Экран истории сна ребёнка с мягкой сводкой за период и хронологической историей сессий сна.",
+    "concept": "Сохраняем новую концепцию: крупный заголовок, сегменты периода, hero-summary карточка и timeline истории. Визуальный стиль тёплый, спокойный, семейный. Вместо персонажа в hero-блоке используется простая иконка сна и тематический фон: луна, звёзды, облака."
+  },
+  "design_principles": {
+    "visual_direction": [
+      "warm",
+      "soft",
+      "editorial",
+      "calm",
+      "family-friendly",
+      "premium",
+      "minimal-but-friendly"
+    ],
+    "avoid": [
+      "холодный клинический интерфейс",
+      "тяжёлый dashboard",
+      "крупная иллюстрация спящего ребёнка",
+      "перегруженность иконками",
+      "кислотные фиолетовые заливки",
+      "слишком мультяшный стиль",
+      "агрессивные контрасты"
+    ],
+    "must_have": [
+      "большой спокойный заголовок",
+      "сегментированный выбор периода",
+      "hero-summary карточка",
+      "простая иконка сна как основной символ",
+      "тематический фон с луной и звёздами",
+      "timeline-история сессий сна",
+      "мягкие светлые карточки с персиковой обводкой"
+    ]
+  },
+  "canvas": {
+    "safe_area": {
+      "top_px": 150,
+      "bottom_px": 120,
+      "horizontal_padding_px": 56
+    },
+    "status_bar": {
+      "height_px": 120,
+      "time": "11:59",
+      "icons": [
+        "cellular",
+        "wifi",
+        "battery"
+      ],
+      "icon_color": "#000000"
+    },
+    "dynamic_island": {
+      "enabled": true,
+      "width_px": 268,
+      "height_px": 86,
+      "radius_px": 43,
+      "color": "#000000"
+    },
+    "home_indicator": {
+      "enabled": false
+    }
+  },
+  "grid": {
+    "columns": 1,
+    "outer_margin_px": 56,
+    "content_width_px": 1178,
+    "vertical_flow_gap_px": 38,
+    "micro_gap_px": 16,
+    "section_gap_px": 40
+  },
+  "color_tokens": {
+    "background": {
+      "page": "#FFF8F4",
+      "page_gradient_top": "#FFF7F2",
+      "page_gradient_middle": "#FFFDFC",
+      "page_gradient_bottom": "#FFF8F4"
+    },
+    "surface": {
+      "primary_card": "#FFFDFC",
+      "secondary_card": "#FFFBF8",
+      "hero_tint": "#FFF8F0",
+      "segmented_bg": "#FFFDFC",
+      "metric_panel": "#FFFFFF"
+    },
+    "text": {
+      "primary": "#1E2A38",
+      "secondary": "#66758A",
+      "tertiary": "#8A96A6",
+      "link": "#5F7387",
+      "accent": "#1E2A38",
+      "inverse": "#FFFFFF"
+    },
+    "border": {
+      "soft_warm": "#F1D9CF",
+      "soft_warm_strong": "#E9C7B7",
+      "very_soft": "#F6E7E0",
+      "timeline_line": "#F2D2C5",
+      "divider": "#F3E6DE"
+    },
+    "accent": {
+      "sleep_primary": "#B9A8E8",
+      "sleep_primary_soft": "#EEE7FB",
+      "night_blue": "#C9D9F6",
+      "night_blue_soft": "#EEF4FF",
+      "moon_peach": "#F8D8B2",
+      "moon_peach_soft": "#FFF0DE",
+      "star_warm": "#F9D68F",
+      "star_warm_soft": "#FFF4D9",
+      "timeline_dot": "#F0B087",
+      "coral_soft": "#FFE8E1"
+    },
+    "icon_badges": {
+      "sleep_bg": "#E8DDF9",
+      "sleep_fg": "#7E69C7",
+      "day_sleep_bg": "#D9E8FB",
+      "day_sleep_fg": "#6F8FCA",
+      "clock_bg": "#FFF0DE",
+      "clock_fg": "#C78234"
+    }
+  },
+  "typography_tokens": {
+    "font_family": {
+      "primary": "SF Pro Display",
+      "secondary": "SF Pro Text",
+      "fallback": [
+        "Plus Jakarta Sans",
+        "Inter",
+        "Manrope",
+        "system-ui",
+        "sans-serif"
+      ]
+    },
+    "styles": {
+      "nav_link": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 24,
+        "font_weight": 500,
+        "line_height_px": 30,
+        "letter_spacing_px": 0,
+        "color": "#5F7387"
+      },
+      "page_title": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 70,
+        "font_weight": 800,
+        "line_height_px": 74,
+        "letter_spacing_px": -1.2,
+        "color": "#1E2A38"
+      },
+      "page_subtitle": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 30,
+        "font_weight": 500,
+        "line_height_px": 42,
+        "letter_spacing_px": -0.2,
+        "color": "#66758A"
+      },
+      "section_title": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 54,
+        "font_weight": 800,
+        "line_height_px": 60,
+        "letter_spacing_px": -0.8,
+        "color": "#1E2A38"
+      },
+      "segment_label": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 27,
+        "font_weight": 500,
+        "line_height_px": 34,
+        "color": "#425468"
+      },
+      "segment_label_active": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 27,
+        "font_weight": 700,
+        "line_height_px": 34,
+        "color": "#1E2A38"
+      },
+      "card_title": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 44,
+        "font_weight": 800,
+        "line_height_px": 50,
+        "letter_spacing_px": -0.6,
+        "color": "#1E2A38"
+      },
+      "card_subtitle": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 27,
+        "font_weight": 500,
+        "line_height_px": 34,
+        "color": "#66758A"
+      },
+      "metric_value": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 38,
+        "font_weight": 800,
+        "line_height_px": 42,
+        "letter_spacing_px": -0.4,
+        "color": "#1E2A38"
+      },
+      "metric_suffix": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 30,
+        "font_weight": 700,
+        "line_height_px": 34,
+        "letter_spacing_px": -0.2,
+        "color": "#1E2A38"
+      },
+      "metric_label": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 20,
+        "font_weight": 500,
+        "line_height_px": 28,
+        "color": "#66758A"
+      },
+      "timeline_time": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 30,
+        "font_weight": 800,
+        "line_height_px": 36,
+        "color": "#1E2A38"
+      },
+      "timeline_day": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 20,
+        "font_weight": 500,
+        "line_height_px": 26,
+        "color": "#66758A"
+      },
+      "entry_title": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 31,
+        "font_weight": 800,
+        "line_height_px": 38,
+        "color": "#1E2A38"
+      },
+      "entry_meta": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 20,
+        "font_weight": 500,
+        "line_height_px": 28,
+        "color": "#66758A"
+      }
+    }
+  },
+  "radius_tokens": {
+    "card_lg_px": 38,
+    "card_md_px": 32,
+    "card_sm_px": 28,
+    "pill_px": 30,
+    "segmented_outer_px": 30,
+    "segmented_inner_px": 24,
+    "icon_button_px": 34,
+    "badge_circle_px": 28
+  },
+  "stroke_tokens": {
+    "card_border_px": 2,
+    "soft_border_px": 1.5,
+    "icon_stroke_px": 2.4,
+    "timeline_line_px": 2
+  },
+  "shadow_tokens": {
+    "card_shadow": {
+      "x": 0,
+      "y": 12,
+      "blur": 38,
+      "spread": 0,
+      "color": "#E8CBBE",
+      "opacity": 0.08
+    },
+    "hero_shadow": {
+      "x": 0,
+      "y": 16,
+      "blur": 50,
+      "spread": 0,
+      "color": "#E8CBBE",
+      "opacity": 0.1
+    }
+  },
+  "spacing_tokens": {
+    "screen_top_after_status_px": 44,
+    "nav_to_title_px": 44,
+    "title_to_subtitle_px": 24,
+    "subtitle_to_segmented_px": 52,
+    "segmented_to_hero_px": 34,
+    "hero_inner_padding_px": 34,
+    "hero_title_to_subtitle_px": 16,
+    "hero_top_block_to_metrics_px": 30,
+    "metrics_inner_padding_px": 28,
+    "section_title_to_list_px": 28,
+    "timeline_row_gap_px": 18,
+    "timeline_card_inner_padding_px": 22,
+    "timeline_left_col_width_px": 210,
+    "timeline_dot_to_card_gap_px": 18,
+    "icon_button_gap_px": 14
+  },
+  "icon_system": {
+    "style": {
+      "family": "rounded outline icons",
+      "stroke_px": 2.4,
+      "corner_style": "round",
+      "fill_usage": "иконки сидят в мягких круглых бейджах",
+      "overall_rule": "Главный акцент — структура и типографика. Иконки используются умеренно."
+    },
+    "sizes": {
+      "nav_icon_px": 22,
+      "header_action_icon_px": 28,
+      "hero_main_icon_px": 56,
+      "summary_metric_icon_px": 30,
+      "timeline_badge_icon_px": 34,
+      "chevron_icon_px": 24
+    },
+    "containers": {
+      "header_action_circle_px": 82,
+      "hero_main_icon_circle_px": 108,
+      "summary_metric_circle_px": 72,
+      "timeline_badge_circle_px": 72
+    },
+    "tokens": {
+      "back": {
+        "name": "arrow-left",
+        "color": "#5F7387"
+      },
+      "share": {
+        "name": "share",
+        "color": "#1E2A38",
+        "background": "#FFFDFC"
+      },
+      "sliders": {
+        "name": "sliders-horizontal",
+        "color": "#1E2A38",
+        "background": "#FFFDFC"
+      },
+      "moon": {
+        "name": "moon-stars",
+        "color": "#7E69C7",
+        "background": "#E8DDF9"
+      },
+      "clock": {
+        "name": "clock",
+        "color": "#C78234",
+        "background": "#FFF0DE"
+      },
+      "night_sleep": {
+        "name": "moon-stars",
+        "color": "#7E69C7",
+        "background": "#E8DDF9"
+      },
+      "day_sleep": {
+        "name": "cloud-zzz",
+        "color": "#6F8FCA",
+        "background": "#D9E8FB"
+      },
+      "zzz": {
+        "name": "zzz",
+        "color": "#7E69C7",
+        "background": "#E8DDF9"
+      },
+      "chevron": {
+        "name": "chevron-right",
+        "color": "#8A96A6"
+      }
+    }
+  },
+  "illustration_system": {
+    "hero_background": {
+      "type": "soft decorative background only",
+      "elements": [
+        "large crescent moon",
+        "small stars",
+        "tiny sparkles",
+        "light clouds on right edge"
+      ],
+      "position": "top-right half of hero card behind heading area",
+      "style": [
+        "very soft pastel",
+        "subtle",
+        "low contrast",
+        "not a full illustration scene"
+      ],
+      "colors": {
+        "moon": "#F8D8B2",
+        "stars": "#F9D68F",
+        "clouds": "#FFF6EF"
+      },
+      "opacity_rule": "50–80% relative to foreground icon and text"
+    },
+    "hero_main_icon": {
+      "type": "simple sleep icon",
+      "description": "Круглый бейдж с луной и маленькими звёздами, как в системе иконок журнала. Он заменяет крупную сцену со спящим ребёнком.",
+      "size_px": 108,
+      "position": "left side inside hero header area"
+    }
+  },
+  "component_tokens": {
+    "header_action_button": {
+      "size_px": 82,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 1.5,
+        "color": "#F1D9CF"
+      },
+      "radius_px": 41,
+      "shadow": null
+    },
+    "segmented_control": {
+      "width_px": 1178,
+      "height_px": 118,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 2,
+        "color": "#F1D9CF"
+      },
+      "radius_px": 30,
+      "padding_px": 8,
+      "segments_count": 4,
+      "active_segment_background": "#FFFFFF",
+      "active_segment_radius_px": 24,
+      "active_index": 1,
+      "dividers": {
+        "enabled": true,
+        "color": "#F3E6DE",
+        "width_px": 1,
+        "height_px": 48
+      }
+    },
+    "hero_card": {
+      "width_px": 1178,
+      "height_px": 580,
+      "background": "#FFF8F0",
+      "border": {
+        "width_px": 2,
+        "color": "#F1D9CF"
+      },
+      "radius_px": 38,
+      "padding_px": 34,
+      "shadow": "hero_shadow"
+    },
+    "hero_metrics_panel": {
+      "width_px": 1110,
+      "height_px": 250,
+      "background": "#FFFFFF",
+      "border": {
+        "width_px": 1.5,
+        "color": "#F1D9CF"
+      },
+      "radius_px": 34,
+      "padding_px": 28,
+      "layout": "3 equal columns",
+      "column_divider": {
+        "width_px": 1.5,
+        "color": "#F3E6DE",
+        "height_px": 146
+      }
+    },
+    "timeline_item_time_card": {
+      "width_px": 210,
+      "height_px": 150,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 1.5,
+        "color": "#F6E7E0"
+      },
+      "radius_px": 28,
+      "padding_px": 22
+    },
+    "timeline_item_main_card": {
+      "width_px": 914,
+      "height_px": 150,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 1.5,
+        "color": "#F6E7E0"
+      },
+      "radius_px": 28,
+      "padding_px": 22
+    },
+    "timeline_dot": {
+      "size_px": 18,
+      "color": "#F0B087",
+      "line_color": "#F2D2C5",
+      "line_width_px": 2
+    }
+  },
+  "screen_structure": {
+    "order": [
+      "status_bar",
+      "top_navigation_row",
+      "page_heading",
+      "page_subtitle",
+      "segmented_period_control",
+      "hero_summary_card",
+      "history_section_title",
+      "timeline_history_list"
+    ],
+    "notes": [
+      "Нижнего меню нет.",
+      "Нет отдельной карточки ребёнка.",
+      "Hero-блок не использует большую сцену со спящим ребёнком.",
+      "Вместо этого используется большая иконка сна + декоративный тематический фон с луной и звёздами."
+    ]
+  },
+  "layout_blueprint": {
+    "top_navigation_row": {
+      "y_px": 154,
+      "height_px": 84,
+      "left_element": {
+        "type": "back_link",
+        "text": "К профилю ребёнка",
+        "icon": "back",
+        "gap_between_icon_and_text_px": 12
+      },
+      "right_elements": [
+        {
+          "type": "header_action_button",
+          "icon": "share"
+        },
+        {
+          "type": "header_action_button",
+          "icon": "sliders"
+        }
+      ]
+    },
+    "heading": {
+      "y_px": 274,
+      "title": "Сон • Эдик",
+      "subtitle": "История сна ребёнка и быстрый доступ к сохранённым сессиям.",
+      "title_max_width_px": 760,
+      "subtitle_max_width_px": 860
+    },
+    "segmented_control": {
+      "y_px": 566,
+      "labels": [
+        "24 часа",
+        "7 дней",
+        "30 дней",
+        "Все время"
+      ],
+      "active_label": "7 дней"
+    },
+    "hero_summary_card": {
+      "y_px": 720,
+      "title": "Как спал Эдик",
+      "subtitle": "за последние 7 дней",
+      "hero_main_icon": "moon",
+      "background_theme": [
+        "луна",
+        "звёзды",
+        "облака"
+      ],
+      "metrics": [
+        {
+          "icon": "night_sleep",
+          "value": "0.1",
+          "value_suffix": "раз",
+          "label": "В среднем в день"
+        },
+        {
+          "icon": "clock",
+          "value": "12:55",
+          "value_suffix": "",
+          "label": "Обычно в"
+        },
+        {
+          "icon": "zzz",
+          "value": "0",
+          "value_suffix": "мин",
+          "label": "Средняя длительность"
+        }
+      ]
+    },
+    "history_section": {
+      "y_px": 1360,
+      "title": "История сна"
+    },
+    "timeline_history_list": {
+      "starts_y_px": 1460,
+      "row_height_px": 150,
+      "row_gap_px": 18,
+      "left_line_x_px": 77,
+      "dot_x_px": 77,
+      "items": [
+        {
+          "time": "12:55",
+          "day": "Вчера",
+          "type": "Сон",
+          "icon": "night_sleep",
+          "badge_color": "sleep_bg",
+          "meta": "Конец: 12:56 • меньше минуты"
+        },
+        {
+          "time": "21:30",
+          "day": "2 дня назад",
+          "type": "Сон",
+          "icon": "night_sleep",
+          "badge_color": "sleep_bg",
+          "meta": "Конец: 06:45 • 9 ч 15 мин"
+        },
+        {
+          "time": "14:10",
+          "day": "2 дня назад",
+          "type": "Дневной сон",
+          "icon": "day_sleep",
+          "badge_color": "day_sleep_bg",
+          "meta": "Конец: 15:05 • 55 мин"
+        },
+        {
+          "time": "13:20",
+          "day": "3 дня назад",
+          "type": "Дневной сон",
+          "icon": "day_sleep",
+          "badge_color": "day_sleep_bg",
+          "meta": "Конец: 14:00 • 40 мин"
+        }
+      ]
+    }
+  },
+  "component_recipes": {
+    "hero_header_block": {
+      "composition": [
+        "hero_main_icon_left",
+        "title_and_subtitle_center_left",
+        "decorative_background_right"
+      ],
+      "hero_main_icon_left": {
+        "container_size_px": 108,
+        "icon_token": "moon"
+      },
+      "title_and_subtitle_center_left": {
+        "title_style": "card_title",
+        "subtitle_style": "card_subtitle"
+      },
+      "decorative_background_right": {
+        "elements": [
+          "crescent moon",
+          "stars",
+          "clouds"
+        ],
+        "non_interactive": true
+      }
+    },
+    "hero_metric_column": {
+      "contains": [
+        "soft_icon_circle",
+        "metric_value",
+        "optional_metric_suffix",
+        "metric_label"
+      ],
+      "alignment": "center",
+      "value_emphasis": "primary dark text, secondary icon accent"
+    },
+    "timeline_item": {
+      "composition": [
+        "time_card_left",
+        "main_card_right"
+      ],
+      "time_card_left": {
+        "contains": [
+          "timeline_time",
+          "timeline_day"
+        ]
+      },
+      "main_card_right": {
+        "contains": [
+          "icon_badge",
+          "entry_title",
+          "entry_meta",
+          "chevron_right"
+        ],
+        "layout": {
+          "icon_badge_x": 30,
+          "title_x": 126,
+          "meta_x": 126,
+          "chevron_align": "right_center"
+        }
+      }
+    }
+  },
+  "token_aliases": {
+    "bg/page": "{color_tokens.background.page}",
+    "bg/card": "{color_tokens.surface.primary_card}",
+    "bg/hero": "{color_tokens.surface.hero_tint}",
+    "border/card": "{color_tokens.border.soft_warm}",
+    "text/primary": "{color_tokens.text.primary}",
+    "text/secondary": "{color_tokens.text.secondary}",
+    "accent/sleep": "{color_tokens.accent.sleep_primary}",
+    "accent/sleep-soft": "{color_tokens.accent.sleep_primary_soft}",
+    "accent/moon": "{color_tokens.accent.moon_peach}",
+    "accent/star": "{color_tokens.accent.star_warm}",
+    "radius/lg": "{radius_tokens.card_lg_px}",
+    "radius/md": "{radius_tokens.card_md_px}",
+    "font/title": "{typography_tokens.styles.page_title}",
+    "font/subtitle": "{typography_tokens.styles.page_subtitle}",
+    "font/card-title": "{typography_tokens.styles.card_title}",
+    "font/value": "{typography_tokens.styles.metric_value}"
+  },
+  "ai_assembly_rules": {
+    "hierarchy": [
+      "Сначала показать контекст экрана: back-link + title + subtitle.",
+      "Потом дать сегментированный выбор периода.",
+      "Потом показать hero-summary карточку со сводкой сна.",
+      "Потом показать историю сна в timeline-формате."
+    ],
+    "content_rules": [
+      "Русский язык интерфейса.",
+      "Заголовки крупные и спокойные.",
+      "Hero-блок должен читаться как мягкая сводка, а не как аналитический dashboard.",
+      "Иконка сна — основная смысловая иконка hero-блока.",
+      "Луна и звёзды — только фон, не отдельные крупные KPI-блоки."
+    ],
+    "icon_rules": [
+      "Не перегружать экран иконками.",
+      "Иконки в timeline использовать как маркеры типа записи.",
+      "Hero-блок: один крупный бейдж сна слева и 3 маленьких иконки в метриках.",
+      "Не использовать крупную персонажную иллюстрацию."
+    ],
+    "spacing_rules": [
+      "Сохранять большие внешние поля.",
+      "Карточки не должны прилипать друг к другу.",
+      "Hero-card должна выглядеть воздушно и спокойно.",
+      "Timeline должен иметь равномерный ритм."
+    ],
+    "style_rules": [
+      "Общий стиль тёплый, мягкий, светлый.",
+      "Фон почти белый с лёгкой персиковой теплотой.",
+      "Фиолетовый используется только как мягкий акцент иконки сна, а не как доминирующая плашка на весь экран.",
+      "Луна и звёзды — деликатный фон, а не основная иллюстрация."
+    ]
+  }
+}

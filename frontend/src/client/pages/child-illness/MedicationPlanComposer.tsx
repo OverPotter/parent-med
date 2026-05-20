@@ -10,10 +10,11 @@ import {
   getMedicationDosePerKgReference,
 } from "../../utils/medicationPlans";
 import {
+  appBtnFilledClass,
   appBtnSecondaryClass,
+  illnessFlatPanelClass,
   illnessCompactInputClass,
   illnessCompactSecondaryButtonClass,
-  illnessPanelSoftClass,
 } from "./shared";
 import { MedicationDoseCalculationCard } from "./MedicationDoseCalculationCard";
 import {
@@ -30,8 +31,7 @@ import { CabinetMedicinePicker } from "./CabinetMedicinePicker";
 import { ReminderFirstAdministrationSection } from "./ReminderFirstAdministrationSection";
 import { isFutureFirstAdministrationSelection } from "./reminderTiming";
 
-const reminderComposerPrimaryActionClass =
-  "soft-pill-success app-profile-action app-profile-action--active min-h-[2.58rem] px-3.75 text-[0.8rem] sm:min-h-[2.68rem] sm:text-[0.82rem]";
+const reminderComposerPrimaryActionClass = `${appBtnFilledClass} min-h-[2.58rem] px-3.75 text-[0.8rem] sm:min-h-[2.68rem] sm:text-[0.82rem]`;
 const reminderComposerSecondaryActionClass = `${illnessCompactSecondaryButtonClass} min-h-[2.45rem] px-3.5 text-[0.79rem] sm:min-h-[2.55rem] sm:text-[0.81rem]`;
 const reminderComposerDisabledActionClass = `${reminderComposerSecondaryActionClass} border border-border/75 bg-[color:color-mix(in_srgb,var(--color-surface)_84%,var(--color-background)_16%)] text-foreground/55 shadow-none opacity-70 cursor-not-allowed`;
 
@@ -410,7 +410,7 @@ export function MedicationPlanComposer({
           "calc(8.5rem + var(--app-keyboard-height, 0px) + max(0.75rem, var(--app-safe-bottom-runtime, env(safe-area-inset-bottom))))",
       }}
     >
-      <div className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
+      <div className={`${illnessFlatPanelClass} space-y-4 p-4 sm:p-5`}>
         {medicines.length > 0 ? (
           <div className="grid grid-cols-2 gap-2">
             <button

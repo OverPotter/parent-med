@@ -1,0 +1,1311 @@
+{
+  "module_name": "ObservationQuickActions",
+  "app": "PillPath",
+  "language": "ru",
+  "platform": "iOS",
+  "screens": [
+    "AddTemperatureScreen",
+    "AddMedicineIntakeScreen",
+    "AddObservationNoteScreen"
+  ],
+  "global_design_direction": {
+    "goal": "Переосмыслить технические экраны старого журнала наблюдения болезни и привести их к новому мягкому, человеческому, семейному стилю PillPath.",
+    "main_principle": "Каждый экран должен ощущаться как спокойный помощник родителя, а не как медицинская форма.",
+    "style": [
+      "тёплый кремовый фон",
+      "мягкие карточки",
+      "крупные читаемые поля",
+      "человеческие подписи",
+      "минимум технического языка",
+      "дружелюбный детский аватар",
+      "коралловый главный CTA",
+      "мягкие подсказки без тревоги"
+    ],
+    "important_ux_rules": [
+      "Пользователь должен быстро добавить запись за 10–20 секунд.",
+      "Главная кнопка сохранения должна быть заметной.",
+      "Все поля должны быть понятны без объяснений.",
+      "Не заставлять пользователя заполнять лишнее.",
+      "Последние записи показывать ниже формы.",
+      "Если записей нет, показывать мягкий empty state.",
+      "Не использовать фиолетовый старый фон.",
+      "Не использовать жёсткие чёрные рамки.",
+      "Не перегружать медицинскими терминами."
+    ]
+  },
+  "target_device": {
+    "design_width": 393,
+    "design_height": 852,
+    "export_width": 1290,
+    "export_height": 2796,
+    "safe_area": {
+      "top": 54,
+      "bottom": 34,
+      "horizontal": 24
+    }
+  },
+  "global_tokens": {
+    "colors": {
+      "background_top": "#FFF4EC",
+      "background_middle": "#FFFAF6",
+      "background_bottom": "#FFFDF9",
+
+      "text_primary": "#1E2A3A",
+      "text_secondary": "#667386",
+      "text_muted": "#9AA3AF",
+      "text_on_primary": "#FFFFFF",
+
+      "card_bg": "#FFFCF8",
+      "card_bg_soft": "#FFF8F3",
+      "card_border": "#EED8CE",
+      "card_border_light": "#F3E3DB",
+
+      "input_bg": "#FFFBF8",
+      "input_border": "#EAD9D0",
+      "input_border_focus": "#F56F68",
+      "input_placeholder": "#9AA3AF",
+
+      "primary_coral": "#F56F68",
+      "primary_coral_dark": "#E95D56",
+      "primary_coral_light": "#FFE4DD",
+
+      "temperature_bg": "#FFF0F0",
+      "temperature_icon_bg": "#FFD6D8",
+      "temperature_icon": "#F56F68",
+      "temperature_border": "#F5C7C8",
+
+      "medicine_bg": "#FFF4E6",
+      "medicine_icon_bg": "#FFE0B9",
+      "medicine_icon": "#F59B45",
+      "medicine_border": "#F2D4AF",
+
+      "note_bg": "#EFFAF3",
+      "note_icon_bg": "#D8F1E1",
+      "note_icon": "#57B97C",
+      "note_border": "#C8E4D1",
+
+      "hint_bg": "#FFF1E9",
+      "hint_icon_bg": "#FFE0A8",
+      "hint_icon": "#E99A2E",
+
+      "empty_state_bg": "#FFFCF8",
+      "empty_state_border": "#F2D9CE",
+      "empty_state_border_dashed": "#F2D9CE",
+
+      "chip_bg": "#FFF1E9",
+      "chip_text": "#9A5D50",
+
+      "divider": "#F0DDD4",
+
+      "shadow_card": "rgba(58, 35, 24, 0.06)",
+      "shadow_button": "rgba(245, 111, 104, 0.22)"
+    },
+    "typography": {
+      "font_family": "SF Pro Display / SF Pro Text",
+      "fallback": "Inter, Plus Jakarta Sans, system-ui",
+
+      "back_button": {
+        "font_size": 17,
+        "line_height": 22,
+        "font_weight": 700,
+        "color": "#F56F68"
+      },
+      "screen_title": {
+        "font_size": 34,
+        "line_height": 40,
+        "font_weight": 800,
+        "letter_spacing": -0.8,
+        "color": "#1E2A3A"
+      },
+      "screen_title_highlight": {
+        "font_size": 34,
+        "line_height": 40,
+        "font_weight": 800,
+        "letter_spacing": -0.8,
+        "color": "#F56F68"
+      },
+      "screen_subtitle": {
+        "font_size": 17,
+        "line_height": 27,
+        "font_weight": 500,
+        "color": "#667386"
+      },
+      "card_title": {
+        "font_size": 19,
+        "line_height": 25,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "field_label": {
+        "font_size": 16,
+        "line_height": 22,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "input_text": {
+        "font_size": 17,
+        "line_height": 24,
+        "font_weight": 600,
+        "color": "#1E2A3A"
+      },
+      "input_placeholder": {
+        "font_size": 16,
+        "line_height": 23,
+        "font_weight": 500,
+        "color": "#9AA3AF"
+      },
+      "large_temperature_value": {
+        "font_size": 38,
+        "line_height": 44,
+        "font_weight": 800,
+        "letter_spacing": -0.8,
+        "color": "#1E2A3A"
+      },
+      "unit": {
+        "font_size": 18,
+        "line_height": 24,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "textarea_counter": {
+        "font_size": 14,
+        "line_height": 18,
+        "font_weight": 600,
+        "color": "#9AA3AF"
+      },
+      "button": {
+        "font_size": 17,
+        "line_height": 22,
+        "font_weight": 800
+      },
+      "section_title": {
+        "font_size": 22,
+        "line_height": 28,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "count_badge": {
+        "font_size": 15,
+        "line_height": 20,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "empty_text": {
+        "font_size": 16,
+        "line_height": 22,
+        "font_weight": 500,
+        "color": "#667386"
+      },
+      "hint_title": {
+        "font_size": 15,
+        "line_height": 20,
+        "font_weight": 800,
+        "color": "#1E2A3A"
+      },
+      "hint_body": {
+        "font_size": 14,
+        "line_height": 20,
+        "font_weight": 500,
+        "color": "#667386"
+      }
+    },
+    "radii": {
+      "circle": 999,
+      "screen_card": 28,
+      "large_card": 26,
+      "field": 22,
+      "textarea": 24,
+      "button": 999,
+      "small_card": 20,
+      "avatar": 999,
+      "icon_circle": 999,
+      "empty_state": 24
+    },
+    "spacing": {
+      "screen_padding_x": 24,
+      "screen_padding_top": 72,
+      "screen_padding_bottom": 40,
+
+      "top_bar_height": 52,
+      "top_bar_to_hero": 28,
+
+      "hero_title_to_subtitle": 10,
+      "hero_to_form": 26,
+
+      "card_padding": 20,
+      "card_gap": 16,
+
+      "field_label_to_input": 10,
+      "field_gap": 20,
+
+      "section_gap": 28,
+      "button_top_gap": 18,
+
+      "empty_state_margin_top": 14
+    },
+    "shadows": {
+      "card": {
+        "x": 0,
+        "y": 8,
+        "blur": 24,
+        "spread": 0,
+        "color": "rgba(58, 35, 24, 0.06)"
+      },
+      "primary_button": {
+        "x": 0,
+        "y": 8,
+        "blur": 20,
+        "spread": 0,
+        "color": "rgba(245, 111, 104, 0.22)"
+      }
+    }
+  },
+  "shared_components": {
+    "root_layout": {
+      "type": "scroll_view",
+      "background": {
+        "type": "linear_gradient",
+        "direction": "top_to_bottom",
+        "colors": [
+          "#FFF4EC",
+          "#FFFAF6",
+          "#FFFDF9"
+        ]
+      },
+      "padding": {
+        "left": 24,
+        "right": 24,
+        "top": 72,
+        "bottom": 40
+      }
+    },
+    "top_bar": {
+      "height": 52,
+      "layout": "horizontal",
+      "align_items": "center",
+      "justify_content": "space_between",
+      "left": {
+        "component": "back_button"
+      },
+      "right": {
+        "layout": "horizontal",
+        "gap": 12,
+        "items": [
+          "message_circle_button",
+          "profile_circle_button"
+        ]
+      }
+    },
+    "back_button": {
+      "height": 48,
+      "min_width": 96,
+      "layout": "horizontal",
+      "align_items": "center",
+      "gap": 8,
+      "border_radius": 999,
+      "background": "rgba(255, 252, 248, 0.65)",
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "icon": {
+        "name": "ArrowLeft",
+        "size": 22,
+        "stroke_width": 2,
+        "color": "#F56F68"
+      },
+      "text": {
+        "value": "Назад",
+        "style": "back_button"
+      },
+      "padding": {
+        "left": 14,
+        "right": 18
+      },
+      "states": {
+        "default": {
+          "opacity": 1,
+          "scale": 1
+        },
+        "pressed": {
+          "opacity": 0.75,
+          "scale": 0.97
+        }
+      }
+    },
+    "circle_icon_button": {
+      "size": 48,
+      "border_radius": 999,
+      "background": "rgba(255, 252, 248, 0.8)",
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "icon": {
+        "size": 22,
+        "stroke_width": 2,
+        "color": "#1E2A3A"
+      },
+      "states": {
+        "pressed": {
+          "opacity": 0.78,
+          "scale": 0.96
+        }
+      }
+    },
+    "hero_header": {
+      "type": "horizontal",
+      "margin_top": 28,
+      "align_items": "flex_start",
+      "left_width": 235,
+      "right_avatar_size": 132,
+      "title_template": "{action_title} · {child_name}",
+      "child_name_highlight_color": "#F56F68",
+      "avatar": {
+        "description": "Friendly 3D child avatar, boy with dark hair and yellow shirt, same as child profile avatar.",
+        "background_blob": "#FFF1E9",
+        "decor": "small soft peach splashes behind avatar"
+      }
+    },
+    "form_card": {
+      "background": "#FFFCF8",
+      "border": {
+        "width": 1,
+        "color": "#EED8CE"
+      },
+      "border_radius": 28,
+      "padding": 20,
+      "shadow": "card"
+    },
+    "basic_input": {
+      "height": 58,
+      "background": "#FFFBF8",
+      "border": {
+        "width": 1,
+        "color": "#EAD9D0"
+      },
+      "border_radius": 22,
+      "padding": {
+        "left": 18,
+        "right": 18
+      },
+      "states": {
+        "focused": {
+          "border_color": "#F56F68",
+          "border_width": 1.5
+        },
+        "disabled": {
+          "opacity": 0.6
+        }
+      }
+    },
+    "textarea": {
+      "min_height": 106,
+      "background": "#FFFBF8",
+      "border": {
+        "width": 1,
+        "color": "#EAD9D0"
+      },
+      "border_radius": 24,
+      "padding": {
+        "left": 18,
+        "right": 18,
+        "top": 18,
+        "bottom": 18
+      },
+      "counter_position": "bottom_right"
+    },
+    "date_time_field": {
+      "height": 58,
+      "background": "#FFFBF8",
+      "border": {
+        "width": 1,
+        "color": "#EAD9D0"
+      },
+      "border_radius": 22,
+      "padding": {
+        "left": 16,
+        "right": 16
+      },
+      "layout": "horizontal",
+      "justify_content": "space_between",
+      "left_icon": {
+        "name": "CalendarDays",
+        "size": 20,
+        "color": "#F56F68"
+      },
+      "right_icon": {
+        "name": "ChevronDown",
+        "size": 20,
+        "color": "#A28B82"
+      }
+    },
+    "hint_box": {
+      "background": "#FFF1E9",
+      "border_radius": 20,
+      "padding": {
+        "left": 14,
+        "right": 16,
+        "top": 12,
+        "bottom": 12
+      },
+      "layout": "horizontal",
+      "gap": 12,
+      "icon_container": {
+        "size": 42,
+        "background": "#FFE0A8",
+        "border_radius": 999
+      },
+      "icon": {
+        "name": "Lightbulb",
+        "size": 22,
+        "color": "#E99A2E"
+      }
+    },
+    "primary_button": {
+      "height": 58,
+      "border_radius": 999,
+      "background": "#F56F68",
+      "text_color": "#FFFFFF",
+      "shadow": "primary_button",
+      "states": {
+        "default": {
+          "background": "#F56F68",
+          "opacity": 1
+        },
+        "pressed": {
+          "background": "#E95D56",
+          "scale": 0.98
+        },
+        "disabled": {
+          "background": "#F3C7C2",
+          "opacity": 0.75,
+          "shadow": "none"
+        },
+        "loading": {
+          "show_spinner": true,
+          "text_opacity": 0
+        }
+      }
+    },
+    "section_header_with_count": {
+      "layout": "horizontal",
+      "justify_content": "space_between",
+      "align_items": "center",
+      "count_badge": {
+        "height": 38,
+        "padding_x": 16,
+        "border_radius": 999,
+        "background": "#FFFCF8",
+        "border": {
+          "width": 1,
+          "color": "#EED8CE"
+        }
+      }
+    },
+    "empty_state_card": {
+      "height": 112,
+      "background": "#FFFCF8",
+      "border": {
+        "width": 1,
+        "color": "#F2D9CE",
+        "style": "dashed"
+      },
+      "border_radius": 24,
+      "layout": "horizontal",
+      "align_items": "center",
+      "justify_content": "center",
+      "gap": 16,
+      "illustration_size": 64
+    },
+    "encouragement_card": {
+      "height": 72,
+      "background": "#FFF8F3",
+      "border": {
+        "width": 1,
+        "color": "#F3E3DB"
+      },
+      "border_radius": 20,
+      "padding": {
+        "left": 16,
+        "right": 16
+      },
+      "layout": "horizontal",
+      "gap": 14,
+      "icon_container": {
+        "size": 42,
+        "background": "#FFD8CB",
+        "border_radius": 999
+      },
+      "icon": {
+        "name": "ShieldCheck",
+        "size": 22,
+        "color": "#F56F68"
+      }
+    }
+  },
+  "screens_detail": {
+    "AddTemperatureScreen": {
+      "screen_name": "AddTemperatureScreen",
+      "title": "Температура · Эдик",
+      "subtitle": "Сохраните новый замер и сразу сверьтесь с последними значениями.",
+      "purpose": "Быстро добавить новый замер температуры во время активного наблюдения болезни.",
+      "main_change_from_old_design": "Убрать выбор вида измерения температуры. Больше не показывать 'подмышечная / ректально / ухо / лоб'. Оставить только значение, время и комментарий.",
+      "layout": {
+        "root": "shared.root_layout",
+        "top_bar": "shared.top_bar",
+        "hero": {
+          "component": "shared.hero_header",
+          "action_title": "Температура",
+          "child_name": "Эдик",
+          "subtitle": "Сохраните новый замер и сразу сверьтесь с последними значениями."
+        },
+        "form_card": {
+          "component": "shared.form_card",
+          "margin_top": 26,
+          "children": [
+            "temperature_value_block",
+            "measured_at_field",
+            "comment_field",
+            "temperature_hint_box",
+            "save_temperature_button"
+          ]
+        },
+        "history_section": {
+          "margin_top": 28,
+          "children": [
+            "section_header",
+            "empty_state_or_recent_temperature_list",
+            "encouragement_card"
+          ]
+        }
+      },
+      "components": {
+        "temperature_value_block": {
+          "label": "Новая температура",
+          "field": {
+            "height": 64,
+            "layout": "horizontal",
+            "background": "#FFFBF8",
+            "border": {
+              "width": 1,
+              "color": "#EAD9D0"
+            },
+            "border_radius": 24,
+            "padding": {
+              "left": 14,
+              "right": 14
+            },
+            "left_icon_container": {
+              "size": 46,
+              "border_radius": 999,
+              "background": "#FFD6D8"
+            },
+            "left_icon": {
+              "name": "Thermometer",
+              "size": 24,
+              "color": "#F56F68"
+            },
+            "input": {
+              "type": "decimal",
+              "value": "36.6",
+              "placeholder": "36.6",
+              "keyboard": "decimalPad",
+              "font_style": "large_temperature_value",
+              "text_align": "center",
+              "allowed_range": {
+                "min": 32.0,
+                "max": 43.0
+              }
+            },
+            "unit": {
+              "text": "°C",
+              "style": "unit"
+            },
+            "inline_action_button": {
+              "text": "Добавить",
+              "height": 50,
+              "width": 116,
+              "border_radius": 999,
+              "background": "#F56F68",
+              "text_color": "#FFFFFF",
+              "font_style": "button",
+              "note": "Можно использовать как быстрый save, но основной save всё равно остаётся внизу карточки. Если оставить две кнопки кажется лишним — убрать inline_action_button и оставить только большую кнопку 'Сохранить замер'."
+            }
+          }
+        },
+        "removed_measurement_type_selector": {
+          "status": "removed",
+          "old_options": [
+            "Подмышечная",
+            "Ректально",
+            "Ухо",
+            "Лоб"
+          ],
+          "reason": "Для быстрого родительского сценария это лишняя техническая детализация. Пользователь хочет быстро записать температуру, а не заполнять медицинскую анкету."
+        },
+        "measured_at_field": {
+          "label": "Когда измерили?",
+          "field": {
+            "component": "shared.date_time_field",
+            "value": "10 мая 2026 г., 12:54",
+            "tap_action": "open_datetime_picker"
+          }
+        },
+        "comment_field": {
+          "label": "Комментарий",
+          "label_suffix": "(необязательно)",
+          "field": {
+            "component": "shared.textarea",
+            "height": 100,
+            "placeholder": "Как себя чувствует?",
+            "max_length": 120,
+            "counter": "0/120"
+          }
+        },
+        "temperature_hint_box": {
+          "component": "shared.hint_box",
+          "text": {
+            "title": null,
+            "body": "Измеряйте в спокойной обстановке. Повторные замеры делайте с интервалом не менее 30 минут."
+          }
+        },
+        "save_temperature_button": {
+          "component": "shared.primary_button",
+          "text": "Сохранить замер",
+          "margin_top": 18
+        },
+        "history_section": {
+          "section_header": {
+            "title": "Последние замеры",
+            "count_badge": "0 записей"
+          },
+          "empty_state": {
+            "illustration": {
+              "type": "soft_3d",
+              "name": "cute_thermometer",
+              "description": "Мягкий маленький термометр с добрым лицом, пастельный коралловый оттенок."
+            },
+            "text": "Пока нет ни одного замера температуры."
+          },
+          "encouragement_card": {
+            "title": "Вы молодцы!",
+            "body": "Даже один замер помогает лучше понять состояние ребёнка.",
+            "icon": "ShieldCheck"
+          },
+          "recent_item_example": {
+            "height": 70,
+            "background": "#FFFCF8",
+            "border": {
+              "width": 1,
+              "color": "#EED8CE"
+            },
+            "border_radius": 20,
+            "left": {
+              "time": "12:54",
+              "icon": "Thermometer",
+              "icon_bg": "#FFD6D8",
+              "icon_color": "#F56F68"
+            },
+            "content": {
+              "title": "36.6 °C",
+              "subtitle": "Как себя чувствует: бодрый"
+            },
+            "right": {
+              "icon": "ChevronRight"
+            }
+          }
+        }
+      },
+      "interaction_logic": {
+        "on_open": [
+          "Подставить child_id и child_name.",
+          "По умолчанию значение температуры = пусто или последнее введённое пользователем значение, если он начал ввод.",
+          "Дата и время = текущий момент.",
+          "Кнопка 'Сохранить замер' disabled, пока поле температуры пустое или значение вне диапазона."
+        ],
+        "temperature_input": {
+          "keyboard": "decimalPad",
+          "auto_format": [
+            "Разрешить ввод с точкой или запятой.",
+            "Преобразовать запятую в точку внутри модели.",
+            "Показывать одну цифру после запятой."
+          ],
+          "validation": {
+            "required": true,
+            "min": 32.0,
+            "max": 43.0,
+            "error_message_low": "Проверьте значение температуры.",
+            "error_message_high": "Проверьте значение температуры."
+          }
+        },
+        "datetime_field": {
+          "tap": "open_datetime_picker_bottom_sheet",
+          "allowed_range": {
+            "from": "observation_start_date",
+            "to": "now"
+          }
+        },
+        "comment": {
+          "required": false,
+          "max_length": 120
+        },
+        "save": {
+          "tap": {
+            "action": "create_temperature_record",
+            "payload": {
+              "child_id": "{child_id}",
+              "observation_id": "{observation_id}",
+              "type": "temperature",
+              "temperature_celsius": "{temperature_value}",
+              "measured_at": "{selected_datetime}",
+              "comment": "{comment_value}"
+            },
+            "success": [
+              "Добавить запись в ленту наблюдения.",
+              "Обновить карточку ребёнка в Журнале.",
+              "Показать toast: Замер сохранён.",
+              "Очистить поле или вернуться в Журнал — зависит от сценария."
+            ]
+          }
+        }
+      }
+    },
+    "AddMedicineIntakeScreen": {
+      "screen_name": "AddMedicineIntakeScreen",
+      "title": "Приём · Эдик",
+      "subtitle": "Быстро отметьте, что и сколько дали ребёнку.",
+      "purpose": "Добавить запись о приёме лекарства, витамина или другого средства во время наблюдения.",
+      "layout": {
+        "root": "shared.root_layout",
+        "top_bar": "shared.top_bar",
+        "hero": {
+          "component": "shared.hero_header",
+          "action_title": "Приём",
+          "child_name": "Эдик",
+          "subtitle": "Быстро отметьте, что и сколько дали ребёнку."
+        },
+        "form_card": {
+          "component": "shared.form_card",
+          "margin_top": 26,
+          "children": [
+            "medicine_name_field",
+            "add_from_cabinet_button",
+            "dose_field",
+            "given_at_field",
+            "comment_field",
+            "medicine_hint_box",
+            "save_medicine_button"
+          ]
+        },
+        "history_section": {
+          "margin_top": 28,
+          "children": [
+            "section_header",
+            "empty_state_or_recent_medicine_list",
+            "encouragement_card"
+          ]
+        }
+      },
+      "components": {
+        "medicine_name_field": {
+          "label": "Что дали?",
+          "field": {
+            "component": "shared.basic_input",
+            "icon": {
+              "name": "Search",
+              "size": 20,
+              "color": "#9AA3AF"
+            },
+            "placeholder": "Например: Ибупрофен",
+            "input_type": "text",
+            "max_length": 80,
+            "autocomplete": {
+              "source": "home_medicine_cabinet",
+              "enabled": true,
+              "behavior": "При вводе показывать подсказки из домашней аптечки."
+            }
+          }
+        },
+        "add_from_cabinet_button": {
+          "height": 46,
+          "border_radius": 999,
+          "background": "#FFF8F3",
+          "border": {
+            "width": 1,
+            "color": "#EED8CE"
+          },
+          "icon": {
+            "name": "Plus",
+            "size": 18,
+            "color": "#F56F68"
+          },
+          "text": {
+            "value": "Добавить из аптечки",
+            "font_size": 15,
+            "font_weight": 800,
+            "color": "#F56F68"
+          },
+          "tap_action": "open_medicine_cabinet_picker",
+          "note": "Кнопка вторичная. Она помогает, но не должна быть главным действием."
+        },
+        "dose_field": {
+          "label": "Сколько дали, если нужно",
+          "field": {
+            "component": "shared.basic_input",
+            "icon": {
+              "name": "Droplet",
+              "size": 20,
+              "color": "#F59B45"
+            },
+            "placeholder": "Например: 5 мл или 1 таб.",
+            "input_type": "text",
+            "max_length": 40
+          }
+        },
+        "given_at_field": {
+          "label": "Когда дали?",
+          "field": {
+            "component": "shared.date_time_field",
+            "value": "10 мая 2026 г., 12:54",
+            "tap_action": "open_datetime_picker"
+          }
+        },
+        "comment_field": {
+          "label": "Комментарий",
+          "label_suffix": "(необязательно)",
+          "field": {
+            "component": "shared.textarea",
+            "height": 92,
+            "placeholder": "Например: после еды",
+            "max_length": 120,
+            "counter": "0/120"
+          }
+        },
+        "medicine_hint_box": {
+          "component": "shared.hint_box",
+          "text": {
+            "title": null,
+            "body": "Точные дозировки помогают отслеживать приём и эффект."
+          }
+        },
+        "save_medicine_button": {
+          "component": "shared.primary_button",
+          "text": "Сохранить приём",
+          "margin_top": 18
+        },
+        "history_section": {
+          "section_header": {
+            "title": "Последние приёмы",
+            "count_badge": "0 записей"
+          },
+          "empty_state": {
+            "illustration": {
+              "type": "soft_3d",
+              "name": "medicine_bottle_and_pill",
+              "description": "Мягкий флакон лекарства и таблетка в пастельном персиковом стиле."
+            },
+            "text": "Пока нет ни одного приёма."
+          },
+          "encouragement_card": {
+            "title": "Спасибо, что заботитесь!",
+            "body": "Ваши записи помогают соблюдать режим лечения.",
+            "icon": "ShieldCheck"
+          },
+          "recent_item_example": {
+            "height": 74,
+            "background": "#FFFCF8",
+            "border": {
+              "width": 1,
+              "color": "#EED8CE"
+            },
+            "border_radius": 20,
+            "left": {
+              "time": "13:10",
+              "icon": "PillBottle",
+              "icon_bg": "#FFE0B9",
+              "icon_color": "#F59B45"
+            },
+            "content": {
+              "title": "Ибупрофен — 5 мл",
+              "subtitle": "После еды"
+            },
+            "right": {
+              "icon": "ChevronRight"
+            }
+          }
+        }
+      },
+      "interaction_logic": {
+        "on_open": [
+          "Подставить child_id и child_name.",
+          "Дата и время = текущий момент.",
+          "Кнопка 'Сохранить приём' disabled, пока поле 'Что дали?' пустое."
+        ],
+        "medicine_name": {
+          "required": true,
+          "autocomplete": true,
+          "on_select_from_cabinet": [
+            "Заполнить название препарата.",
+            "Если в аптечке есть стандартная дозировка, предложить её в поле 'Сколько дали'."
+          ]
+        },
+        "dose": {
+          "required": false,
+          "examples": [
+            "5 мл",
+            "1 таб.",
+            "2 капли",
+            "1 пакетик"
+          ]
+        },
+        "datetime_field": {
+          "tap": "open_datetime_picker_bottom_sheet",
+          "allowed_range": {
+            "from": "observation_start_date",
+            "to": "now"
+          }
+        },
+        "comment": {
+          "required": false,
+          "max_length": 120
+        },
+        "save": {
+          "tap": {
+            "action": "create_medicine_intake_record",
+            "payload": {
+              "child_id": "{child_id}",
+              "observation_id": "{observation_id}",
+              "type": "medicine_intake",
+              "medicine_name": "{medicine_name}",
+              "dose": "{dose_value}",
+              "given_at": "{selected_datetime}",
+              "comment": "{comment_value}",
+              "medicine_cabinet_item_id": "{optional_selected_item_id}"
+            },
+            "success": [
+              "Добавить запись в ленту наблюдения.",
+              "Обновить количество приёмов в карточке ребёнка.",
+              "Показать toast: Приём сохранён."
+            ]
+          }
+        }
+      }
+    },
+    "AddObservationNoteScreen": {
+      "screen_name": "AddObservationNoteScreen",
+      "title": "Заметка · Эдик",
+      "subtitle": "Добавьте короткое наблюдение о состоянии ребёнка.",
+      "purpose": "Записать свободное наблюдение: настроение, симптомы, активность, аппетит, реакцию на лекарство.",
+      "layout": {
+        "root": "shared.root_layout",
+        "top_bar": "shared.top_bar",
+        "hero": {
+          "component": "shared.hero_header",
+          "action_title": "Заметка",
+          "child_name": "Эдик",
+          "subtitle": "Добавьте короткое наблюдение о состоянии ребёнка."
+        },
+        "form_card": {
+          "component": "shared.form_card",
+          "margin_top": 26,
+          "children": [
+            "note_textarea",
+            "note_at_field",
+            "note_hint_box",
+            "save_note_button"
+          ]
+        },
+        "history_section": {
+          "margin_top": 28,
+          "children": [
+            "section_header",
+            "empty_state_or_recent_note_list",
+            "encouragement_card"
+          ]
+        }
+      },
+      "components": {
+        "note_textarea": {
+          "label": "Новая заметка",
+          "field": {
+            "component": "shared.textarea",
+            "height": 150,
+            "placeholder": "Например: к вечеру бодрее, после сна снова температура.",
+            "max_length": 200,
+            "counter": "0/200"
+          }
+        },
+        "note_at_field": {
+          "label": "Когда это было?",
+          "field": {
+            "component": "shared.date_time_field",
+            "value": "10 мая 2026 г., 12:54",
+            "tap_action": "open_datetime_picker"
+          }
+        },
+        "note_hint_box": {
+          "component": "shared.hint_box",
+          "text": {
+            "title": null,
+            "body": "Короткие заметки помогают не упустить важные детали."
+          }
+        },
+        "save_note_button": {
+          "component": "shared.primary_button",
+          "text": "Добавить заметку",
+          "margin_top": 18
+        },
+        "history_section": {
+          "section_header": {
+            "title": "Последние заметки",
+            "count_badge": "0 записей"
+          },
+          "empty_state": {
+            "illustration": {
+              "type": "soft_3d",
+              "name": "chat_bubble",
+              "description": "Мягкий персиковый пузырь сообщения с тремя точками."
+            },
+            "text": "Пока нет ни одной заметки."
+          },
+          "encouragement_card": {
+            "title": "Каждая деталь важна!",
+            "body": "Даже небольшая заметка может помочь врачу.",
+            "icon": "ShieldCheck"
+          },
+          "recent_item_example": {
+            "height": 82,
+            "background": "#FFFCF8",
+            "border": {
+              "width": 1,
+              "color": "#EED8CE"
+            },
+            "border_radius": 20,
+            "left": {
+              "time": "13:30",
+              "icon": "MessageSquareText",
+              "icon_bg": "#D8F1E1",
+              "icon_color": "#57B97C"
+            },
+            "content": {
+              "title": "Стал активнее",
+              "subtitle": "Хорошо поиграл, настроение лучше"
+            },
+            "right": {
+              "icon": "ChevronRight"
+            }
+          }
+        }
+      },
+      "interaction_logic": {
+        "on_open": [
+          "Подставить child_id и child_name.",
+          "Дата и время = текущий момент.",
+          "Кнопка 'Добавить заметку' disabled, пока поле заметки пустое."
+        ],
+        "note_textarea": {
+          "required": true,
+          "max_length": 200,
+          "keyboard": "default",
+          "supports_multiline": true,
+          "auto_focus": false
+        },
+        "datetime_field": {
+          "tap": "open_datetime_picker_bottom_sheet",
+          "allowed_range": {
+            "from": "observation_start_date",
+            "to": "now"
+          }
+        },
+        "save": {
+          "tap": {
+            "action": "create_note_record",
+            "payload": {
+              "child_id": "{child_id}",
+              "observation_id": "{observation_id}",
+              "type": "note",
+              "note": "{note_value}",
+              "created_for_time": "{selected_datetime}"
+            },
+            "success": [
+              "Добавить запись в ленту наблюдения.",
+              "Показать toast: Заметка добавлена.",
+              "Обновить последние заметки."
+            ]
+          }
+        }
+      }
+    }
+  },
+  "navigation_and_flow": {
+    "entry_points": {
+      "from_journal_card_temperature": {
+        "source": "JournalActiveObservationList",
+        "button": "+ Температура",
+        "target": "AddTemperatureScreen"
+      },
+      "from_journal_card_medicine": {
+        "source": "JournalActiveObservationList",
+        "button": "+ Приём",
+        "target": "AddMedicineIntakeScreen"
+      },
+      "from_journal_card_note": {
+        "source": "JournalActiveObservationList",
+        "button": "+ Заметка",
+        "target": "AddObservationNoteScreen"
+      }
+    },
+    "after_save_behavior_options": {
+      "recommended": {
+        "behavior": "После сохранения возвращать пользователя на экран Журнал к карточке ребёнка.",
+        "reason": "Это быстрее и логичнее для родителя во время болезни."
+      },
+      "alternative": {
+        "behavior": "Оставаться на экране и очищать форму, чтобы добавить ещё одну запись.",
+        "when_to_use": "Если пользователь часто добавляет несколько значений подряд."
+      }
+    },
+    "back_behavior": {
+      "no_changes": "Вернуться назад сразу.",
+      "with_unsaved_changes": {
+        "show_confirmation": true,
+        "title": "Выйти без сохранения?",
+        "description": "Запись ещё не добавлена.",
+        "primary_button": "Выйти",
+        "secondary_button": "Остаться"
+      }
+    }
+  },
+  "date_time_picker_bottom_sheet": {
+    "component": "DateTimePickerSheet",
+    "height": 380,
+    "background": "#FFFCF8",
+    "top_radius": 28,
+    "title": "Дата и время",
+    "allowed_range": {
+      "from": "observation_start_date",
+      "to": "now"
+    },
+    "buttons": {
+      "secondary": "Отмена",
+      "primary": "Готово"
+    },
+    "style": {
+      "primary_button_bg": "#F56F68",
+      "primary_button_text": "#FFFFFF",
+      "secondary_button_text": "#667386"
+    }
+  },
+  "empty_states": {
+    "temperature": {
+      "title": null,
+      "text": "Пока нет ни одного замера температуры.",
+      "illustration": "cute_thermometer"
+    },
+    "medicine": {
+      "title": null,
+      "text": "Пока нет ни одного приёма.",
+      "illustration": "medicine_bottle_and_pill"
+    },
+    "note": {
+      "title": null,
+      "text": "Пока нет ни одной заметки.",
+      "illustration": "chat_bubble"
+    }
+  },
+  "copy_rules": {
+    "tone": "Спокойный, человеческий, без давления.",
+    "preferred_words": [
+      "замер",
+      "приём",
+      "заметка",
+      "ребёнок",
+      "состояние",
+      "наблюдение",
+      "запись"
+    ],
+    "avoid_words": [
+      "пациент",
+      "диагноз",
+      "симптоматика",
+      "анамнез",
+      "медицинский протокол",
+      "создать болезнь",
+      "заполнить форму"
+    ],
+    "button_texts": {
+      "temperature": "Сохранить замер",
+      "medicine": "Сохранить приём",
+      "note": "Добавить заметку"
+    }
+  },
+  "validation": {
+    "temperature": {
+      "required_fields": [
+        "temperature_value"
+      ],
+      "optional_fields": [
+        "comment"
+      ],
+      "temperature_range_celsius": {
+        "min": 32.0,
+        "max": 43.0
+      },
+      "disabled_button_until_valid": true
+    },
+    "medicine": {
+      "required_fields": [
+        "medicine_name"
+      ],
+      "optional_fields": [
+        "dose",
+        "comment"
+      ],
+      "disabled_button_until_valid": true
+    },
+    "note": {
+      "required_fields": [
+        "note"
+      ],
+      "optional_fields": [],
+      "disabled_button_until_valid": true
+    }
+  },
+  "accessibility": {
+    "minimum_tap_target": 44,
+    "dynamic_type": true,
+    "voiceover": {
+      "temperature_screen_title": "Температура для Эдик",
+      "temperature_input": "Введите температуру в градусах Цельсия",
+      "temperature_save": "Сохранить замер температуры",
+      "medicine_screen_title": "Приём для Эдик",
+      "medicine_name_input": "Что дали ребёнку",
+      "medicine_dose_input": "Сколько дали, необязательное поле",
+      "medicine_save": "Сохранить приём",
+      "note_screen_title": "Заметка для Эдик",
+      "note_input": "Введите заметку о состоянии ребёнка",
+      "note_save": "Добавить заметку"
+    },
+    "contrast_rules": [
+      "Основной текст #1E2A3A на светлом фоне.",
+      "Вторичный текст не светлее #667386.",
+      "Главная кнопка #F56F68 с белым текстом.",
+      "Плейсхолдеры допускаются светлее, но не использовать их как основной текст."
+    ]
+  },
+  "ai_generation_prompts": {
+    "temperature_screen": {
+      "prompt": "Create a high-fidelity iPhone screen in Russian for PillPath child health app. Screen: Add Temperature for child Эдик. Warm cream to soft peach gradient background, soft rounded cards, dark navy text, coral accent. Top bar with rounded back button, message and profile circle buttons. Hero title 'Температура · Эдик' with 'Эдик' in coral, subtitle: 'Сохраните новый замер и сразу сверьтесь с последними значениями.' Friendly 3D boy avatar on the right. Main card: title 'Новая температура', large input 36.6 °C with thermometer icon and coral add button, NO measurement type selector, date/time field 'Когда измерили?', optional comment textarea 'Как себя чувствует?', soft hint about measuring calmly, coral button 'Сохранить замер'. Below: 'Последние замеры' with 0 records badge, empty state with cute thermometer illustration and encouragement card. No purple old style, no harsh borders.",
+      "negative_prompt": "Do not show measurement type selector. Do not show options like подмышечная, ректально, ухо, лоб. Do not use purple background. Do not use black borders. Do not make it clinical. Do not use English UI."
+    },
+    "medicine_screen": {
+      "prompt": "Create a high-fidelity iPhone screen in Russian for PillPath child health app. Screen: Add medicine intake for child Эдик. Warm cream to soft peach gradient, rounded cards, dark navy text, coral CTA. Top bar with back button, message and profile buttons. Hero title 'Приём · Эдик' with coral child name, subtitle 'Быстро отметьте, что и сколько дали ребёнку.' Friendly 3D boy avatar. Main card: field 'Что дали?' placeholder 'Например: Ибупрофен', secondary pill button '+ Добавить из аптечки', field 'Сколько дали, если нужно' placeholder 'Например: 5 мл или 1 таб.', date/time field 'Когда дали?', optional comment field 'Например: после еды', soft hint about accurate dosage, coral button 'Сохранить приём'. Below: recent intakes empty state with medicine bottle illustration and encouragement card.",
+      "negative_prompt": "Do not use purple old background. Do not make it technical. Do not crop text. Do not use English UI labels. Do not use harsh black outlines."
+    },
+    "note_screen": {
+      "prompt": "Create a high-fidelity iPhone screen in Russian for PillPath child health app. Screen: Add observation note for child Эдик. Warm cream/peach background, soft rounded cards, dark navy typography, coral main CTA. Top bar with back button, message and profile buttons. Hero title 'Заметка · Эдик' with child name in coral, subtitle 'Добавьте короткое наблюдение о состоянии ребёнка.' Friendly 3D boy avatar. Main card: title 'Новая заметка', large textarea placeholder 'Например: к вечеру бодрее, после сна снова температура.', counter 0/200, date/time field 'Когда это было?', soft hint 'Короткие заметки помогают не упустить важные детали.', coral button 'Добавить заметку'. Below: 'Последние заметки' with 0 records badge, empty state with chat bubble illustration and encouragement card.",
+      "negative_prompt": "Do not use old purple background. Do not make it look like a technical form. Do not crop text. Do not use English labels. Do not use black borders."
+    }
+  }
+}

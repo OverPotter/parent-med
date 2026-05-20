@@ -20,6 +20,8 @@ type RawChild = {
   birth_date: string | null;
   age_label: string | null;
   baby_mode_enabled: boolean;
+  avatar_key?: string | null;
+  gender?: string | null;
   institution_name: string | null;
   institution_phone: string | null;
   doctor_name: string | null;
@@ -50,6 +52,8 @@ interface CreateChildBody {
   name: string;
   birth_date?: string | null;
   baby_mode_enabled?: boolean;
+  avatar_key?: string | null;
+  gender?: string | null;
   institution_name?: string | null;
   institution_phone?: string | null;
   doctor_name?: string | null;
@@ -64,6 +68,8 @@ export async function createChild(
   birthDate?: string | null,
   details?: {
     babyModeEnabled?: boolean;
+    avatarKey?: string | null;
+    gender?: string | null;
     institutionName?: string | null;
     institutionPhone?: string | null;
     doctorName?: string | null;
@@ -77,6 +83,8 @@ export async function createChild(
     name,
     birth_date: birthDate ?? null,
     baby_mode_enabled: details?.babyModeEnabled ?? false,
+    avatar_key: details?.avatarKey ?? null,
+    gender: details?.gender ?? null,
     institution_name: details?.institutionName ?? null,
     institution_phone: details?.institutionPhone ?? null,
     doctor_name: details?.doctorName ?? null,
@@ -91,6 +99,8 @@ export async function createChild(
     birth_date: string | null;
     age_label: string | null;
     baby_mode_enabled: boolean;
+    avatar_key?: string | null;
+    gender?: string | null;
     institution_name: string | null;
     institution_phone: string | null;
     doctor_name: string | null;
@@ -107,6 +117,8 @@ export async function updateChild(
   birthDate?: string | null,
   details?: {
     babyModeEnabled?: boolean;
+    avatarKey?: string | null;
+    gender?: string | null;
     institutionName?: string | null;
     institutionPhone?: string | null;
     doctorName?: string | null;
@@ -122,6 +134,8 @@ export async function updateChild(
     birth_date: string | null;
     age_label: string | null;
     baby_mode_enabled: boolean;
+    avatar_key?: string | null;
+    gender?: string | null;
     institution_name: string | null;
     institution_phone: string | null;
     doctor_name: string | null;
@@ -132,6 +146,8 @@ export async function updateChild(
     name,
     birth_date: birthDate,
     baby_mode_enabled: details?.babyModeEnabled,
+    avatar_key: details?.avatarKey,
+    gender: details?.gender,
     institution_name: details?.institutionName,
     institution_phone: details?.institutionPhone,
     doctor_name: details?.doctorName,

@@ -1,6 +1,6 @@
 """DTO для ребёнка."""
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -21,6 +21,8 @@ class ChildCreateDto(BaseModel):
     doctor_phone: str | None = Field(None, description="Телефон врача")
     allergies: str | None = Field(None, description="Аллергии")
     notes: str | None = Field(None, description="Заметки")
+    avatar_key: str | None = Field(None, description="Ключ preset-иконки ребёнка")
+    gender: str | None = Field(None, description="Пол ребёнка")
 
 
 class ChildUpdateDto(BaseModel):
@@ -35,6 +37,8 @@ class ChildUpdateDto(BaseModel):
     doctor_phone: str | None = Field(None, description="Телефон врача")
     allergies: str | None = Field(None, description="Аллергии")
     notes: str | None = Field(None, description="Заметки")
+    avatar_key: str | None = Field(None, description="Ключ preset-иконки ребёнка")
+    gender: str | None = Field(None, description="Пол ребёнка")
 
 
 class ChildResponseDto(ResponseBase):
@@ -52,3 +56,22 @@ class ChildResponseDto(ResponseBase):
     doctor_phone: str | None = None
     allergies: str | None = None
     notes: str | None = None
+    avatar_key: str | None = None
+    gender: str | None = None
+
+
+class ChildActiveSleepSessionDto(ResponseBase):
+    id: UUID
+    started_at: datetime
+
+
+class ChildActiveFeedingRecordDto(ResponseBase):
+    id: UUID
+    started_at: datetime
+
+
+class ChildSummaryResponseDto(ChildResponseDto):
+    latest_weight_kg: float | None = None
+    latest_height_cm: float | None = None
+    active_sleep_session: ChildActiveSleepSessionDto | None = None
+    active_feeding_record: ChildActiveFeedingRecordDto | None = None

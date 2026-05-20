@@ -1,0 +1,588 @@
+{
+  "screen": {
+    "name": "PillPath / Children Screen",
+    "file": "pencil-new.pen",
+    "nodeId": "W8ClSg",
+    "canvas": {
+      "width": 1179,
+      "height": 2556,
+      "orientation": "portrait",
+      "deviceTarget": "iPhone",
+      "clip": true
+    },
+    "background": {
+      "type": "image",
+      "path": "../../shared/backgrounds/children_module_background_1179x2556.webp",
+      "mode": "fill"
+    }
+  },
+  "designTokens": {
+    "colors": {
+      "textPrimary": "#252B35",
+      "textSecondary": "#6F7178",
+      "textTertiary": "#7B7D84",
+      "textMeta": "#5F636B",
+      "cardFill": "#FFF8F1",
+      "cardInnerFill": "#FFFDF8",
+      "cardBorder": "#EFDDD2",
+      "tileBorder": "#F1E3DA",
+      "ctaFill": "#FFF7F1",
+      "ctaBorder": "#F2C2B8",
+      "accentCoral": "#F26F6C",
+      "liveChipFill": "#FDE8DF",
+      "liveChipBorder": "#F5CDBD",
+      "liveChipText": "#B76A54",
+      "liveChipDot": "#7FB79A",
+      "tabBarFill": "#FFF9F4",
+      "tabBarBorder": "#EEDDD5",
+      "tabActiveFill": "#FCE8E1",
+      "tabInactive": "#7A746F",
+      "collapseFill": "#FCEBE7"
+    },
+    "typography": {
+      "fontFamily": "Nunito",
+      "title": {
+        "fontSize": 108,
+        "fontWeight": "700",
+        "color": "#252B35"
+      },
+      "subtitle": {
+        "fontSize": 45,
+        "fontWeight": "500",
+        "lineHeight": 1.28,
+        "color": "#6F7178"
+      },
+      "childName": {
+        "fontSize": 68,
+        "fontWeight": "700",
+        "color": "#252B35"
+      },
+      "childStats": {
+        "fontSize": 39,
+        "fontWeight": "500",
+        "color": "#5F636B"
+      },
+      "lastRecord": {
+        "fontSize": 36,
+        "fontWeight": "500",
+        "color": "#7B7D84"
+      },
+      "liveChip": {
+        "fontSize": 26,
+        "fontWeight": "700",
+        "color": "#B76A54"
+      },
+      "quickActionLabel": {
+        "fontSize": 39,
+        "fontWeight": "600",
+        "color": "#202938"
+      },
+      "ctaLabel": {
+        "fontSize": 34,
+        "fontWeight": "700",
+        "color": "#F26F6C"
+      },
+      "tabActive": {
+        "fontSize": 32,
+        "fontWeight": "700",
+        "color": "#F26F6C"
+      },
+      "tabInactive": {
+        "fontSize": 32,
+        "fontWeight": "600",
+        "color": "#7A746F"
+      }
+    },
+    "effects": {
+      "cardShadow": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#CFAE9F12",
+        "offset": { "x": 0, "y": 10 },
+        "blur": 22
+      },
+      "tileShadow": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#D9B7AA10",
+        "offset": { "x": 0, "y": 8 },
+        "blur": 16
+      },
+      "tabBarShadow": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#D4B3A61A",
+        "offset": { "x": 0, "y": 6 },
+        "blur": 18
+      }
+    }
+  },
+  "layout": {
+    "contentWrapper": {
+      "nodeId": "E7Xls",
+      "width": 1179,
+      "height": 2376,
+      "padding": { "top": 132, "right": 48, "bottom": 48, "left": 48 },
+      "gap": 42
+    },
+    "header": {
+      "nodeId": "VKMan",
+      "x": 48,
+      "y": 132,
+      "width": 1083,
+      "height": 223,
+      "layout": "vertical",
+      "gap": 20,
+      "titleStackGap": 18
+    },
+    "cardsStack": {
+      "nodeId": "m14BHF",
+      "x": 48,
+      "y": 397,
+      "width": 1083,
+      "height": 1468,
+      "gap": 32
+    },
+    "bottomNavWrap": {
+      "nodeId": "QX64t",
+      "x": 0,
+      "y": 2376,
+      "width": 1179,
+      "height": 180,
+      "padding": { "top": 0, "right": 48, "bottom": 24, "left": 48 }
+    }
+  },
+  "header": {
+    "title": {
+      "nodeId": "nKDfy",
+      "text": "Дети"
+    },
+    "subtitle": {
+      "nodeId": "JoW7b",
+      "text": "Профили детей и быстрый доступ к записям."
+    }
+  },
+  "childrenCards": [
+    {
+      "nodeId": "IEh55",
+      "name": "Эдик",
+      "frame": {
+        "width": 1083,
+        "height": 753,
+        "cornerRadius": 42,
+        "padding": 40,
+        "gap": 24,
+        "fill": "#FFF8F1",
+        "border": {
+          "color": "#EFDDD2",
+          "thickness": 1.5
+        }
+      },
+      "headerRow": {
+        "gap": 24,
+        "avatar": {
+          "nodeId": "aLQwN",
+          "width": 136,
+          "height": 136,
+          "shape": "circle",
+          "fill": {
+            "type": "radialGradient",
+            "colors": ["#F8D9CA", "#EFEAE2"]
+          },
+          "icon": {
+            "nodeId": "wjye8",
+            "type": "icon_font",
+            "iconFontFamily": "lucide",
+            "iconFontName": "baby",
+            "width": 78,
+            "height": 78,
+            "fill": "#C67A58"
+          }
+        },
+        "collapseButton": {
+          "nodeId": "A0yej",
+          "width": 56,
+          "height": 56,
+          "cornerRadius": 28,
+          "fill": "#FCEBE7",
+          "icon": {
+            "nodeId": "FHwGD",
+            "iconFontFamily": "lucide",
+            "iconFontName": "chevron-up",
+            "width": 24,
+            "height": 24,
+            "fill": "#F26F6C"
+          }
+        }
+      },
+      "info": {
+        "nameText": "Эдик",
+        "statsText": "4 года • 15 кг • 108 см",
+        "lastRecordText": "Последняя запись сегодня, 09:20",
+        "lastRecordClock": {
+          "iconFontFamily": "lucide",
+          "iconFontName": "clock-3",
+          "width": 26,
+          "height": 26,
+          "fill": "#F26F6C"
+        },
+        "liveActivityChip": {
+          "nodeId": "e4YXk",
+          "visible": true,
+          "text": "Live Activity on",
+          "height": 58,
+          "cornerRadius": 29,
+          "paddingX": 22,
+          "gap": 14,
+          "fill": "#FDE8DF",
+          "border": {
+            "color": "#F5CDBD",
+            "thickness": 2
+          },
+          "dot": {
+            "width": 16,
+            "height": 16,
+            "fill": "#7FB79A"
+          }
+        }
+      },
+      "quickActions": [
+        {
+          "nodeId": "WDOzV",
+          "title": "Сон",
+          "interaction": "open_sleep_tracking_for_this_child",
+          "frame": {
+            "height": 168,
+            "cornerRadius": 30,
+            "paddingX": 28,
+            "gap": 24,
+            "fill": "#FFFDF8",
+            "border": {
+              "color": "#F1E3DA",
+              "thickness": 1.5
+            }
+          },
+          "iconContainer": {
+            "sourceNodeId": "dB0L0",
+            "type": "image",
+            "width": 170,
+            "height": 150,
+            "path": "../../shared/icons/moon_sleep_icon_transparent.png"
+          }
+        },
+        {
+          "nodeId": "v0UyuX",
+          "title": "Кормление",
+          "interaction": "open_feeding_entry_for_this_child",
+          "frame": {
+            "height": 168,
+            "cornerRadius": 30,
+            "paddingX": 28,
+            "gap": 24,
+            "fill": "#FFFDF8",
+            "border": {
+              "color": "#F1E3DA",
+              "thickness": 1.5
+            }
+          },
+          "iconContainer": {
+            "sourceNodeId": "uTIev",
+            "type": "image",
+            "width": 170,
+            "height": 150,
+            "path": "../../shared/icons/bottle_transparent.png"
+          }
+        },
+        {
+          "nodeId": "RGAcj",
+          "title": "Наблюдение",
+          "interaction": "open_observation_or_illness_tracking_for_this_child",
+          "frame": {
+            "height": 168,
+            "cornerRadius": 30,
+            "paddingX": 28,
+            "gap": 24,
+            "fill": "#FFFDF8",
+            "border": {
+              "color": "#F1E3DA",
+              "thickness": 1.5
+            }
+          },
+          "iconContainer": {
+            "sourceNodeId": "lF7Vg",
+            "type": "image",
+            "width": 170,
+            "height": 150,
+            "path": "../../shared/icons/thermometer_transparent.png"
+          }
+        },
+        {
+          "nodeId": "X8u8Ft",
+          "title": "Профиль",
+          "interaction": "open_child_profile",
+          "frame": {
+            "height": 168,
+            "cornerRadius": 30,
+            "paddingX": 28,
+            "gap": 24,
+            "fill": "#FFFDF8",
+            "border": {
+              "color": "#F1E3DA",
+              "thickness": 1.5
+            }
+          },
+          "iconContainer": {
+            "sourceNodeId": "myqxt",
+            "type": "image",
+            "width": 170,
+            "height": 150,
+            "path": "../../shared/icons/profile_icon_transparent.png"
+          }
+        }
+      ]
+    },
+    {
+      "nodeId": "lXnlk",
+      "name": "Маша",
+      "frame": {
+        "width": 1083,
+        "height": 683,
+        "cornerRadius": 42,
+        "padding": 40,
+        "gap": 24,
+        "fill": "#FFF8F1",
+        "border": {
+          "color": "#EFDDD2",
+          "thickness": 1.5
+        }
+      },
+      "headerRow": {
+        "gap": 24,
+        "avatar": {
+          "nodeId": "mmQet",
+          "width": 136,
+          "height": 136,
+          "shape": "circle",
+          "fill": {
+            "type": "radialGradient",
+            "colors": ["#F7DBD8", "#F3EEE8"]
+          },
+          "icon": {
+            "nodeId": "gr8eh",
+            "type": "icon_font",
+            "iconFontFamily": "lucide",
+            "iconFontName": "baby",
+            "width": 78,
+            "height": 78,
+            "fill": "#C78172"
+          }
+        },
+        "collapseButton": {
+          "nodeId": "i2y1J",
+          "width": 56,
+          "height": 56,
+          "cornerRadius": 28,
+          "fill": "#FCEBE7",
+          "icon": {
+            "nodeId": "aF7j6",
+            "iconFontFamily": "lucide",
+            "iconFontName": "chevron-up",
+            "width": 24,
+            "height": 24,
+            "fill": "#F26F6C"
+          }
+        }
+      },
+      "info": {
+        "nameText": "Маша",
+        "statsText": "2 года • 12 кг • 89 см",
+        "lastRecordText": "Последняя запись сегодня, 08:10",
+        "lastRecordClock": {
+          "iconFontFamily": "lucide",
+          "iconFontName": "clock-3",
+          "width": 26,
+          "height": 26,
+          "fill": "#F26F6C"
+        },
+        "liveActivityChip": {
+          "visible": false
+        }
+      },
+      "quickActions": [
+        {
+          "nodeId": "PFuXl",
+          "title": "Сон",
+          "interaction": "open_sleep_tracking_for_this_child",
+          "iconContainer": {
+            "sourceNodeId": "zB2aD",
+            "type": "image",
+            "width": 170,
+            "height": 150,
+            "path": "../../shared/icons/moon_sleep_icon_transparent.png"
+          }
+        },
+        {
+          "nodeId": "K2OrKX",
+          "title": "Кормление",
+          "interaction": "open_feeding_entry_for_this_child",
+          "iconContainer": {
+            "sourceNodeId": "B2lxwQ",
+            "type": "image",
+            "width": 170,
+            "height": 150,
+            "path": "../../shared/icons/bottle_transparent.png"
+          }
+        },
+        {
+          "nodeId": "K4EWCS",
+          "title": "Наблюдение",
+          "interaction": "open_observation_or_illness_tracking_for_this_child",
+          "iconContainer": {
+            "sourceNodeId": "DfKls",
+            "type": "image",
+            "width": 170,
+            "height": 150,
+            "path": "../../shared/icons/thermometer_transparent.png"
+          }
+        },
+        {
+          "nodeId": "K2c4u",
+          "title": "Профиль",
+          "interaction": "open_child_profile",
+          "iconContainer": {
+            "sourceNodeId": "x2T2S",
+            "type": "image",
+            "width": 170,
+            "height": 150,
+            "path": "../../shared/icons/profile_icon_transparent.png"
+          }
+        }
+      ]
+    }
+  ],
+  "addChildCta": {
+    "nodeId": "lPhkD",
+    "x": 48,
+    "y": 1907,
+    "width": 1083,
+    "height": 164,
+    "cornerRadius": 34,
+    "fill": "#FFF7F1",
+    "border": {
+      "color": "#F2C2B8",
+      "thickness": 2
+    },
+    "layout": {
+      "justifyContent": "center",
+      "alignItems": "center",
+      "gap": 18
+    },
+    "plusCircle": {
+      "nodeId": "jZzMs",
+      "width": 76,
+      "height": 76,
+      "cornerRadius": 38,
+      "fill": "#F26F6C"
+    },
+    "plusIcon": {
+      "nodeId": "VDLJg",
+      "iconFontFamily": "lucide",
+      "iconFontName": "plus",
+      "width": 36,
+      "height": 36,
+      "fill": "#FFFFFF"
+    },
+    "label": "Добавить ребёнка",
+    "interaction": "open_add_child_flow"
+  },
+  "bottomNavigation": {
+    "nodeId": "TmVXA",
+    "width": 1083,
+    "height": 156,
+    "padding": 10,
+    "gap": 10,
+    "cornerRadius": 34,
+    "fill": "#FFF9F4",
+    "border": {
+      "color": "#EEDDD5",
+      "thickness": 2
+    },
+    "tabs": [
+      {
+        "nodeId": "dARF2",
+        "label": "Дети",
+        "active": true,
+        "icon": {
+          "nodeId": "ZHqdZ",
+          "type": "icon_font",
+          "iconFontFamily": "lucide",
+          "iconFontName": "baby",
+          "width": 40,
+          "height": 40,
+          "fill": "#F26F6C"
+        },
+        "fill": "#FCE8E1",
+        "cornerRadius": 24
+      },
+      {
+        "nodeId": "n2LcFM",
+        "label": "Таблетница",
+        "active": false,
+        "icon": {
+          "nodeId": "B1B7T",
+          "type": "icon_font",
+          "iconFontFamily": "lucide",
+          "iconFontName": "pill",
+          "width": 40,
+          "height": 40,
+          "fill": "#7A746F"
+        }
+      },
+      {
+        "nodeId": "zbsG1",
+        "label": "Аптечка",
+        "active": false,
+        "icon": {
+          "nodeId": "OOrwx",
+          "type": "icon_font",
+          "iconFontFamily": "lucide",
+          "iconFontName": "briefcase-medical",
+          "width": 40,
+          "height": 40,
+          "fill": "#7A746F"
+        }
+      },
+      {
+        "nodeId": "Z6buO",
+        "label": "Ещё",
+        "active": false,
+        "icon": {
+          "nodeId": "dMOMu",
+          "type": "icon_font",
+          "iconFontFamily": "lucide",
+          "iconFontName": "menu",
+          "width": 40,
+          "height": 40,
+          "fill": "#7A746F"
+        }
+      }
+    ]
+  },
+  "interactions": {
+    "screenBehavior": "vertical_scroll_screen_with_fixed_bottom_navigation",
+    "childCardBehavior": {
+      "collapseControl": "top_right_chip_button_with_chevron_up",
+      "quickActionsStayInsideCard": true
+    },
+    "liveActivity": {
+      "visibleForChild": "Эдик",
+      "stateText": "Live Activity on",
+      "intendedMeaning": "live activity enabled for current child"
+    }
+  },
+  "notes": [
+    "All asset paths are normalized to local repository-relative paths under redesigned shared and screen folders.",
+    "If this JSON is used as implementation source of truth, keep new assets inside redesighn/shared or redesighn/screens instead of external absolute paths.",
+    "Bottom nav is visually fixed at screen bottom via separate wrapper QX64t."
+  ]
+}

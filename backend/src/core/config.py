@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
 
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/pillpath"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/parent_med"
     jwt_secret: str = "dev-jwt-secret-change-me"
     jwt_issuer: str = "pillpath"
     access_token_ttl_minutes: int = 30

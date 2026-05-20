@@ -1,0 +1,156 @@
+import type { MobileAuthSession } from "../../auth/api/authApi";
+import { getMobileApiBaseUrl } from "../../../shared/config/mobileRuntimeConfig";
+
+type RawWeightEntryResponse = {
+  id: string;
+  child_id: string;
+  value_kg: number;
+  measured_at: string;
+};
+
+export type MobileWeightEntry = {
+  id: string;
+  childId: string;
+  valueKg: number;
+  measuredAt: string;
+};
+
+export class MobileWeightEntriesApiError extends Error {
+  code?: string;
+  detail?: string;
+
+  constructor(message: string, options?: { code?: string; detail?: string }) {
+    super(message);
+    this.name = "MobileWeightEntriesApiError";
+    this.code = options?.code;
+    this.detail = options?.detail;
+  }
+}
+
+const API_BASE_URL = getMobileApiBaseUrl();
+
+function parseErrorPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object") {
+    return {};
+  }
+
+  const candidate = payload as {
+    code?: unknown;
+    detail?: unknown;
+    message?: unknown;
+  };
+
+  return {
+    code: typeof candidate.code === "string" ? candidate.code : undefined,
+    detail:
+      typeof candidate.detail === "string"
+        ? candidate.detail
+        : typeof candidate.message === "string"
+          ? candidate.message
+          : undefined,
+  };
+}
+
+async function requestAuthedJson<T>(
+  path: string,
+  init: RequestInit,
+  accessToken: string | null,
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(init.headers ?? {}),
+    },
+  });
+
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+
+  if (!response.ok) {
+    const { code, detail } = parseErrorPayload(payload);
+    throw new MobileWeightEntriesApiError(detail ?? "Request failed", {
+      code,
+      detail,
+    });
+  }
+
+  return payload as T;
+}
+
+function toMobileWeightEntry(raw: RawWeightEntryResponse): MobileWeightEntry {
+  return {
+    id: raw.id,
+    childId: raw.child_id,
+    valueKg: raw.value_kg,
+    measuredAt: raw.measured_at,
+  };
+}
+
+export async function fetchLatestMobileWeightEntry(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<MobileWeightEntry | null> {
+  const response = await requestAuthedJson<RawWeightEntryResponse | null>(
+    `/weight-entries/child/${encodeURIComponent(childId)}/latest`,
+    {
+      method: "GET",
+    },
+    session.accessToken,
+  );
+
+  return response ? toMobileWeightEntry(response) : null;
+}
+
+export async function fetchMobileWeightEntries(
+  session: Pick<MobileAuthSession, "accessToken">,
+  childId: string,
+): Promise<MobileWeightEntry[]> {
+  const response = await requestAuthedJson<RawWeightEntryResponse[]>(
+    `/weight-entries?child_id=${encodeURIComponent(childId)}`,
+    {
+      method: "GET",
+    },
+    session.accessToken,
+  );
+
+  return response.map(toMobileWeightEntry);
+}
+
+export async function createMobileWeightEntry(
+  session: Pick<MobileAuthSession, "accessToken">,
+  payload: {
+    childId: string;
+    valueKg: number;
+    measuredAt?: string | null;
+  },
+) {
+  const response = await requestAuthedJson<RawWeightEntryResponse>(
+    "/weight-entries",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        child_id: payload.childId,
+        value_kg: payload.valueKg,
+        measured_at: payload.measuredAt ?? null,
+      }),
+    },
+    session.accessToken,
+  );
+
+  return toMobileWeightEntry(response);
+}
+
+export async function deleteMobileWeightEntry(
+  session: Pick<MobileAuthSession, "accessToken">,
+  entryId: string,
+): Promise<void> {
+  await requestAuthedJson<void>(
+    `/weight-entries/${encodeURIComponent(entryId)}`,
+    {
+      method: "DELETE",
+    },
+    session.accessToken,
+  );
+}

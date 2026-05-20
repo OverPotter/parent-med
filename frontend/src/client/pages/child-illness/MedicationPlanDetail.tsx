@@ -19,7 +19,7 @@ import {
   appBtnJournalSecondaryClass,
   illnessCompactPrimaryButtonClass,
   illnessCompactInputClass,
-  illnessPanelSoftClass,
+  illnessFlatPanelClass,
 } from "./shared";
 import {
   hasDoseUnitHint,
@@ -311,7 +311,7 @@ export function MedicationPlanDetail({
           onDelete(plan.id);
         }}
       />
-      <div className={`${illnessPanelSoftClass} space-y-3 rounded-[28px] p-4 sm:p-5`}>
+      <div className={`${illnessFlatPanelClass} space-y-3 p-4 sm:p-5`}>
         <div className="flex items-start gap-3">
           <span
             className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -371,7 +371,7 @@ export function MedicationPlanDetail({
                 item.editable ? "cursor-pointer transition hover:bg-surface-muted" : ""
               } ${
                 quickEditField === item.editKey
-                  ? "ring-2 ring-[color:color-mix(in_srgb,var(--color-primary)_42%,transparent)]"
+                  ? "ring-1 ring-[color:color-mix(in_srgb,var(--color-primary)_42%,transparent)]"
                   : ""
               }`}
             >
@@ -499,7 +499,7 @@ export function MedicationPlanDetail({
       plan.doseCalcWarning ||
       doseCalculation?.doseCalcWarning ||
       plan.manualDoseOverride ? (
-        <div className={`${illnessPanelSoftClass} space-y-3 rounded-[28px] p-4 sm:p-5`}>
+        <div className={`${illnessFlatPanelClass} space-y-3 p-4 sm:p-5`}>
           <h5 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
             {language === "ru" ? "Дополнительно" : "More"}
           </h5>

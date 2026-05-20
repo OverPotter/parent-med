@@ -31,6 +31,7 @@ interface RawPillboxPlanSummary {
   id: string;
   title: string;
   status: PillboxPlanSummary["status"];
+  subject_account_id: string | null;
   member_account_ids: string[];
   active_medication_count: number;
   next_dose_at: string | null;
@@ -47,6 +48,7 @@ interface RawPillboxPlan {
   family_id: string;
   title: string;
   status: PillboxPlan["status"];
+  subject_account_id: string | null;
   member_account_ids: string[];
   medications: RawPillboxMedication[];
   created_at: string;
@@ -108,6 +110,7 @@ function toPillboxPlanSummary(raw: RawPillboxPlanSummary): PillboxPlanSummary {
     id: raw.id,
     title: raw.title,
     status: raw.status,
+    subjectAccountId: raw.subject_account_id ?? null,
     memberAccountIds: raw.member_account_ids ?? [],
     activeMedicationCount: raw.active_medication_count,
     nextDoseAt: raw.next_dose_at ?? null,
@@ -126,6 +129,7 @@ function toPillboxPlan(raw: RawPillboxPlan): PillboxPlan {
     familyId: raw.family_id,
     title: raw.title,
     status: raw.status,
+    subjectAccountId: raw.subject_account_id ?? null,
     memberAccountIds: raw.member_account_ids ?? [],
     medications: (raw.medications ?? []).map(toPillboxMedication),
     createdAt: raw.created_at,
@@ -170,6 +174,7 @@ function toPillboxHistorySummary(raw: RawPillboxHistorySummary): PillboxHistoryS
 function toWritePayload(plan: PillboxPlanWrite) {
   return {
     title: plan.title,
+    subject_account_id: plan.subjectAccountId ?? null,
     member_account_ids: plan.memberAccountIds,
     medications: plan.medications.map((item: PillboxMedicationWrite) => ({
       id: item.id ?? null,

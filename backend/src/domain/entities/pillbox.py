@@ -44,6 +44,7 @@ class PillboxPlan:
     updated_at: datetime
     medications: list[PillboxMedication]
     dose_logs: list["PillboxDoseLog"] = field(default_factory=list)
+    subject_account_id: UUID | None = None
 
 
 @dataclass

@@ -12,6 +12,7 @@ from src.application.services.access_control import (
     filter_child_ids,
     get_child_for_account,
 )
+from src.application.services.child_plan_access import ensure_child_plan_mutation_allowed
 from src.application.services.subscription_policy import resolve_family_plan_policy
 from src.core.exceptions import ForbiddenError, NotFoundError, ValidationError
 from src.domain.entities.child import Child
@@ -73,6 +74,38 @@ class ChildService:
                 "Дата рождения не может быть в будущем", code="BIRTH_DATE_IN_FUTURE"
             )
 
+    def _normalize_avatar_key(self, avatar_key: str | None) -> str | None:
+        return (avatar_key or "").strip() or None
+
+    def _normalize_gender(self, gender: str | None) -> str | None:
+        normalized = (gender or "").strip().lower()
+        if not normalized:
+            return None
+        if normalized not in {"boy", "girl"}:
+            raise ValidationError("Некорректный пол ребёнка", code="INVALID_CHILD_GENDER")
+        return normalized
+
+    def _infer_gender_from_avatar_key(self, avatar_key: str | None) -> str | None:
+        normalized_avatar_key = self._normalize_avatar_key(avatar_key)
+        if not normalized_avatar_key:
+            return None
+        if normalized_avatar_key.startswith("boy"):
+            return "boy"
+        if normalized_avatar_key.startswith("girl"):
+            return "girl"
+        return None
+
+    def _resolve_gender(self, avatar_key: str | None, gender: str | None) -> str | None:
+        normalized_avatar_key = self._normalize_avatar_key(avatar_key)
+        normalized_gender = self._normalize_gender(gender)
+        inferred_gender = self._infer_gender_from_avatar_key(normalized_avatar_key)
+        if inferred_gender and normalized_gender and inferred_gender != normalized_gender:
+            raise ValidationError(
+                "Пол ребёнка не совпадает с выбранной иконкой",
+                code="CHILD_GENDER_AVATAR_MISMATCH",
+            )
+        return normalized_gender or inferred_gender
+
     def _to_response(self, entity: Child) -> ChildResponseDto:
         return ChildResponseDto(
             id=entity.id,
@@ -87,6 +120,8 @@ class ChildService:
             doctor_phone=entity.doctor_phone,
             allergies=entity.allergies,
             notes=entity.notes,
+            avatar_key=entity.avatar_key,
+            gender=entity.gender,
         )
 
     async def get_by_id(self, id: UUID) -> ChildResponseDto:
@@ -158,6 +193,8 @@ class ChildService:
             doctor_phone=(dto.doctor_phone or "").strip() or None,
             allergies=(dto.allergies or "").strip() or None,
             notes=(dto.notes or "").strip() or None,
+            avatar_key=self._normalize_avatar_key(dto.avatar_key),
+            gender=self._resolve_gender(dto.avatar_key, dto.gender),
         )
         created = await self._repo.add(entity)
         if family.free_primary_child_id is None:
@@ -185,6 +222,16 @@ class ChildService:
             dto.baby_mode_enabled
             if "baby_mode_enabled" in fields_set and dto.baby_mode_enabled is not None
             else entity.baby_mode_enabled
+        )
+        next_avatar_key = (
+            self._normalize_avatar_key(dto.avatar_key)
+            if "avatar_key" in fields_set
+            else entity.avatar_key
+        )
+        next_gender = (
+            self._resolve_gender(next_avatar_key, dto.gender)
+            if "gender" in fields_set or "avatar_key" in fields_set
+            else entity.gender
         )
         self._validate_birth_date(birth_date)
         entity = Child(
@@ -219,6 +266,8 @@ class ChildService:
                 else entity.allergies
             ),
             notes=((dto.notes or "").strip() or None if "notes" in fields_set else entity.notes),
+            avatar_key=next_avatar_key,
+            gender=next_gender,
         )
         updated = await self._repo.update(entity)
         return self._to_response(updated)
@@ -235,6 +284,7 @@ class ChildService:
         if entity.family_id != current_account.family_id:
             raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
         ensure_child_edit_access(current_account, entity.id)
+        await ensure_child_plan_mutation_allowed(self._family_repo, current_account, entity.id)
         return await self.update(id, dto)
 
     async def delete(self, id: UUID) -> None:
@@ -250,4 +300,5 @@ class ChildService:
         if entity.family_id != current_account.family_id:
             raise ForbiddenError("Нет доступа к ребёнку из другой семьи")
         ensure_children_admin_access(current_account)
+        await ensure_child_plan_mutation_allowed(self._family_repo, current_account, entity.id)
         await self._repo.delete(id)

@@ -26,6 +26,8 @@ from src.domain.repositories.illness_episode_repository import IllnessEpisodeRep
 class IllnessCommentService:
     """Сервис журнала комментариев внутри эпизода болезни."""
 
+    MAX_COMMENT_LENGTH = 512
+
     def __init__(
         self,
         comment_repo: IllnessCommentRepository,
@@ -119,6 +121,8 @@ class IllnessCommentService:
         text = dto.text.strip()
         if not text:
             raise ValidationError("Комментарий не может быть пустым")
+        if len(text) > self.MAX_COMMENT_LENGTH:
+            raise ValidationError("Комментарий не должен быть длиннее 512 символов")
         entity = IllnessComment(
             id=uuid4(),
             episode_id=dto.episode_id,

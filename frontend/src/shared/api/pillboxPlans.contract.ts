@@ -1,6 +1,6 @@
 /** Контракт API семейной таблетницы. */
 
-export type PillboxMealRule = "before_meal" | "with_meal" | "after_meal";
+export type PillboxMealRule = "before_meal" | "with_meal" | "after_meal" | "not_matter";
 export type PillboxCourseMode = "continuous" | "period";
 export type PillboxPlanStatus = "active" | "paused" | "completed" | "archived";
 export type PillboxPlanWritableStatus = "active" | "paused" | "archived";
@@ -21,6 +21,7 @@ export interface PillboxMedicationWrite {
 
 export interface PillboxPlanWrite {
   title: string;
+  subjectAccountId?: string | null;
   memberAccountIds: string[];
   medications: PillboxMedicationWrite[];
   status?: PillboxPlanWritableStatus;
@@ -30,6 +31,7 @@ export interface PillboxPlanSummary {
   id: string;
   title: string;
   status: PillboxPlanStatus;
+  subjectAccountId: string | null;
   memberAccountIds: string[];
   activeMedicationCount: number;
   nextDoseAt: string | null;
@@ -60,6 +62,7 @@ export interface PillboxPlan {
   familyId: string;
   title: string;
   status: PillboxPlanStatus;
+  subjectAccountId: string | null;
   memberAccountIds: string[];
   medications: PillboxMedication[];
   createdAt: string;

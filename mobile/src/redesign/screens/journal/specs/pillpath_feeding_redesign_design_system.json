@@ -1,0 +1,708 @@
+{
+  "meta": {
+    "project": "PillPath",
+    "screen_name": "FeedingHistoryAndPeriodSummary",
+    "screen_title_ru": "Кормление • Эдик",
+    "platform": "iOS",
+    "device_target": "iPhone 15 / 16 Pro Max",
+    "canvas_px": {
+      "width": 1290,
+      "height": 2796
+    },
+    "scale": "3x",
+    "logical_size_pt": {
+      "width": 430,
+      "height": 932
+    },
+    "language": "ru",
+    "version": "1.0",
+    "purpose": "Экран истории кормлений ребёнка с мягкой сводкой за период и хронологической лентой записей.",
+    "concept": "Не сухая таблица и не dashboard. Это тёплая сводка + понятная история записей."
+  },
+  "design_principles": {
+    "visual_direction": [
+      "warm",
+      "soft",
+      "caring",
+      "premium",
+      "clean",
+      "editorial",
+      "family-friendly"
+    ],
+    "avoid": [
+      "холодный клинический стиль",
+      "жёсткий SaaS-dashboard",
+      "слишком много иконок",
+      "тяжёлые тени",
+      "кислотные цвета",
+      "перегруженные KPI-плитки",
+      "лишние вторичные кнопки"
+    ],
+    "must_have": [
+      "крупный спокойный заголовок",
+      "сегментированный выбор периода",
+      "главная summary-card",
+      "timeline-история кормлений",
+      "мягкие карточки с тёплой обводкой",
+      "минимум визуального шума"
+    ]
+  },
+  "canvas": {
+    "safe_area": {
+      "top_px": 150,
+      "bottom_px": 120,
+      "horizontal_padding_px": 56
+    },
+    "status_bar": {
+      "height_px": 120,
+      "time": "11:42",
+      "icons": [
+        "cellular",
+        "wifi",
+        "battery"
+      ],
+      "icon_color": "#000000"
+    },
+    "dynamic_island": {
+      "enabled": false
+    },
+    "home_indicator": {
+      "enabled": false
+    }
+  },
+  "grid": {
+    "columns": 1,
+    "outer_margin_px": 56,
+    "content_width_px": 1178,
+    "vertical_flow_gap_px": 38,
+    "micro_gap_px": 16,
+    "section_gap_px": 42
+  },
+  "color_tokens": {
+    "background": {
+      "page": "#FFF9F6",
+      "page_gradient_top": "#FFF9F6",
+      "page_gradient_middle": "#FFFDFC",
+      "page_gradient_bottom": "#FFF6F2"
+    },
+    "surface": {
+      "primary_card": "#FFFDFC",
+      "secondary_card": "#FFF9F6",
+      "soft_panel": "#FFF7F2",
+      "muted_tile": "#FFF4EF",
+      "segmented_bg": "#FFFDFC"
+    },
+    "text": {
+      "primary": "#1E2A38",
+      "secondary": "#66758A",
+      "tertiary": "#8A96A6",
+      "link": "#8D86BC",
+      "accent_text": "#FF6E61",
+      "white": "#FFFFFF"
+    },
+    "border": {
+      "soft_warm": "#F1D9CF",
+      "soft_warm_strong": "#E9C7B7",
+      "very_soft": "#F6E7E0",
+      "timeline_line": "#F3D5CA"
+    },
+    "accent": {
+      "coral": "#FF7668",
+      "coral_soft": "#FFE8E1",
+      "lavender": "#A593D8",
+      "lavender_soft": "#F2ECFE",
+      "yellow": "#F4BF62",
+      "yellow_soft": "#FFF3D8",
+      "mint": "#57C493",
+      "mint_soft": "#E7FAF1",
+      "peach": "#F6CFC2",
+      "peach_soft": "#FFF1EB"
+    },
+    "icon_badges": {
+      "breast_bg": "#FFD8D1",
+      "breast_fg": "#FFFFFF",
+      "formula_bg": "#FFD98B",
+      "formula_fg": "#FFFFFF",
+      "summary_icon_bg": "#FFF0EA",
+      "summary_icon_fg": "#FF7668"
+    }
+  },
+  "typography_tokens": {
+    "font_family": {
+      "primary": "SF Pro Display",
+      "secondary": "SF Pro Text",
+      "fallback": [
+        "Plus Jakarta Sans",
+        "Inter",
+        "Manrope",
+        "system-ui",
+        "sans-serif"
+      ]
+    },
+    "styles": {
+      "nav_link": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 24,
+        "font_weight": 500,
+        "line_height_px": 30,
+        "letter_spacing_px": 0,
+        "color": "#8D86BC"
+      },
+      "page_title": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 66,
+        "font_weight": 800,
+        "line_height_px": 72,
+        "letter_spacing_px": -1.2,
+        "color": "#1E2A38"
+      },
+      "page_subtitle": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 31,
+        "font_weight": 500,
+        "line_height_px": 44,
+        "letter_spacing_px": -0.2,
+        "color": "#66758A"
+      },
+      "section_title": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 54,
+        "font_weight": 800,
+        "line_height_px": 60,
+        "letter_spacing_px": -0.8,
+        "color": "#1E2A38"
+      },
+      "segment_label": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 27,
+        "font_weight": 500,
+        "line_height_px": 34,
+        "color": "#1E2A38"
+      },
+      "segment_label_active": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 27,
+        "font_weight": 700,
+        "line_height_px": 34,
+        "color": "#FF6E61"
+      },
+      "card_title": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 42,
+        "font_weight": 800,
+        "line_height_px": 48,
+        "letter_spacing_px": -0.5,
+        "color": "#1E2A38"
+      },
+      "card_subtitle": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 27,
+        "font_weight": 500,
+        "line_height_px": 34,
+        "color": "#66758A"
+      },
+      "metric_value": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 37,
+        "font_weight": 800,
+        "line_height_px": 42,
+        "letter_spacing_px": -0.4,
+        "color": "#FF6E61"
+      },
+      "metric_label": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 21,
+        "font_weight": 500,
+        "line_height_px": 28,
+        "color": "#66758A"
+      },
+      "timeline_time": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 30,
+        "font_weight": 800,
+        "line_height_px": 36,
+        "color": "#1E2A38"
+      },
+      "timeline_day": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 20,
+        "font_weight": 500,
+        "line_height_px": 26,
+        "color": "#66758A"
+      },
+      "entry_title": {
+        "font_family": "SF Pro Display",
+        "font_size_px": 31,
+        "font_weight": 800,
+        "line_height_px": 38,
+        "color": "#1E2A38"
+      },
+      "entry_meta": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 20,
+        "font_weight": 500,
+        "line_height_px": 28,
+        "color": "#66758A"
+      },
+      "icon_button": {
+        "font_family": "SF Pro Text",
+        "font_size_px": 0,
+        "font_weight": 0,
+        "line_height_px": 0,
+        "color": "#FF7668"
+      }
+    }
+  },
+  "radius_tokens": {
+    "screen_visual": 0,
+    "card_lg_px": 38,
+    "card_md_px": 32,
+    "card_sm_px": 28,
+    "pill_px": 30,
+    "segmented_outer_px": 30,
+    "segmented_inner_px": 24,
+    "icon_button_px": 34,
+    "badge_circle_px": 28
+  },
+  "stroke_tokens": {
+    "card_border_px": 2,
+    "soft_border_px": 1.5,
+    "icon_stroke_px": 2.4,
+    "timeline_line_px": 2
+  },
+  "shadow_tokens": {
+    "card_shadow": {
+      "x": 0,
+      "y": 12,
+      "blur": 38,
+      "spread": 0,
+      "color": "#E8CBBE",
+      "opacity": 0.08
+    },
+    "hero_shadow": {
+      "x": 0,
+      "y": 16,
+      "blur": 50,
+      "spread": 0,
+      "color": "#E8CBBE",
+      "opacity": 0.1
+    }
+  },
+  "spacing_tokens": {
+    "screen_top_after_status_px": 46,
+    "title_to_subtitle_px": 24,
+    "subtitle_to_segmented_px": 54,
+    "segmented_to_hero_px": 38,
+    "hero_inner_padding_px": 34,
+    "hero_title_to_subtitle_px": 18,
+    "hero_top_block_to_metrics_px": 30,
+    "metrics_inner_padding_px": 28,
+    "section_title_to_list_px": 28,
+    "timeline_row_gap_px": 18,
+    "timeline_card_inner_padding_px": 22,
+    "timeline_left_col_width_px": 210,
+    "timeline_dot_to_card_gap_px": 18,
+    "icon_button_gap_px": 14
+  },
+  "icon_system": {
+    "style": {
+      "family": "rounded outline icons",
+      "stroke_px": 2.4,
+      "corner_style": "round",
+      "fill_usage": "icons sit inside soft circular or rounded-square badges",
+      "overall_rule": "Использовать умеренно. Главный смысл экрана строится не на иконках, а на структуре."
+    },
+    "sizes": {
+      "nav_icon_px": 22,
+      "header_action_icon_px": 28,
+      "summary_metric_icon_px": 26,
+      "timeline_badge_icon_px": 28,
+      "chevron_icon_px": 24
+    },
+    "containers": {
+      "header_action_circle_px": 82,
+      "summary_metric_circle_px": 56,
+      "timeline_badge_circle_px": 72
+    },
+    "tokens": {
+      "back": {
+        "name": "arrow-left",
+        "color": "#8D86BC"
+      },
+      "chat": {
+        "name": "message-square",
+        "color": "#FF7668",
+        "background": "#FFF6F2"
+      },
+      "profile": {
+        "name": "user",
+        "color": "#FF7668",
+        "background": "#FFF6F2"
+      },
+      "bottle": {
+        "name": "baby-bottle",
+        "color": "#FFFFFF",
+        "background": "#FFD8D1"
+      },
+      "formula": {
+        "name": "baby-bottle",
+        "color": "#FFFFFF",
+        "background": "#FFD98B"
+      },
+      "time": {
+        "name": "clock",
+        "color": "#FF7668",
+        "background": "#FFF0EA"
+      },
+      "drop": {
+        "name": "droplet",
+        "color": "#FF7668",
+        "background": "#FFF0EA"
+      },
+      "amount": {
+        "name": "bottle",
+        "color": "#FF7668",
+        "background": "#FFF0EA"
+      },
+      "chevron": {
+        "name": "chevron-right",
+        "color": "#8A96A6"
+      }
+    }
+  },
+  "illustration_system": {
+    "hero_illustration": {
+      "type": "soft 3D/2.5D child portrait",
+      "subject": "ребёнок, мальчик, Эдик",
+      "position": "right side of hero card",
+      "size_px": {
+        "width": 310,
+        "height": 290
+      },
+      "style": [
+        "friendly",
+        "soft shading",
+        "light pastel",
+        "not too cartoonish",
+        "family app aesthetic"
+      ]
+    },
+    "background_objects": {
+      "type": "feeding-related thematic objects",
+      "objects": [
+        "baby bottle",
+        "formula jar",
+        "food jar",
+        "small spoon"
+      ],
+      "position": "behind and around the child, as soft semi-decorative background elements",
+      "opacity_rule": "60–80% relative to main character, lower contrast",
+      "purpose": "заменить сердечки/листочки тематическим фоном"
+    }
+  },
+  "component_tokens": {
+    "header_action_button": {
+      "size_px": 82,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 1.5,
+        "color": "#F1D9CF"
+      },
+      "radius_px": 41,
+      "shadow": null
+    },
+    "segmented_control": {
+      "width_px": 1178,
+      "height_px": 118,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 2,
+        "color": "#F1D9CF"
+      },
+      "radius_px": 30,
+      "padding_px": 8,
+      "segments_count": 4,
+      "active_segment_background": "#FFEDE7",
+      "active_segment_radius_px": 24,
+      "active_index": 1
+    },
+    "hero_card": {
+      "width_px": 1178,
+      "height_px": 610,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 2,
+        "color": "#F1D9CF"
+      },
+      "radius_px": 38,
+      "padding_px": 34,
+      "shadow": "hero_shadow"
+    },
+    "hero_metrics_panel": {
+      "width_px": 1110,
+      "height_px": 240,
+      "background": "#FFFFFF",
+      "border": null,
+      "radius_px": 34,
+      "padding_px": 28,
+      "layout": "3 equal columns",
+      "column_divider": {
+        "width_px": 1.5,
+        "color": "#F6E7E0",
+        "height_px": 140
+      }
+    },
+    "timeline_item_time_card": {
+      "width_px": 210,
+      "height_px": 160,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 1.5,
+        "color": "#F6E7E0"
+      },
+      "radius_px": 28,
+      "padding_px": 22
+    },
+    "timeline_item_main_card": {
+      "width_px": 914,
+      "height_px": 160,
+      "background": "#FFFDFC",
+      "border": {
+        "width_px": 1.5,
+        "color": "#F6E7E0"
+      },
+      "radius_px": 28,
+      "padding_px": 22
+    },
+    "timeline_dot": {
+      "size_px": 18,
+      "color": "#FF9C92",
+      "line_color": "#F3D5CA",
+      "line_width_px": 2
+    }
+  },
+  "screen_structure": {
+    "order": [
+      "status_bar",
+      "top_navigation_row",
+      "page_heading",
+      "page_subtitle",
+      "segmented_period_control",
+      "hero_summary_card",
+      "history_section_title",
+      "timeline_history_list"
+    ],
+    "notes": [
+      "Нижнего меню нет.",
+      "Нет отдельной карточки ребёнка.",
+      "Нет tips-card и нет filters-button.",
+      "Главный экран строится вокруг summary hero-card и списка истории."
+    ]
+  },
+  "layout_blueprint": {
+    "top_navigation_row": {
+      "y_px": 148,
+      "height_px": 84,
+      "left_element": {
+        "type": "back_link",
+        "text": "К профилю ребёнка",
+        "icon": "back",
+        "gap_between_icon_and_text_px": 12
+      },
+      "right_elements": [
+        {
+          "type": "header_action_button",
+          "icon": "chat"
+        },
+        {
+          "type": "header_action_button",
+          "icon": "profile"
+        }
+      ]
+    },
+    "heading": {
+      "y_px": 272,
+      "title": "Кормление • Эдик",
+      "subtitle": "История кормлений ребёнка и быстрый доступ к сохранённым записям.",
+      "title_max_width_px": 760,
+      "subtitle_max_width_px": 760
+    },
+    "segmented_control": {
+      "y_px": 594,
+      "labels": [
+        "24 часа",
+        "7 дней",
+        "30 дней",
+        "Все время"
+      ],
+      "active_label": "7 дней"
+    },
+    "hero_summary_card": {
+      "y_px": 750,
+      "title": "Как кормился Эдик",
+      "subtitle": "за последние 7 дней",
+      "illustration_side": "right",
+      "background_objects": [
+        "баночка",
+        "бутылочка",
+        "баночка смеси",
+        "ложечка"
+      ],
+      "metrics": [
+        {
+          "icon": "amount",
+          "value": "0.1 раз",
+          "label": "В среднем в день"
+        },
+        {
+          "icon": "time",
+          "value": "12:55",
+          "label": "Обычно в"
+        },
+        {
+          "icon": "drop",
+          "value": "0 мин",
+          "label": "Средняя длительность"
+        }
+      ]
+    },
+    "history_section": {
+      "y_px": 1404,
+      "title": "История кормлений"
+    },
+    "timeline_history_list": {
+      "starts_y_px": 1510,
+      "row_height_px": 160,
+      "row_gap_px": 18,
+      "left_line_x_px": 67,
+      "dot_x_px": 67,
+      "items": [
+        {
+          "time": "12:55",
+          "day": "Вчера",
+          "type": "Грудь",
+          "icon": "bottle",
+          "badge_color": "breast_bg",
+          "meta": "Сохранено • Левая • меньше минуты"
+        },
+        {
+          "time": "09:10",
+          "day": "Вчера",
+          "type": "Грудь",
+          "icon": "bottle",
+          "badge_color": "breast_bg",
+          "meta": "Сохранено • Правая • меньше минуты"
+        },
+        {
+          "time": "21:30",
+          "day": "2 дня назад",
+          "type": "Смесь",
+          "icon": "formula",
+          "badge_color": "formula_bg",
+          "meta": "Сохранено • 120 мл"
+        },
+        {
+          "time": "18:05",
+          "day": "2 дня назад",
+          "type": "Грудь",
+          "icon": "bottle",
+          "badge_color": "breast_bg",
+          "meta": "Сохранено • Обе • 3 мин"
+        },
+        {
+          "time": "15:20",
+          "day": "3 дня назад",
+          "type": "Смесь",
+          "icon": "formula",
+          "badge_color": "formula_bg",
+          "meta": "Сохранено • 150 мл"
+        }
+      ]
+    }
+  },
+  "component_recipes": {
+    "timeline_item": {
+      "composition": [
+        "time_card_left",
+        "main_card_right"
+      ],
+      "time_card_left": {
+        "contains": [
+          "timeline_time",
+          "timeline_day"
+        ]
+      },
+      "main_card_right": {
+        "contains": [
+          "icon_badge",
+          "entry_title",
+          "entry_meta",
+          "chevron_right"
+        ],
+        "layout": {
+          "icon_badge_x": 34,
+          "title_x": 132,
+          "meta_x": 132,
+          "chevron_align": "right_center"
+        }
+      }
+    },
+    "hero_metric_column": {
+      "contains": [
+        "soft_icon_circle",
+        "metric_value",
+        "metric_label"
+      ],
+      "alignment": "center",
+      "value_emphasis": "strong coral accent"
+    }
+  },
+  "token_aliases": {
+    "bg/page": "{color_tokens.background.page}",
+    "bg/card": "{color_tokens.surface.primary_card}",
+    "border/card": "{color_tokens.border.soft_warm}",
+    "text/primary": "{color_tokens.text.primary}",
+    "text/secondary": "{color_tokens.text.secondary}",
+    "accent/coral": "{color_tokens.accent.coral}",
+    "accent/coral-soft": "{color_tokens.accent.coral_soft}",
+    "accent/lavender": "{color_tokens.accent.lavender}",
+    "accent/yellow": "{color_tokens.accent.yellow}",
+    "radius/lg": "{radius_tokens.card_lg_px}",
+    "radius/md": "{radius_tokens.card_md_px}",
+    "font/title": "{typography_tokens.styles.page_title}",
+    "font/subtitle": "{typography_tokens.styles.page_subtitle}",
+    "font/card-title": "{typography_tokens.styles.card_title}",
+    "font/value": "{typography_tokens.styles.metric_value}"
+  },
+  "ai_assembly_rules": {
+    "hierarchy": [
+      "Сначала показать контекст экрана (назад + title + subtitle).",
+      "Потом дать быстрое переключение периода.",
+      "Потом показать summary-card со сводкой за период.",
+      "Потом показать историю в хронологической timeline-ленте."
+    ],
+    "text_rules": [
+      "Текст должен быть на русском.",
+      "Заголовки — крупные и уверенные.",
+      "Подписи и метаинформация — мягкие и вторичные.",
+      "Никаких перегруженных описаний."
+    ],
+    "icon_rules": [
+      "Иконки нужны только там, где они помогают сканированию.",
+      "Не ставить лишние иконки в header subtitle и section title.",
+      "В timeline использовать цветные badge-иконки как маркеры типа записи."
+    ],
+    "spacing_rules": [
+      "Удерживать большие внешние поля.",
+      "Не прижимать карточки друг к другу.",
+      "Summary-card должна дышать.",
+      "Timeline элементы должны иметь повторяемый ритм."
+    ],
+    "style_rules": [
+      "Всё должно быть мягким, светлым, тёплым.",
+      "Тени почти незаметные.",
+      "Обводки тонкие, персиковые.",
+      "Без холодной серой UI-эстетики."
+    ]
+  }
+}

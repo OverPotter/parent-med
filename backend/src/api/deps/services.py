@@ -33,7 +33,9 @@ from src.application.services.auth_service import AuthService
 from src.application.services.base_auth_service import BaseAuthService
 from src.application.services.billing_service import BillingService
 from src.application.services.child_export_service import ChildExportService
+from src.application.services.child_overview_service import ChildOverviewService
 from src.application.services.child_service import ChildService
+from src.application.services.child_summary_service import ChildSummaryService
 from src.application.services.curated_medicine_catalog_service import (
     CuratedMedicineCatalogService,
 )
@@ -160,6 +162,42 @@ def get_child_service(
     family_repo=Depends(get_family_repo),
 ) -> ChildService:
     return ChildService(child_repo=child_repo, family_repo=family_repo)
+
+
+def get_child_summary_service(
+    child_repo=Depends(get_child_repo),
+    family_repo=Depends(get_family_repo),
+    sleep_repo=Depends(get_sleep_session_repo),
+    feeding_repo=Depends(get_feeding_record_repo),
+    weight_repo=Depends(get_weight_entry_repo),
+    height_repo=Depends(get_height_entry_repo),
+) -> ChildSummaryService:
+    return ChildSummaryService(
+        child_repo=child_repo,
+        family_repo=family_repo,
+        sleep_repo=sleep_repo,
+        feeding_repo=feeding_repo,
+        weight_repo=weight_repo,
+        height_repo=height_repo,
+    )
+
+
+def get_child_overview_service(
+    child_repo=Depends(get_child_repo),
+    feeding_repo=Depends(get_feeding_record_repo),
+    sleep_repo=Depends(get_sleep_session_repo),
+    weight_repo=Depends(get_weight_entry_repo),
+    height_repo=Depends(get_height_entry_repo),
+    episode_repo=Depends(get_illness_episode_repo),
+) -> ChildOverviewService:
+    return ChildOverviewService(
+        child_repo=child_repo,
+        feeding_repo=feeding_repo,
+        sleep_repo=sleep_repo,
+        weight_repo=weight_repo,
+        height_repo=height_repo,
+        episode_repo=episode_repo,
+    )
 
 
 def get_child_export_service(

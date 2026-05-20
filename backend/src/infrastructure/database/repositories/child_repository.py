@@ -29,6 +29,8 @@ class SqlChildRepository(ChildRepository):
             doctor_phone=m.doctor_phone,
             allergies=m.allergies,
             notes=m.notes,
+            avatar_key=m.avatar_key,
+            gender=m.gender,
             created_at=m.created_at,
         )
 
@@ -45,6 +47,8 @@ class SqlChildRepository(ChildRepository):
             doctor_phone=e.doctor_phone,
             allergies=e.allergies,
             notes=e.notes,
+            avatar_key=e.avatar_key,
+            gender=e.gender,
             created_at=e.created_at,
         )
 
@@ -80,6 +84,8 @@ class SqlChildRepository(ChildRepository):
         row.doctor_phone = entity.doctor_phone
         row.allergies = entity.allergies
         row.notes = entity.notes
+        row.avatar_key = entity.avatar_key
+        row.gender = entity.gender
         await self._session.flush()
         await self._session.refresh(row)
         return self._to_entity(row)

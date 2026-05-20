@@ -1,0 +1,8 @@
+{
+  "platforms": ["apple"],
+  "apple": {
+    "modules": ["ParentMedLiveActivitiesModule"],
+    "podspecPath": "ParentMedLiveActivities.podspec",
+    "swiftModuleName": "ParentMedLiveActivities"
+  }
+}

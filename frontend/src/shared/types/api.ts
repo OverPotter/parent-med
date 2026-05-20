@@ -106,6 +106,8 @@ export interface Child {
   birthDate: string | null;
   ageLabel: string | null;
   babyModeEnabled: boolean;
+  avatarKey: string | null;
+  gender: string | null;
   institutionName: string | null;
   institutionPhone: string | null;
   doctorName: string | null;

@@ -5,6 +5,8 @@ import type { HouseholdMedicine } from "@shared/types/api";
 import { formatDate } from "@shared/utils/date";
 import {
   SectionTitle,
+  illnessFlatBadgeClass,
+  illnessFlatCardClass,
   illnessCompactInputClass,
   illnessCompactSecondaryButtonClass,
 } from "./shared";
@@ -138,7 +140,7 @@ export function CabinetMedicinePicker({
         />
       ) : null}
 
-      <div className="soft-panel min-w-0 overflow-hidden rounded-[24px]">
+      <div className={`${illnessFlatCardClass} min-w-0 overflow-hidden`}>
         {filteredMedicines.map((medicine) => {
           const isActive = medicine.id === value;
           const statusDotClass =
@@ -182,10 +184,10 @@ export function CabinetMedicinePicker({
                 </span>
               </span>
               <span
-                className={`inline-flex min-h-[2.2rem] items-center rounded-full px-3 text-[0.74rem] font-semibold ${
+                className={`${illnessFlatBadgeClass} inline-flex min-h-[2.2rem] items-center px-3 text-[0.74rem] font-semibold ${
                   isActive
-                    ? "soft-pill-primary app-profile-action--selected"
-                    : "soft-pill app-profile-action"
+                    ? "border-[color:color-mix(in_srgb,var(--color-primary)_34%,var(--color-border))] bg-[color:color-mix(in_srgb,var(--color-primary-soft)_48%,var(--color-surface))] text-foreground"
+                    : "text-foreground"
                 }`}
                 aria-hidden="true"
               >

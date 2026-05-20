@@ -3,6 +3,8 @@ import { DateField } from "@shared/components/DateField";
 import { useI18n } from "@shared/hooks/useI18n";
 import { getLocalIsoDate } from "@shared/utils/date";
 import {
+  illnessFlatInsetCardClass,
+  illnessFlatPanelClass,
   illnessCompactInputClass,
   illnessCompactPrimaryButtonClass,
   illnessCompactSecondaryButtonClass,
@@ -46,10 +48,14 @@ export function EpisodeActivationCard({
   const [title, setTitle] = useState("");
 
   return (
-    <div className="soft-panel rounded-[30px]">
+    <div className={`${illnessFlatPanelClass} rounded-[30px]`}>
       <div className="space-y-5 px-5 py-5 sm:px-6 sm:py-6">
         {errorMessage && (
-          <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorMessage}</div>
+          <div
+            className={`${illnessFlatInsetCardClass} rounded-2xl px-4 py-3 text-sm text-foreground`}
+          >
+            {errorMessage}
+          </div>
         )}
         <label className="block space-y-1.5">
           <span className="soft-field-label">

@@ -6,7 +6,9 @@ import {
   appBtnDangerClass,
   appPillActionClass,
   illnessCompactSecondaryButtonClass,
-  illnessPanelSoftClass,
+  illnessFlatBadgeClass,
+  illnessFlatPanelClass,
+  illnessFlatSurfaceClass,
 } from "./shared";
 
 export function ManualComposerOverview(props: {
@@ -31,7 +33,7 @@ export function ManualComposerOverview(props: {
       </button>
     );
   return (
-    <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
+    <section className={`${illnessFlatPanelClass} space-y-4 p-4 sm:p-5`}>
       <div className="min-w-0">
         <h4 className="text-base font-semibold text-foreground">
           {language === "ru" ? "Быстрые записи" : "Quick logs"}
@@ -66,7 +68,7 @@ export function TimelineOverviewPanel(props: {
 }) {
   const { language, childId, timelineCount } = props;
   return (
-    <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
+    <section className={`${illnessFlatPanelClass} space-y-4 p-4 sm:p-5`}>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
         <div className="min-w-0">
           <h4 className="text-base font-semibold text-foreground">
@@ -90,7 +92,7 @@ export function TimelineOverviewPanel(props: {
 
       {timelineCount > 0 ? (
         <div>
-          <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+          <span className={`${illnessFlatBadgeClass} px-3 py-1.5 text-xs`}>
             {language === "ru" ? "Записей" : "Entries"}: {timelineCount}
           </span>
         </div>
@@ -123,7 +125,7 @@ export function ReminderOverviewPanel(props: {
   if (episode.medicationMode !== "guided") return null;
 
   return (
-    <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
+    <section className={`${illnessFlatPanelClass} space-y-4 p-4 sm:p-5`}>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
         <div className="min-w-0">
           <h4 className="text-base font-semibold text-foreground">
@@ -217,7 +219,7 @@ export function EpisodeMainPanel(props: {
   const isActive = episode.status === "active";
 
   return (
-    <div className="soft-panel rounded-[30px]">
+    <div className={`${illnessFlatPanelClass} rounded-[30px]`}>
       <ConfirmDialog
         isOpen={isCloseConfirmOpen}
         title={
@@ -237,7 +239,7 @@ export function EpisodeMainPanel(props: {
         }}
       />
 
-      <div className="soft-hero rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5">
+      <div className={`${illnessFlatSurfaceClass} rounded-t-[30px] px-5 py-4 sm:px-6 sm:py-5`}>
         {isActive ? (
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0">

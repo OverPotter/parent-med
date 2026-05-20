@@ -26,10 +26,13 @@ import {
   appBtnFilledClass,
   appBtnSecondaryClass,
   appPillActionClass,
+  illnessFlatBadgeClass,
+  illnessFlatCardClass,
+  illnessFlatInsetCardClass,
+  illnessFlatPanelClass,
   SectionTitle,
   illnessCompactPrimaryButtonClass,
   illnessListClass,
-  illnessPanelSoftClass,
 } from "./shared";
 import {
   EpisodeTimelineList,
@@ -91,11 +94,8 @@ function EpisodeReminderRecipientsCard({
       return;
     }
     const previousIds = selectedIdsRef.current;
-    const nextIds = toggleNormalizedRecipientSelection(
-      memberId,
-      previousIds,
-      (toggledIds) =>
-        resolveIllnessRecipientSelection(toggledIds, eligibleMemberIds, currentAccountId)
+    const nextIds = toggleNormalizedRecipientSelection(memberId, previousIds, (toggledIds) =>
+      resolveIllnessRecipientSelection(toggledIds, eligibleMemberIds, currentAccountId)
     );
     await runOptimisticRecipientSelectionUpdate({
       previousIds,
@@ -152,13 +152,15 @@ function EpisodeReminderRecipientsCard({
           </div>
 
           <div
-            className={`${illnessPanelSoftClass} mt-4 max-h-[min(23rem,58vh)] overflow-y-auto p-2.5`}
+            className={`${illnessFlatCardClass} mt-4 max-h-[min(23rem,58vh)] overflow-y-auto p-2.5`}
           >
             <div className="space-y-2">
               {familyMembers.map((member) => {
                 const selected = selectedIds.includes(member.id);
                 const label = getAccountDisplayLabel(member);
-                const isCurrentAccount = Boolean(currentAccountId && member.id === currentAccountId);
+                const isCurrentAccount = Boolean(
+                  currentAccountId && member.id === currentAccountId
+                );
                 const memberMeta = member.relationshipLabel?.trim() || "";
                 return (
                   <button
@@ -182,7 +184,9 @@ function EpisodeReminderRecipientsCard({
                           {label}
                         </span>
                         {isCurrentAccount ? (
-                          <span className="soft-pill inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[0.68rem] font-semibold leading-none text-foreground">
+                          <span
+                            className={`${illnessFlatBadgeClass} inline-flex shrink-0 items-center px-2.5 py-1 text-[0.68rem] font-semibold leading-none text-foreground`}
+                          >
                             {tFamily(language, "yourProfileTitle")}
                           </span>
                         ) : null}
@@ -265,10 +269,12 @@ export function TemperatureQuickView(props: {
       />
 
       {successMessage ? (
-        <div className="soft-note-info rounded-[20px] px-4 py-3 text-sm">{successMessage}</div>
+        <div className={`${illnessFlatInsetCardClass} rounded-[20px] px-4 py-3 text-sm`}>
+          {successMessage}
+        </div>
       ) : null}
 
-      <section className="soft-panel rounded-[28px] p-4 sm:p-5">
+      <section className={`${illnessFlatPanelClass} p-4 sm:p-5`}>
         <TemperatureForm
           value={tempValue}
           onChange={onTempChange}
@@ -284,7 +290,7 @@ export function TemperatureQuickView(props: {
               {language === "ru" ? "Последние замеры" : "Recent readings"}
             </h2>
           </div>
-          <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+          <span className={`${illnessFlatBadgeClass} px-3 py-1.5 text-xs`}>
             {entries.length}{" "}
             {language === "ru"
               ? entries.length === 1
@@ -330,7 +336,7 @@ export function TemperatureQuickView(props: {
             ))}
           </div>
         ) : (
-          <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+          <div className={`${illnessFlatCardClass} px-4 py-6 text-sm text-muted`}>
             {language === "ru"
               ? "Пока нет ни одного замера температуры."
               : "No temperature readings yet."}
@@ -400,10 +406,12 @@ export function AdministrationQuickView(props: {
       />
 
       {successMessage ? (
-        <div className="soft-note-info rounded-[20px] px-4 py-3 text-sm">{successMessage}</div>
+        <div className={`${illnessFlatInsetCardClass} rounded-[20px] px-4 py-3 text-sm`}>
+          {successMessage}
+        </div>
       ) : null}
 
-      <section className="soft-panel rounded-[28px] p-4 sm:p-5">
+      <section className={`${illnessFlatPanelClass} p-4 sm:p-5`}>
         <div className="space-y-4">
           <AdministrationForm
             customMedicineName={customMedicineName}
@@ -414,7 +422,9 @@ export function AdministrationQuickView(props: {
             isPending={isPending}
           />
           {isError ? (
-            <p className="soft-note-danger rounded-2xl px-4 py-3 text-sm">
+            <p
+              className={`${illnessFlatInsetCardClass} rounded-2xl px-4 py-3 text-sm text-foreground`}
+            >
               {errorDetail ??
                 (language === "ru"
                   ? "Ошибка записи. Проверь срок годности и срок после вскрытия."
@@ -431,7 +441,7 @@ export function AdministrationQuickView(props: {
               {language === "ru" ? "Последние приёмы" : "Recent doses"}
             </h2>
           </div>
-          <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+          <span className={`${illnessFlatBadgeClass} px-3 py-1.5 text-xs`}>
             {entries.length}{" "}
             {language === "ru"
               ? entries.length === 1
@@ -477,7 +487,7 @@ export function AdministrationQuickView(props: {
             ))}
           </div>
         ) : (
-          <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+          <div className={`${illnessFlatCardClass} px-4 py-6 text-sm text-muted`}>
             {language === "ru" ? "Пока нет ни одного приёма." : "No doses logged yet."}
           </div>
         )}
@@ -509,10 +519,12 @@ export function CommentQuickView(props: {
       />
 
       {successMessage ? (
-        <div className="soft-note-info rounded-[20px] px-4 py-3 text-sm">{successMessage}</div>
+        <div className={`${illnessFlatInsetCardClass} rounded-[20px] px-4 py-3 text-sm`}>
+          {successMessage}
+        </div>
       ) : null}
 
-      <section className="soft-panel rounded-[28px] p-4 sm:p-5">
+      <section className={`${illnessFlatPanelClass} p-4 sm:p-5`}>
         <div className="space-y-4">
           <div className="grid gap-3">
             <textarea
@@ -553,7 +565,7 @@ export function CommentQuickView(props: {
               {language === "ru" ? "Последние заметки" : "Recent notes"}
             </h2>
           </div>
-          <span className="soft-pill rounded-full px-3 py-1.5 text-xs">
+          <span className={`${illnessFlatBadgeClass} px-3 py-1.5 text-xs`}>
             {entries.length}{" "}
             {language === "ru"
               ? entries.length === 1
@@ -595,7 +607,7 @@ export function CommentQuickView(props: {
             ))}
           </div>
         ) : (
-          <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+          <div className={`${illnessFlatCardClass} px-4 py-6 text-sm text-muted`}>
             {language === "ru" ? "Пока нет ни одной заметки." : "No notes yet."}
           </div>
         )}
@@ -633,7 +645,7 @@ export function TimelineQuickView(props: {
         }
       />
 
-      <section className={`${illnessPanelSoftClass} space-y-4 rounded-[28px] p-4 sm:p-5`}>
+      <section className={`${illnessFlatPanelClass} space-y-4 p-4 sm:p-5`}>
         <div className="grid gap-2">
           <div className="flex flex-wrap gap-2">
             {(
@@ -859,7 +871,7 @@ export function ReminderDetailQuickView(props: {
           }
         />
 
-        <div className="soft-empty rounded-[24px] px-4 py-6 text-sm text-muted">
+        <div className={`${illnessFlatCardClass} px-4 py-6 text-sm text-muted`}>
           {language === "ru" ? "Напоминание не найдено." : "Reminder not found."}
         </div>
       </div>
@@ -919,7 +931,11 @@ export function ReminderDetailQuickView(props: {
           onDelete={onDelete}
         />
         {errorDetail ? (
-          <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorDetail}</div>
+          <div
+            className={`${illnessFlatInsetCardClass} rounded-2xl px-4 py-3 text-sm text-foreground`}
+          >
+            {errorDetail}
+          </div>
         ) : null}
       </div>
     </div>
@@ -970,7 +986,11 @@ export function ReminderCreateQuickView(props: {
           onCancel={onCancel}
         />
         {errorDetail ? (
-          <div className="soft-note-danger rounded-2xl px-4 py-3 text-sm">{errorDetail}</div>
+          <div
+            className={`${illnessFlatInsetCardClass} rounded-2xl px-4 py-3 text-sm text-foreground`}
+          >
+            {errorDetail}
+          </div>
         ) : null}
       </div>
     </div>

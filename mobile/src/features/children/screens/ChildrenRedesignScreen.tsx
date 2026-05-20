@@ -1,0 +1,337 @@
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import {
+  ImageBackground,
+  ScrollView,
+  Text,
+  View,
+  Pressable,
+} from "react-native";
+import { NotificationDisabledBanner } from "../../../shared/components/NotificationDisabledBanner";
+import { ChildrenChildCard } from "../components/ChildrenChildCard";
+import {
+  buildChildrenScreenContent,
+  buildChildrenStopActionCopy,
+  type ChildCard,
+} from "../model/childrenRedesign";
+import { styles } from "./childrenRedesignStyles";
+import { formatElapsedDuration } from "../utils/formatElapsedDuration";
+import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
+import { JournalEntryKind } from "../../journal/model/journalEntryScreen";
+import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
+
+type ChildrenRedesignScreenProps = {
+  cards?: ChildCard[];
+  onOpenChildCreate?: () => void;
+  addChildLocked?: boolean;
+  onOpenLockedChild?: () => void;
+  onOpenChildProfile?: (cardId: string) => void;
+  onOpenJournalEntry?: (cardId: string, kind: JournalEntryKind) => void;
+  onOpenObservation?: (cardId: string) => void;
+  activeSleepStartedAtByCardId?: Record<string, string | null>;
+  activeFeedingStartedAtByCardId?: Record<string, string | null>;
+  activeObservationByCardId?: Record<string, boolean>;
+  onFeedingPress?: (cardId: string) => void;
+  onSleepPress?: (cardId: string) => void;
+  pushNotificationsBannerVisible?: boolean;
+  pushNotificationsBannerTitle?: string;
+  pushNotificationsBannerBody?: string;
+  pushNotificationsBannerActionLabel?: string;
+  onOpenPushNotificationSettings?: () => void;
+};
+
+const noop = () => {};
+type PendingStopAction = {
+  kind: "sleep" | "feeding";
+  cardId: string;
+} | null;
+
+export function ChildrenRedesignScreen({
+  cards,
+  onOpenChildCreate,
+  addChildLocked = false,
+  onOpenLockedChild = noop,
+  onOpenChildProfile,
+  onOpenJournalEntry,
+  onOpenObservation,
+  activeSleepStartedAtByCardId = {},
+  activeFeedingStartedAtByCardId = {},
+  activeObservationByCardId = {},
+  onFeedingPress = noop,
+  onSleepPress = noop,
+  pushNotificationsBannerVisible = false,
+  pushNotificationsBannerTitle,
+  pushNotificationsBannerBody,
+  pushNotificationsBannerActionLabel,
+  onOpenPushNotificationSettings = noop,
+}: ChildrenRedesignScreenProps) {
+  const { locale } = useMobileI18n();
+  const surfaceTheme = useMobileSurfaceTheme();
+  const childrenScreenContent = buildChildrenScreenContent(locale, "children");
+  const cardsToRender = cards ?? [];
+  const handleOpenChildProfile = onOpenChildProfile ?? noop;
+  const handleOpenJournalEntry = onOpenJournalEntry ?? noop;
+  const handleOpenObservation = onOpenObservation ?? noop;
+  const [collapsedCardIds, setCollapsedCardIds] = useState<string[]>(
+    cardsToRender.map((card) => card.nodeId),
+  );
+  const [now, setNow] = useState(Date.now());
+  const [pendingStopAction, setPendingStopAction] =
+    useState<PendingStopAction>(null);
+  const stopActionCopy = pendingStopAction
+    ? buildChildrenStopActionCopy(locale, pendingStopAction.kind)
+    : null;
+  const addChildPlusLabel =
+    locale === "ru"
+      ? "Plus"
+      : locale === "de"
+        ? "Plus"
+        : locale === "pl"
+          ? "Plus"
+          : "Plus";
+  const addChildLockedHint =
+    locale === "ru"
+      ? "Больше детей в Plus"
+      : locale === "de"
+        ? "Mehr Kinder mit Plus"
+        : locale === "pl"
+          ? "Więcej dzieci w Plus"
+          : "More children with Plus";
+
+  const hasActiveSleep = Object.values(activeSleepStartedAtByCardId).some(Boolean);
+  const hasActiveFeeding = Object.values(activeFeedingStartedAtByCardId).some(
+    Boolean,
+  );
+
+  useEffect(() => {
+    setCollapsedCardIds(cardsToRender.map((card) => card.nodeId));
+  }, [cardsToRender]);
+
+  useEffect(() => {
+    if (!hasActiveSleep && !hasActiveFeeding) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [hasActiveFeeding, hasActiveSleep]);
+
+  const handleToggleCollapse = (cardId: string) => {
+    setCollapsedCardIds((current) =>
+      current.includes(cardId)
+        ? current.filter((id) => id !== cardId)
+        : [...current, cardId],
+    );
+  };
+
+  const handleSleepPress = (cardId: string) => {
+    if (activeSleepStartedAtByCardId[cardId]) {
+      setPendingStopAction({
+        kind: "sleep",
+        cardId,
+      });
+      return;
+    }
+
+    setNow(Date.now());
+    onSleepPress(cardId);
+  };
+
+  const handleFeedingQuickActionPress = (cardId: string) => {
+    if (activeFeedingStartedAtByCardId[cardId]) {
+      setPendingStopAction({
+        kind: "feeding",
+        cardId,
+      });
+      return;
+    }
+
+    handleOpenJournalEntry(cardId, "feeding");
+  };
+
+  const handleConfirmStopAction = () => {
+    if (!pendingStopAction) {
+      return;
+    }
+
+    if (pendingStopAction.kind === "sleep") {
+      setNow(Date.now());
+      onSleepPress(pendingStopAction.cardId);
+    } else {
+      onFeedingPress(pendingStopAction.cardId);
+    }
+
+    setPendingStopAction(null);
+  };
+
+  return (
+    <View style={[styles.root, { backgroundColor: surfaceTheme.appBackgroundColor }]}>
+      <ImageBackground
+        source={childrenScreenContent.backgroundSource}
+        resizeMode="cover"
+        style={styles.background}
+        imageStyle={styles.backgroundImage}
+      >
+        <View
+          style={[
+            styles.overlay,
+            { backgroundColor: surfaceTheme.backgroundOverlayColor },
+          ]}
+        />
+      </ImageBackground>
+
+      <View style={styles.screen}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              {childrenScreenContent.headerTitle}
+            </Text>
+            <Text style={styles.subtitle}>
+              {childrenScreenContent.headerSubtitle}
+            </Text>
+          </View>
+
+          {pushNotificationsBannerVisible ? (
+            <NotificationDisabledBanner
+              title={pushNotificationsBannerTitle}
+              body={pushNotificationsBannerBody}
+              actionLabel={pushNotificationsBannerActionLabel}
+              onPress={onOpenPushNotificationSettings}
+              palette={{
+                borderColor: "#F2C8BE",
+                backgroundColor: "#FFF6F1",
+                iconBackgroundColor: "#E78783",
+                titleColor: "#252B35",
+                bodyColor: "#6C6664",
+                actionColor: "#D56B67",
+                shadowColor: "#D49B8D",
+                chevronColor: "#D56B67",
+              }}
+            />
+          ) : null}
+
+          <View style={styles.cardsStack}>
+            {cardsToRender.map((card) => (
+              <ChildrenChildCard
+                key={card.nodeId}
+                card={card}
+                collapsed={collapsedCardIds.includes(card.nodeId)}
+                onToggleCollapse={handleToggleCollapse}
+                onOpenLockedChild={onOpenLockedChild}
+                sleepElapsedLabel={
+                  activeSleepStartedAtByCardId[card.nodeId]
+                    ? formatElapsedDuration(
+                        activeSleepStartedAtByCardId[card.nodeId] as string,
+                        now,
+                      )
+                    : null
+                }
+                feedingElapsedLabel={
+                  activeFeedingStartedAtByCardId[card.nodeId]
+                    ? formatElapsedDuration(
+                        activeFeedingStartedAtByCardId[card.nodeId] as string,
+                        now,
+                      )
+                    : null
+                }
+                onSleepPress={handleSleepPress}
+                onFeedingPress={handleFeedingQuickActionPress}
+                onOpenObservation={handleOpenObservation}
+                onOpenProfile={handleOpenChildProfile}
+                onOpenJournalEntry={handleOpenJournalEntry}
+                hasActiveObservation={Boolean(activeObservationByCardId[card.nodeId])}
+              />
+            ))}
+          </View>
+
+          <Pressable
+            onPress={onOpenChildCreate ?? noop}
+            style={({ pressed }) => [
+              styles.addChildCta,
+              addChildLocked ? styles.addChildCtaLocked : null,
+              pressed ? styles.addChildCtaPressed : null,
+            ]}
+          >
+            <View style={styles.addChildIconCircle}>
+              <Ionicons name="add" size={22} color="#FFFFFF" />
+            </View>
+            <View
+              style={[
+                styles.addChildCopy,
+                addChildLocked ? styles.addChildCopyLocked : styles.addChildCopyCentered,
+              ]}
+            >
+              <View
+                style={[
+                  styles.addChildTitleRow,
+                  addChildLocked ? null : styles.addChildTitleRowCentered,
+                ]}
+              >
+                <Text style={styles.addChildLabel}>
+                  {childrenScreenContent.addChildLabel}
+                </Text>
+                {addChildLocked ? (
+                  <View style={styles.addChildPlusTip}>
+                    <Text style={styles.addChildPlusTipText}>{addChildPlusLabel}</Text>
+                  </View>
+                ) : null}
+              </View>
+              {addChildLocked ? (
+                <Text style={styles.addChildHint}>{addChildLockedHint}</Text>
+              ) : null}
+            </View>
+          </Pressable>
+        </ScrollView>
+      </View>
+
+      {pendingStopAction ? (
+        <View style={styles.confirmOverlay}>
+          <Pressable
+            style={styles.confirmBackdrop}
+            onPress={() => setPendingStopAction(null)}
+          />
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmContent}>
+              <Text style={styles.confirmTitle}>
+                {stopActionCopy?.title}
+              </Text>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  onPress={() => setPendingStopAction(null)}
+                  style={({ pressed }) => [
+                    styles.confirmButtonSecondary,
+                    pressed ? styles.confirmButtonPressed : null,
+                  ]}
+                >
+                  <Text style={styles.confirmButtonSecondaryText}>
+                    {stopActionCopy?.cancelLabel}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleConfirmStopAction}
+                  style={({ pressed }) => [
+                    styles.confirmButtonPrimary,
+                    pressed ? styles.confirmButtonPressed : null,
+                  ]}
+                >
+                  <Text style={styles.confirmButtonPrimaryText}>
+                    {stopActionCopy?.confirmLabel}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      ) : null}
+    </View>
+  );
+}

@@ -1,0 +1,651 @@
+{
+  "screen": {
+    "id": "jSOKu",
+    "name": "PillPath / Child Profile / Edik",
+    "platform": "mobile",
+    "size": {
+      "width": 495,
+      "height": 895
+    },
+    "background": {
+      "type": "linear-gradient",
+      "rotation": 180,
+      "colors": [
+        "#F6D9CE",
+        "#FFF8EE"
+      ]
+    },
+    "contentWrapper": {
+      "id": "YKiiD",
+      "layout": "vertical",
+      "padding": {
+        "top": 14,
+        "right": 16,
+        "bottom": 14,
+        "left": 16
+      },
+      "gap": 8
+    }
+  },
+  "theme": {
+    "fonts": {
+      "primary": "Inter"
+    },
+    "colors": {
+      "textPrimary": "#243142",
+      "textSecondary": "#6A7889",
+      "textAction": "#3E4B5C",
+      "accentCoral": "#E0846D",
+      "cardCream": "#FFF8F0",
+      "cardLight": "#FFF9F2",
+      "strokeWarm": "#EBCFC0",
+      "strokeLight": "#E9CBBE",
+      "strokeGreen": "#D8E9D7",
+      "pillGreenBg": "#F4FBF4",
+      "pillGreenText": "#47765A",
+      "successDot": "#67B66E"
+    },
+    "radius": {
+      "card": 22,
+      "smallCard": 18,
+      "buttonPill": 999
+    },
+    "shadows": {
+      "profileCard": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#C7A89912",
+        "offset": { "x": 0, "y": 6 },
+        "blur": 12
+      },
+      "journalCard": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#C7A89910",
+        "offset": { "x": 0, "y": 8 },
+        "blur": 18
+      },
+      "exportCard": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#C7A89912",
+        "offset": { "x": 0, "y": 8 },
+        "blur": 18
+      }
+    }
+  },
+  "blocks": [
+    {
+      "type": "statusBar",
+      "id": "pPhd3",
+      "height": 32,
+      "content": {
+        "time": {
+          "id": "acHFN",
+          "text": "10:52",
+          "fontFamily": "Inter",
+          "fontSize": 15,
+          "fontWeight": 600,
+          "color": "#243142",
+          "align": "center"
+        }
+      }
+    },
+    {
+      "type": "topBar",
+      "id": "hvdBl",
+      "height": 40,
+      "layout": "horizontal",
+      "gap": 10,
+      "items": [
+        {
+          "type": "backLink",
+          "id": "PcUV5",
+          "text": "← К детям",
+          "fontFamily": "Inter",
+          "fontSize": 16,
+          "fontWeight": 600,
+          "color": "#3E4B5C",
+          "interaction": {
+            "action": "navigate_back",
+            "target": "children_list"
+          }
+        }
+      ]
+    },
+    {
+      "type": "profileCard",
+      "id": "pME9B",
+      "layout": "vertical",
+      "padding": 14,
+      "gap": 10,
+      "style": {
+        "fill": "#FFF8F0",
+        "stroke": {
+          "color": "#EBCFC0",
+          "thickness": 1
+        },
+        "cornerRadius": 22,
+        "shadow": "profileCard"
+      },
+      "sections": [
+        {
+          "type": "profileTopRow",
+          "id": "e7qtvR",
+          "layout": "horizontal",
+          "gap": 12,
+          "items": [
+            {
+              "type": "photo",
+              "id": "eXO2X",
+              "size": {
+                "width": 84,
+                "height": 84
+              },
+              "cornerRadius": 18,
+              "image": "./images/generated-1778239822858.png",
+              "interaction": {
+                "action": "none"
+              }
+            },
+            {
+              "type": "summary",
+              "id": "O0FRo",
+              "layout": "vertical",
+              "gap": 6,
+              "items": [
+                {
+                  "type": "title",
+                  "id": "VIRGF",
+                  "text": "Эдик",
+                  "fontFamily": "Inter",
+                  "fontSize": 26,
+                  "fontWeight": 700,
+                  "color": "#243142"
+                },
+                {
+                  "type": "statsRow",
+                  "id": "voeIQ",
+                  "layout": "horizontal",
+                  "gap": 8,
+                  "items": [
+                    {
+                      "id": "jiHlB",
+                      "label": "Возраст",
+                      "value": "4 года",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": 600,
+                      "color": "#243142"
+                    },
+                    {
+                      "id": "iMfU9",
+                      "label": "Вес",
+                      "value": "15 кг",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": 600,
+                      "color": "#243142"
+                    }
+                  ]
+                },
+                {
+                  "type": "statsRow",
+                  "id": "GPN9Y",
+                  "layout": "horizontal",
+                  "gap": 8,
+                  "items": [
+                    {
+                      "id": "HuPDH",
+                      "label": "Рост",
+                      "value": "108 см",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": 600,
+                      "color": "#243142"
+                    },
+                    {
+                      "id": "SNTBV",
+                      "label": "Аллергии",
+                      "value": "Орехи, Цветение",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": 600,
+                      "color": "#243142"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "statusPillsRow",
+          "id": "ck5iW",
+          "layout": "horizontal",
+          "gap": 8,
+          "items": [
+            {
+              "type": "statusPill",
+              "id": "ULnA8",
+              "padding": {
+                "vertical": 6,
+                "horizontal": 10
+              },
+              "gap": 6,
+              "style": {
+                "fill": "#F4FBF4",
+                "stroke": {
+                  "color": "#D8E9D7",
+                  "thickness": 1.5
+                },
+                "cornerRadius": 999
+              },
+              "icon": {
+                "type": "dot",
+                "id": "j6joI",
+                "size": 8,
+                "color": "#67B66E"
+              },
+              "text": {
+                "id": "M17wL",
+                "value": "Live Activity on",
+                "fontFamily": "Inter",
+                "fontSize": 10,
+                "fontWeight": 600,
+                "color": "#47765A"
+              },
+              "interaction": {
+                "action": "show_status_details",
+                "target": "live_activity"
+              }
+            },
+            {
+              "type": "statusPill",
+              "id": "qgOnR",
+              "padding": {
+                "vertical": 6,
+                "horizontal": 10
+              },
+              "gap": 6,
+              "style": {
+                "fill": "#F4FBF4",
+                "stroke": {
+                  "color": "#D8E9D7",
+                  "thickness": 1.5
+                },
+                "cornerRadius": 999
+              },
+              "icon": {
+                "type": "dot",
+                "id": "Q2llS",
+                "size": 8,
+                "color": "#67B66E"
+              },
+              "text": {
+                "id": "JxVZo",
+                "value": "Режим малыша Вкл",
+                "fontFamily": "Inter",
+                "fontSize": 10,
+                "fontWeight": 600,
+                "color": "#47765A"
+              },
+              "interaction": {
+                "action": "show_mode_details",
+                "target": "child_mode"
+              }
+            }
+          ]
+        },
+        {
+          "type": "primaryButton",
+          "id": "rxE7x",
+          "height": 34,
+          "padding": {
+            "vertical": 0,
+            "horizontal": 12
+          },
+          "gap": 6,
+          "style": {
+            "fill": "#FFF7F0",
+            "stroke": {
+              "color": "#E9CBBE",
+              "thickness": 1.5
+            },
+            "cornerRadius": 999
+          },
+          "icon": {
+            "type": "icon_font",
+            "id": "Uk9rC",
+            "name": "pencil",
+            "family": "lucide",
+            "size": 14,
+            "color": "#E0846D"
+          },
+          "label": {
+            "id": "lZtVh",
+            "text": "Редактировать профиль",
+            "fontFamily": "Inter",
+            "fontSize": 12,
+            "fontWeight": 600,
+            "color": "#3E4B5C"
+          },
+          "interaction": {
+            "action": "open_edit_profile",
+            "target": "child_profile_edit"
+          }
+        }
+      ]
+    },
+    {
+      "type": "sectionTitle",
+      "id": "zSsGb",
+      "text": "Журнал",
+      "fontFamily": "Inter",
+      "fontSize": 20,
+      "fontWeight": 700,
+      "color": "#243142"
+    },
+    {
+      "type": "journalGrid",
+      "id": "fo05L",
+      "layout": "vertical",
+      "gap": 6,
+      "rows": [
+        {
+          "id": "AfvAp",
+          "layout": "horizontal",
+          "gap": 6,
+          "items": [
+            {
+              "id": "I5zvnC",
+              "label": "Болезни",
+              "icon": {
+                "type": "circle+icon",
+                "iconName": "heart-pulse",
+                "iconFamily": "lucide",
+                "iconColor": "#E0846D"
+              },
+              "chevron": {
+                "type": "icon_font",
+                "name": "chevron-right",
+                "family": "lucide",
+                "size": 10,
+                "color": "#A4AEB9"
+              },
+              "interaction": {
+                "action": "open_section",
+                "target": "illness_log"
+              }
+            },
+            {
+              "id": "MsiN1",
+              "label": "Кормление",
+              "icon": {
+                "type": "circle+icon",
+                "iconName": "apple",
+                "iconFamily": "lucide",
+                "iconColor": "#E6A55C"
+              },
+              "chevron": {
+                "type": "icon_font",
+                "name": "chevron-right",
+                "family": "lucide",
+                "size": 10,
+                "color": "#A4AEB9"
+              },
+              "interaction": {
+                "action": "open_section",
+                "target": "feeding_log"
+              }
+            }
+          ]
+        },
+        {
+          "id": "rAwgn",
+          "layout": "horizontal",
+          "gap": 6,
+          "items": [
+            {
+              "id": "LydMQ",
+              "label": "Сон",
+              "icon": {
+                "type": "circle+icon",
+                "iconName": "moon-star",
+                "iconFamily": "lucide",
+                "iconColor": "#8A84D6"
+              },
+              "chevron": {
+                "type": "icon_font",
+                "name": "chevron-right",
+                "family": "lucide",
+                "size": 10,
+                "color": "#A4AEB9"
+              },
+              "interaction": {
+                "action": "open_section",
+                "target": "sleep_log"
+              }
+            },
+            {
+              "id": "Gq2xB",
+              "label": "Вес",
+              "icon": {
+                "type": "circle+icon",
+                "iconName": "scale",
+                "iconFamily": "lucide",
+                "iconColor": "#6AA58E"
+              },
+              "chevron": {
+                "type": "icon_font",
+                "name": "chevron-right",
+                "family": "lucide",
+                "size": 10,
+                "color": "#A4AEB9"
+              },
+              "interaction": {
+                "action": "open_section",
+                "target": "weight_log"
+              }
+            }
+          ]
+        },
+        {
+          "id": "NrvRI",
+          "layout": "horizontal",
+          "gap": 6,
+          "items": [
+            {
+              "id": "sDT1m",
+              "label": "Рост",
+              "icon": {
+                "type": "circle+icon",
+                "iconName": "ruler",
+                "iconFamily": "lucide",
+                "iconColor": "#6C98D8"
+              },
+              "chevron": {
+                "type": "icon_font",
+                "name": "chevron-right",
+                "family": "lucide",
+                "size": 10,
+                "color": "#A4AEB9"
+              },
+              "interaction": {
+                "action": "open_section",
+                "target": "height_log"
+              }
+            },
+            {
+              "id": "gDGtQ",
+              "label": "Обзор",
+              "icon": {
+                "type": "circle+icon",
+                "iconName": "clipboard-list",
+                "iconFamily": "lucide",
+                "iconColor": "#D881A5"
+              },
+              "chevron": {
+                "type": "icon_font",
+                "name": "chevron-right",
+                "family": "lucide",
+                "size": 10,
+                "color": "#A4AEB9"
+              },
+              "interaction": {
+                "action": "open_section",
+                "target": "overview"
+              }
+            }
+          ]
+        }
+      ],
+      "itemStyle": {
+        "height": 52,
+        "padding": {
+          "vertical": 0,
+          "horizontal": 10
+        },
+        "fill": "#FFF9F2",
+        "stroke": {
+          "color": "#EFD7CB",
+          "thickness": 1.5
+        },
+        "cornerRadius": 16,
+        "shadow": "journalCard",
+        "labelFont": {
+          "family": "Inter",
+          "size": 12,
+          "weight": 600,
+          "color": "#243142"
+        }
+      }
+    },
+    {
+      "type": "notesBlock",
+      "id": "OzTeB",
+      "layout": "vertical",
+      "padding": 12,
+      "gap": 6,
+      "style": {
+        "fill": "#FFF8F0",
+        "stroke": {
+          "color": "#EBCFC0",
+          "thickness": 1
+        },
+        "cornerRadius": 18
+      },
+      "title": {
+        "id": "w7UhX",
+        "text": "Заметки",
+        "fontFamily": "Inter",
+        "fontSize": 12,
+        "fontWeight": 700,
+        "color": "#243142"
+      },
+      "body": {
+        "id": "wa6jK",
+        "text": "Здесь можно оставить важные наблюдения: реакция на лекарства, настроение, сон или вопросы к врачу.",
+        "fontFamily": "Inter",
+        "fontSize": 11,
+        "fontWeight": 500,
+        "lineHeight": 1.3,
+        "color": "#6A7889"
+      },
+      "interaction": {
+        "action": "open_notes_editor",
+        "target": "child_notes"
+      }
+    },
+    {
+      "type": "exportCard",
+      "id": "i1MZg2",
+      "layout": "horizontal",
+      "padding": 16,
+      "gap": 10,
+      "style": {
+        "fill": "#FFF9F2",
+        "stroke": {
+          "color": "#E9CBBE",
+          "thickness": 2
+        },
+        "cornerRadius": 20,
+        "shadow": "exportCard"
+      },
+      "iconWrap": {
+        "id": "q5Ouv",
+        "size": 36,
+        "fill": "#FFF2E8",
+        "stroke": {
+          "color": "#F0D4C6",
+          "thickness": 1.5
+        },
+        "cornerRadius": 999
+      },
+      "icon": {
+        "id": "OgsJT",
+        "type": "icon_font",
+        "name": "share-2",
+        "family": "lucide",
+        "size": 16,
+        "color": "#E0846D"
+      },
+      "title": {
+        "id": "vPvmU",
+        "text": "Экспорт истории",
+        "fontFamily": "Inter",
+        "fontSize": 14,
+        "fontWeight": 700,
+        "color": "#243142"
+      },
+      "caption": {
+        "id": "UFdrR",
+        "text": "CSV / таблица для врача или семьи",
+        "fontFamily": "Inter",
+        "fontSize": 10,
+        "fontWeight": 500,
+        "color": "#6A7889"
+      },
+      "interaction": {
+        "action": "export_history",
+        "target": "csv_export"
+      }
+    }
+  ],
+  "arrowsAndIcons": {
+    "backArrow": {
+      "textBased": true,
+      "value": "←",
+      "meaning": "назад к списку детей"
+    },
+    "journalChevrons": {
+      "type": "lucide chevron-right",
+      "meaning": "переход внутрь раздела"
+    },
+    "editIcon": {
+      "type": "lucide pencil",
+      "meaning": "редактирование профиля"
+    },
+    "exportIcon": {
+      "type": "lucide share-2",
+      "meaning": "поделиться / экспортировать"
+    },
+    "statusDots": {
+      "color": "#67B66E",
+      "meaning": "активный / включённый статус"
+    }
+  },
+  "uxNotes": {
+    "primaryAction": "Редактировать профиль",
+    "secondaryActions": [
+      "Открыть раздел журнала",
+      "Открыть заметки",
+      "Экспортировать историю"
+    ],
+    "navigationModel": {
+      "topLeft": "возврат к детям",
+      "cardsWithChevron": "drill-down navigation",
+      "exportCard": "terminal action"
+    }
+  }
+}

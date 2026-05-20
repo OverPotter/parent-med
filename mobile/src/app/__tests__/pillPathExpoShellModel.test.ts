@@ -1,0 +1,96 @@
+import type { MobileAuthSession } from "../../features/auth/api/authApi";
+import {
+  isChildProfileVisibleScreen,
+  resolvePostAuthLandingScreen,
+  resolveJournalTargetScreen,
+  shouldRenderMoreTab,
+  shouldShowRootTabBarUnderlay,
+  shouldShowAnalyticsBreakdown,
+} from "../pillPathExpoShellModel";
+
+const baseSession: MobileAuthSession = {
+  tokenType: "bearer",
+  accessToken: "access",
+  refreshToken: "refresh",
+  account: {
+    id: "account-1",
+    email: "user@example.com",
+    familyId: "family-1",
+    displayName: "Anna",
+    needsProfileCompletion: false,
+    relationshipLabel: null,
+    phone: null,
+    preferredLanguage: "ru",
+    familyRole: "admin",
+    hasRecoveryCode: false,
+  },
+  family: {
+    id: "family-1",
+    name: "Care Family",
+    ownerAccountId: "account-1",
+  },
+};
+
+describe("pillPathExpoShellModel", () => {
+  it("maps child destinations to shell screens", () => {
+    expect(resolveJournalTargetScreen("overview")).toBe("overview");
+    expect(resolveJournalTargetScreen("feeding")).toBe("feedingHistory");
+    expect(resolveJournalTargetScreen("sleep")).toBe("sleepHistory");
+    expect(resolveJournalTargetScreen("weight")).toBe("weightHistory");
+    expect(resolveJournalTargetScreen("height")).toBe("growthHistory");
+    expect(resolveJournalTargetScreen("illness")).toBe("illnessJournal");
+  });
+
+  it("exposes routing predicates for more tab and breakdown", () => {
+    expect(shouldRenderMoreTab("more", baseSession)).toBe(true);
+    expect(shouldRenderMoreTab("children", baseSession)).toBe(false);
+    expect(shouldRenderMoreTab("more", null)).toBe(false);
+
+    expect(shouldShowAnalyticsBreakdown("analyticsBreakdown", { id: "1" } as never)).toBe(
+      true,
+    );
+    expect(shouldShowAnalyticsBreakdown("analytics", { id: "1" } as never)).toBe(false);
+    expect(shouldShowAnalyticsBreakdown("analyticsBreakdown", null)).toBe(false);
+  });
+
+  it("opens family as the post-auth landing screen only when family setup is missing", () => {
+    expect(
+      resolvePostAuthLandingScreen({
+        justAuthenticated: true,
+        hasFamily: true,
+      }),
+    ).toBeNull();
+    expect(
+      resolvePostAuthLandingScreen({
+        justAuthenticated: false,
+        hasFamily: true,
+      }),
+    ).toBeNull();
+    expect(
+      resolvePostAuthLandingScreen({
+        justAuthenticated: true,
+        hasFamily: false,
+      }),
+    ).toBe("family");
+    expect(
+      resolvePostAuthLandingScreen({
+        justAuthenticated: false,
+        hasFamily: false,
+      }),
+    ).toBe("family");
+  });
+
+  it("knows which child profile screens keep the child profile visible", () => {
+    expect(isChildProfileVisibleScreen("childProfile")).toBe(true);
+    expect(isChildProfileVisibleScreen("analytics")).toBe(true);
+    expect(isChildProfileVisibleScreen("settings")).toBe(false);
+  });
+
+  it("shows the root tab bar under overlay screens that swipe back to a root module", () => {
+    expect(shouldShowRootTabBarUnderlay("childProfile")).toBe(true);
+    expect(shouldShowRootTabBarUnderlay("journalEntry")).toBe(true);
+    expect(shouldShowRootTabBarUnderlay("illnessReminders")).toBe(true);
+    expect(shouldShowRootTabBarUnderlay("analytics")).toBe(false);
+    expect(shouldShowRootTabBarUnderlay("childProfileEdit")).toBe(false);
+  });
+});

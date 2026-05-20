@@ -2,10 +2,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchIllnessHistorySummary } from "@shared/api/illnessEpisodes";
 import { OverlayDialog } from "@shared/components/OverlayDialog";
-import { Surface } from "@shared/components/Surface";
 import { useI18n } from "@shared/hooks/useI18n";
 import { useLiveQueryOptions } from "@shared/hooks/useLiveQueryOptions";
-import { getHistoryPeriodHint } from "./shared";
+import { getHistoryPeriodHint, illnessFlatMetricClass, illnessFlatPanelClass } from "./shared";
 
 export function HistoryInsightsPreview({ childId }: { childId: string }) {
   const { language } = useI18n();
@@ -34,7 +33,7 @@ export function HistoryInsightsPreview({ childId }: { childId: string }) {
 
   if (isLoading || !summary) {
     return (
-      <div className="soft-panel-muted rounded-[28px] px-5 py-8 text-sm text-muted">
+      <div className={summaryPanelClass}>
         {language === "ru" ? "Готовим сводку…" : "Preparing summary…"}
       </div>
     );
@@ -96,7 +95,7 @@ export function HistoryInsightsPreview({ childId }: { childId: string }) {
   ];
 
   return (
-    <Surface className="relative z-30 overflow-visible p-4 sm:p-5">
+    <div className={`${summaryPanelClass} relative z-30 overflow-visible p-4 sm:p-5`}>
       <div className="space-y-4">
         <div className="relative z-50">
           <button
@@ -180,13 +179,13 @@ export function HistoryInsightsPreview({ childId }: { childId: string }) {
           ))}
         </div>
       </div>
-    </Surface>
+    </div>
   );
 }
 
 function SummaryPill({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
-    <div className="inline-flex min-h-[3.05rem] min-w-0 items-start gap-1.5 rounded-[16px] bg-surface-muted/70 px-2.5 py-2 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.08)]">
+    <div className={summaryPillClass}>
       <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} aria-hidden="true" />
       <span className="min-w-0 flex-1">
         <span className="block break-words text-[0.68rem] font-extrabold leading-4 tracking-[-0.02em] text-foreground">
@@ -199,6 +198,10 @@ function SummaryPill({ label, value, tone }: { label: string; value: string; ton
     </div>
   );
 }
+
+const summaryPanelClass = `${illnessFlatPanelClass} text-sm text-muted`;
+
+const summaryPillClass = `${illnessFlatMetricClass} inline-flex min-h-[3.05rem] min-w-0 items-start gap-1.5 px-2.5 py-2`;
 
 function formatDurationValue(days: number, language: "ru" | "en") {
   if (language === "ru") {

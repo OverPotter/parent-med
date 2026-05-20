@@ -15,7 +15,7 @@ class PillboxMedicationWriteDto(BaseModel):
     household_medicine_id: UUID | None = Field(None, description="ID упаковки из аптечки")
     custom_medicine_name: str | None = Field(None, description="Ручное название лекарства")
     dose_amount: str = Field(..., description="Например, 1 таблетка")
-    meal_rule: str = Field(..., description="before_meal | with_meal | after_meal")
+    meal_rule: str = Field(..., description="before_meal | with_meal | after_meal | not_matter")
     repeat_days: list[int] = Field(..., description="ISO weekdays 1..7")
     times: list[time] = Field(..., description="Времена приёма")
     course_mode: str = Field(..., description="continuous | period")
@@ -28,6 +28,10 @@ class PillboxPlanCreateDto(BaseModel):
     """Создание семейного плана таблетницы."""
 
     title: str = Field(..., description="Название плана")
+    subject_account_id: UUID | None = Field(
+        None,
+        description="Для кого этот план",
+    )
     member_account_ids: list[UUID] = Field(
         default_factory=list,
         description="Кому идут напоминания",
@@ -41,6 +45,10 @@ class PillboxPlanUpdateDto(BaseModel):
     """Обновление семейного плана таблетницы целиком."""
 
     title: str = Field(..., description="Название плана")
+    subject_account_id: UUID | None = Field(
+        None,
+        description="Для кого этот план",
+    )
     member_account_ids: list[UUID] = Field(
         default_factory=list,
         description="Кому идут напоминания",
@@ -73,6 +81,7 @@ class PillboxPlanSummaryDto(ResponseBase):
     id: UUID
     title: str
     status: str
+    subject_account_id: UUID | None
     member_account_ids: list[UUID]
     active_medication_count: int
     next_dose_at: datetime | None
@@ -91,6 +100,7 @@ class PillboxPlanResponseDto(ResponseBase):
     family_id: UUID
     title: str
     status: str
+    subject_account_id: UUID | None
     member_account_ids: list[UUID]
     medications: list[PillboxMedicationResponseDto]
     created_at: datetime
