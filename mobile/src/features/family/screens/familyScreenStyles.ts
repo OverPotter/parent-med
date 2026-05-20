@@ -347,6 +347,12 @@ export const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  inviteTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
   inviteRefreshButton: {
     width: 40,
     height: 40,

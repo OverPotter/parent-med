@@ -131,6 +131,7 @@ export function SettingsScreen({
     subscriptionExpanded,
     subscriptionExpiresAtLabel,
     success,
+    liveActivitiesLocked,
     confirmDelete,
     handleCabinetReminderDaysSelect,
     handleLanguageSelect,
@@ -422,7 +423,7 @@ export function SettingsScreen({
             >
               <LiveActivitiesSettingsCard
                 unavailableHint={content.liveActivitiesUnavailableHint}
-                showUnavailableHint={!familyAccess.canUseLiveActivities}
+                showUnavailableHint={liveActivitiesLocked}
                 sleepTitle={content.liveSleepTitle}
                 sleepHint={content.liveSleepHint}
                 sleepEnabled={pushPreferences.liveActivitySleepEnabled}
@@ -433,17 +434,30 @@ export function SettingsScreen({
                 illnessHint={content.liveIllnessHint}
                 illnessEnabled={pushPreferences.liveActivityIllnessEnabled}
                 disabled={isSavingPush}
+                onPressUnavailable={() => setPaywallVisible(true)}
                 onToggleSleep={(value) => {
+                  if (liveActivitiesLocked) {
+                    setPaywallVisible(true);
+                    return;
+                  }
                   void patchPushPreferences({
                     liveActivitySleepEnabled: value,
                   });
                 }}
                 onToggleFeeding={(value) => {
+                  if (liveActivitiesLocked) {
+                    setPaywallVisible(true);
+                    return;
+                  }
                   void patchPushPreferences({
                     liveActivityFeedingEnabled: value,
                   });
                 }}
                 onToggleIllness={(value) => {
+                  if (liveActivitiesLocked) {
+                    setPaywallVisible(true);
+                    return;
+                  }
                   void patchPushPreferences({
                     liveActivityIllnessEnabled: value,
                   });

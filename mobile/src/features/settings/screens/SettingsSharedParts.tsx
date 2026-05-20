@@ -44,6 +44,7 @@ export function ToggleRow({
   hint,
   value,
   disabled,
+  onPress,
   onValueChange,
 }: {
   icon: ReactNode;
@@ -52,12 +53,12 @@ export function ToggleRow({
   hint: string;
   value: boolean;
   disabled?: boolean;
+  onPress?: () => void;
   onValueChange: (value: boolean) => void;
 }) {
   const surfaceTheme = useMobileSurfaceTheme();
-
-  return (
-    <View style={styles.settingRow}>
+  const content = (
+    <>
       <View style={[styles.rowLead, iconStyle]}>{icon}</View>
       <View style={styles.rowCopy}>
         <Text style={[styles.rowTitle, { color: surfaceTheme.textPrimaryColor }]}>
@@ -76,7 +77,25 @@ export function ToggleRow({
           thumbColor="#FFFFFF"
         />
       </View>
-    </View>
+    </>
+  );
+
+  if (!onPress) {
+    return <View style={styles.settingRow}>{content}</View>;
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!disabled}
+      style={({ pressed }) => [
+        styles.settingRow,
+        disabled ? styles.rowDisabled : null,
+        pressed ? styles.rowPressed : null,
+      ]}
+    >
+      {content}
+    </Pressable>
   );
 }
 

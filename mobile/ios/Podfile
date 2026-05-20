@@ -1,0 +1,215 @@
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
+
+require 'json'
+require 'fileutils'
+podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
+
+def ensure_script_phase_outputs(phase, output_path)
+  phase.output_paths = [output_path]
+  phase.always_out_of_date = '0' if phase.respond_to?(:always_out_of_date=)
+  unless phase.shell_script.include?('SCRIPT_OUTPUT_FILE_0')
+    phase.shell_script = <<~SCRIPT
+      #{phase.shell_script}
+
+      if [ -n "$SCRIPT_OUTPUT_FILE_0" ]; then
+        mkdir -p "$(dirname "$SCRIPT_OUTPUT_FILE_0")"
+        touch "$SCRIPT_OUTPUT_FILE_0"
+      fi
+    SCRIPT
+  end
+end
+
+def ensure_hermes_dsym_phase(project)
+  project.targets.each do |target|
+    next unless target.name == 'PillPath'
+
+    phase_name = '[Hermes] Generate framework dSYM'
+    phase = target.shell_script_build_phases.find { |build_phase| build_phase.name == phase_name }
+    phase ||= target.new_shell_script_build_phase(phase_name)
+
+    phase.shell_path = '/bin/sh'
+    phase.input_paths = [
+      '${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework/hermes',
+    ]
+    phase.output_paths = [
+      '${DWARF_DSYM_FOLDER_PATH}/hermes.framework.dSYM',
+    ]
+    phase.shell_script = <<~'SCRIPT'
+      set -euo pipefail
+
+      HERMES_BINARY="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework/hermes"
+      HERMES_DSYM_DIR="${DWARF_DSYM_FOLDER_PATH}/hermes.framework.dSYM"
+
+      if [ ! -f "${HERMES_BINARY}" ]; then
+        echo "Hermes binary not found at ${HERMES_BINARY}; skipping dSYM generation."
+        exit 0
+      fi
+
+      if [ "${ACTION:-}" != "install" ] && [ "${CONFIGURATION:-}" != "Release" ]; then
+        echo "Skipping Hermes dSYM generation for ACTION=${ACTION:-} CONFIGURATION=${CONFIGURATION:-}"
+        exit 0
+      fi
+
+      rm -rf "${HERMES_DSYM_DIR}"
+      mkdir -p "${DWARF_DSYM_FOLDER_PATH}"
+      echo "Generating Hermes dSYM at ${HERMES_DSYM_DIR}"
+      dsymutil "${HERMES_BINARY}" -o "${HERMES_DSYM_DIR}"
+    SCRIPT
+
+    embed_phase_index = target.build_phases.index do |build_phase|
+      build_phase.respond_to?(:name) && build_phase.name == '[CP] Embed Pods Frameworks'
+    end
+    phase_index = target.build_phases.index(phase)
+
+    if embed_phase_index && phase_index && phase_index <= embed_phase_index
+      target.build_phases.move_from(phase_index, embed_phase_index + 1)
+    end
+  end
+end
+
+def patch_fmt_consteval_header(installer)
+  fmt_header = File.join(installer.sandbox.root, 'fmt/include/fmt/base.h')
+  return unless File.exist?(fmt_header)
+
+  original = File.read(fmt_header)
+  marker = "#if !defined(__cpp_lib_is_constant_evaluated)"
+  replacement = <<~TEXT.rstrip
+    #ifdef FMT_USE_CONSTEVAL
+    // Use the provided definition.
+    #elif !defined(__cpp_lib_is_constant_evaluated)
+  TEXT
+  patched = original
+    .sub(
+      "#ifdef FMT_USE_CONSTEVAL\n// Use the provided definition.\n#if !defined(__cpp_lib_is_constant_evaluated)",
+      replacement,
+    )
+    .sub(marker, replacement)
+
+  return if patched == original
+
+  FileUtils.chmod('u+w', fmt_header)
+  File.write(fmt_header, patched)
+end
+
+def ccache_enabled?(podfile_properties)
+  # Environment variable takes precedence
+  return ENV['USE_CCACHE'] == '1' if ENV['USE_CCACHE']
+  
+  # Fall back to Podfile properties
+  podfile_properties['apple.ccacheEnabled'] == 'true'
+end
+
+ENV['RCT_NEW_ARCH_ENABLED'] ||= '0' if podfile_properties['newArchEnabled'] == 'false'
+ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
+ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
+ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
+ENV['RCT_BUILD_HERMES_FROM_SOURCE'] ||= 'true' if podfile_properties['ios.buildReactNativeFromSource'] == 'true'
+platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
+
+prepare_react_native_project!
+
+target 'PillPath' do
+  use_expo_modules!
+
+  if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
+    config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
+  else
+    config_command = [
+      'node',
+      '--no-warnings',
+      '--eval',
+      'require(\'expo/bin/autolinking\')',
+      'expo-modules-autolinking',
+      'react-native-config',
+      '--json',
+      '--platform',
+      'ios'
+    ]
+  end
+
+  config = use_native_modules!(config_command)
+
+  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
+  use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
+  )
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      :ccache_enabled => ccache_enabled?(podfile_properties),
+    )
+
+    patch_fmt_consteval_header(installer)
+
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_configuration|
+        build_configuration.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'NO'
+        build_configuration.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.1'
+        # Third-party pod warnings are currently noisy and drown out issues in app code.
+        build_configuration.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+        build_configuration.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+        build_configuration.build_settings['CLANG_WARN_NULLABILITY_COMPLETENESS'] = 'NO'
+
+        if target.name == 'fmt'
+          definitions = build_configuration.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+          definitions = [definitions] unless definitions.is_a?(Array)
+          unless definitions.include?('FMT_USE_CONSTEVAL=0')
+            definitions << 'FMT_USE_CONSTEVAL=0'
+          end
+          build_configuration.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = definitions
+        end
+      end
+
+      target.shell_script_build_phases.each do |phase|
+        case phase.name
+        when '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed'
+          ensure_script_phase_outputs(
+            phase,
+            '$(DERIVED_FILE_DIR)/hermes-replaced-$(CONFIGURATION).txt',
+          )
+        when '[CP-User] [RNDeps] Replace React Native Core for the right configuration, if needed'
+          ensure_script_phase_outputs(
+            phase,
+            '$(DERIVED_FILE_DIR)/rncore-replaced-$(CONFIGURATION).txt',
+          )
+        when '[CP-User] [RNDeps] Replace React Native Dependencies for the right configuration, if needed'
+          ensure_script_phase_outputs(
+            phase,
+            '$(DERIVED_FILE_DIR)/rndeps-replaced-$(CONFIGURATION).txt',
+          )
+        when '[CP-User] [RN]Check FBReactNativeSpec'
+          ensure_script_phase_outputs(
+            phase,
+            '$(DERIVED_FILE_DIR)/fbreactnativespec-checked.txt',
+          )
+        end
+      end
+    end
+
+    installer.aggregate_targets.map(&:user_project).uniq.each do |project|
+      ensure_hermes_dsym_phase(project)
+
+      project.targets.each do |target|
+        target.shell_script_build_phases.each do |phase|
+          next unless phase.name == 'Bundle React Native code and images'
+
+          ensure_script_phase_outputs(
+            phase,
+            '$(DERIVED_FILE_DIR)/rn-bundle-$(CONFIGURATION).txt',
+          )
+        end
+      end
+      project.save
+    end
+  end
+end

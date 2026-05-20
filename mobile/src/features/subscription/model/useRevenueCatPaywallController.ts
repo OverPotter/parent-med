@@ -42,10 +42,8 @@ function describeUnknownError(error: unknown) {
 }
 
 export async function finalizeSuccessfulPaywallPurchase(args: {
-  onClose?: () => void;
   onPurchased?: () => Promise<void> | void;
 }) {
-  args.onClose?.();
   try {
     await args.onPurchased?.();
   } catch (error) {
@@ -55,6 +53,21 @@ export async function finalizeSuccessfulPaywallPurchase(args: {
       );
     }
   }
+}
+
+function triggerNonBlockingPaywallRefresh(args: {
+  onPurchased?: () => Promise<void> | void;
+  debugLabel: string;
+}) {
+  void Promise.resolve()
+    .then(() => args.onPurchased?.())
+    .catch((error) => {
+      if (__DEV__) {
+        console.warn(
+          `[paywall] ${args.debugLabel} failed: ${describeUnknownError(error)}`,
+        );
+      }
+    });
 }
 
 export function useRevenueCatPaywallController({
@@ -102,6 +115,37 @@ export function useRevenueCatPaywallController({
       hasFreeTrial: false,
     },
   });
+
+  useEffect(() => {
+    if (visible && session) {
+      return;
+    }
+
+    setSelectedPlan("annual");
+    setIsLoading(false);
+    setIsSubmitting(false);
+    setInlineMessage(null);
+    setPackagesByPlan({
+      annual: null,
+      monthly: null,
+    });
+    setPriceByPlan({
+      annual: null,
+      monthly: null,
+    });
+    setTrialDetailsByPlan({
+      annual: {
+        introPrice: null,
+        eligibility: null,
+        hasFreeTrial: false,
+      },
+      monthly: {
+        introPrice: null,
+        eligibility: null,
+        hasFreeTrial: false,
+      },
+    });
+  }, [session, visible]);
 
   useEffect(() => {
     if (!visible || !session) {
@@ -210,7 +254,7 @@ export function useRevenueCatPaywallController({
       }
 
       await handleSnapshotSync(result.customerSnapshot);
-      await finalizeSuccessfulPaywallPurchase({ onClose, onPurchased });
+      await finalizeSuccessfulPaywallPurchase({ onPurchased });
     } catch (error) {
       if (__DEV__) {
         console.warn(
@@ -239,11 +283,15 @@ export function useRevenueCatPaywallController({
       );
       await handleSnapshotSync(snapshot);
       if (!snapshot?.entitlementActive) {
-        await onPurchased?.();
         setInlineMessage(restoreInactiveMessage);
+        triggerNonBlockingPaywallRefresh({
+          onPurchased,
+          debugLabel: "Post-restore refresh",
+        });
         return;
       }
-      await finalizeSuccessfulPaywallPurchase({ onClose, onPurchased });
+      setInlineMessage(restoreSuccessMessage);
+      await finalizeSuccessfulPaywallPurchase({ onPurchased });
     } catch (error) {
       if (__DEV__) {
         console.warn(

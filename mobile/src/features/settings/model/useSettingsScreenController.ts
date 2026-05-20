@@ -45,6 +45,10 @@ import {
 import { syncNativePushSubscription } from "../../../shared/push/nativePushSync";
 import type { MobileLocale } from "../../../shared/i18n/mobileI18n";
 import type { MedicationIntervalUnit } from "../session/mobileSettingsPreferencesStorage";
+import {
+  isLiveActivitiesLocked,
+  shouldOpenSubscriptionPurchasePaywall,
+} from "../../../shared/subscription/familyPremiumRules";
 
 type SettingsContent = ReturnType<
   typeof import("./settingsScreen").buildSettingsScreenContent
@@ -541,10 +545,13 @@ export function useSettingsScreenController({
     locale,
     familySummary.subscriptionExpiresAt,
   );
-  const shouldOpenPurchasePaywall =
-    familyAccess.subscriptionStatus === "inactive" ||
-    familyAccess.subscriptionStatus === "expired" ||
-    !familyAccess.premiumActive;
+  const shouldOpenPurchasePaywall = shouldOpenSubscriptionPurchasePaywall({
+    premiumActive: familyAccess.premiumActive,
+    subscriptionStatus: familyAccess.subscriptionStatus,
+  });
+  const liveActivitiesLocked = isLiveActivitiesLocked({
+    canUseLiveActivities: familyAccess.canUseLiveActivities,
+  });
 
   const refreshSettingsAfterBilling = async () => {
     if (!session) {
@@ -554,6 +561,7 @@ export function useSettingsScreenController({
     try {
       const nextBundle = await loadSettingsBundle(session);
       applySettingsBundle(nextBundle);
+      setPaywallVisible(false);
     } catch {
       setError(content.saveErrorLabel);
     }
@@ -690,6 +698,7 @@ export function useSettingsScreenController({
     subscriptionExpanded,
     subscriptionExpiresAtLabel,
     success,
+    liveActivitiesLocked,
     confirmDelete,
     handleCabinetReminderDaysSelect,
     handleLanguageSelect,
