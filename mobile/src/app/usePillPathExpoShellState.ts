@@ -50,6 +50,12 @@ import {
   resolvePostAuthLandingScreen,
   type PillPathActiveScreen,
 } from "./pillPathExpoShellModel";
+import {
+  isAddChildLocked,
+  isCabinetCatalogLocked,
+  isFamilyInviteLocked,
+  isPillboxPlanCreationLocked,
+} from "../shared/subscription/familyPremiumRules";
 
 type RootTabContentProps = ComponentProps<typeof RootTabContent>;
 type OverlayScreensProps = ComponentProps<typeof OverlayScreens>;
@@ -205,10 +211,17 @@ export function usePillPathExpoShellState() {
     (childId: string) => Boolean(activeIllnessObservationsByChildId[childId]),
     [activeIllnessObservationsByChildId],
   );
-  const addChildLocked = children.length >= 1 && !familyPremiumActive;
-  const addCabinetFromCatalogLocked = !familyPremiumActive;
-  const createPillboxPlanLocked =
-    familyRoutinesCount >= 1 && !familyPremiumActive;
+  const addChildLocked = isAddChildLocked({
+    premiumActive: familyPremiumActive,
+    currentChildrenCount: children.length,
+  });
+  const addCabinetFromCatalogLocked = isCabinetCatalogLocked({
+    premiumActive: familyPremiumActive,
+  });
+  const createPillboxPlanLocked = isPillboxPlanCreationLocked({
+    premiumActive: familyPremiumActive,
+    currentPillboxPlanCount: familyRoutinesCount,
+  });
 
   const childrenCards = useMemo(() => {
     if (!authSession) {
@@ -659,7 +672,12 @@ export function usePillPathExpoShellState() {
   );
 
   const handleOpenChildCreate = useCallback(() => {
-    if (children.length >= 1 && !familyPremiumActive) {
+    if (
+      isAddChildLocked({
+        premiumActive: familyPremiumActive,
+        currentChildrenCount: children.length,
+      })
+    ) {
       openPaywall("children");
       return;
     }
@@ -684,13 +702,14 @@ export function usePillPathExpoShellState() {
     applySettingsBundleToShell(nextBundle);
   }, [applySettingsBundleToShell, authSession]);
   const handlePaywallPurchased = useCallback(async () => {
-    closePaywall();
     try {
       await refreshPremiumAccessAfterPurchase();
     } catch (error) {
       if (__DEV__) {
         console.warn("[paywall] Shell premium refresh failed", error);
       }
+    } finally {
+      closePaywall();
     }
   }, [closePaywall, refreshPremiumAccessAfterPurchase]);
   const {
@@ -805,7 +824,9 @@ export function usePillPathExpoShellState() {
                 },
               ],
         familyCanSeeInviteCard,
-        familyInviteLocked: !familyPremiumActive,
+        familyInviteLocked: isFamilyInviteLocked({
+          premiumActive: familyPremiumActive,
+        }),
         familyRoutinesCount,
         authSession,
         childFlow: {

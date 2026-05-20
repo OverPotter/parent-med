@@ -17,6 +17,7 @@ export function LiveActivitiesSettingsCard({
   illnessHint,
   illnessEnabled,
   disabled,
+  onPressUnavailable,
   onToggleSleep,
   onToggleFeeding,
   onToggleIllness,
@@ -33,18 +34,32 @@ export function LiveActivitiesSettingsCard({
   illnessHint: string;
   illnessEnabled: boolean;
   disabled: boolean;
+  onPressUnavailable?: () => void;
   onToggleSleep: (value: boolean) => void;
   onToggleFeeding: (value: boolean) => void;
   onToggleIllness: (value: boolean) => void;
 }) {
   const surfaceTheme = useMobileSurfaceTheme();
+  const paywallLocked = showUnavailableHint;
+  const rowDisabled = disabled || paywallLocked;
 
   return (
     <>
       {showUnavailableHint ? (
-        <Text style={[styles.inlineNote, { color: surfaceTheme.textMutedColor }]}>
-          {unavailableHint}
-        </Text>
+        <View style={styles.lockedNoteWrap}>
+          <View style={styles.lockedBadge}>
+            <Text style={styles.lockedBadgeText}>Plus</Text>
+          </View>
+          <Text
+            style={[
+              styles.inlineNote,
+              styles.lockedNoteText,
+              { color: surfaceTheme.textMutedColor },
+            ]}
+          >
+            {unavailableHint}
+          </Text>
+        </View>
       ) : null}
 
       <View
@@ -68,7 +83,8 @@ export function LiveActivitiesSettingsCard({
           title={sleepTitle}
           hint={sleepHint}
           value={sleepEnabled}
-          disabled={disabled}
+          disabled={rowDisabled}
+          onPress={paywallLocked ? onPressUnavailable : undefined}
           onValueChange={onToggleSleep}
         />
         <View style={styles.rowDivider} />
@@ -84,7 +100,8 @@ export function LiveActivitiesSettingsCard({
           title={feedingTitle}
           hint={feedingHint}
           value={feedingEnabled}
-          disabled={disabled}
+          disabled={rowDisabled}
+          onPress={paywallLocked ? onPressUnavailable : undefined}
           onValueChange={onToggleFeeding}
         />
         <View style={styles.rowDivider} />
@@ -100,7 +117,8 @@ export function LiveActivitiesSettingsCard({
           title={illnessTitle}
           hint={illnessHint}
           value={illnessEnabled}
-          disabled={disabled}
+          disabled={rowDisabled}
+          onPress={paywallLocked ? onPressUnavailable : undefined}
           onValueChange={onToggleIllness}
         />
       </View>

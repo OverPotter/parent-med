@@ -1,7 +1,7 @@
 import { finalizeSuccessfulPaywallPurchase } from "../useRevenueCatPaywallController";
 
 describe("finalizeSuccessfulPaywallPurchase", () => {
-  it("closes paywall before awaiting the post-purchase refresh", async () => {
+  it("awaits the post-purchase refresh before completing", async () => {
     const callOrder: string[] = [];
     let resolveRefresh!: () => void;
 
@@ -10,9 +10,6 @@ describe("finalizeSuccessfulPaywallPurchase", () => {
     });
 
     const resultPromise = finalizeSuccessfulPaywallPurchase({
-      onClose: () => {
-        callOrder.push("close");
-      },
       onPurchased: async () => {
         callOrder.push("refresh-start");
         await refreshPromise;
@@ -20,26 +17,23 @@ describe("finalizeSuccessfulPaywallPurchase", () => {
       },
     });
 
-    expect(callOrder).toEqual(["close", "refresh-start"]);
+    expect(callOrder).toEqual(["refresh-start"]);
 
     resolveRefresh();
     await resultPromise;
 
-    expect(callOrder).toEqual(["close", "refresh-start", "refresh-end"]);
+    expect(callOrder).toEqual(["refresh-start", "refresh-end"]);
   });
 
-  it("still closes paywall when the post-purchase refresh fails", async () => {
-    const onClose = jest.fn();
+  it("still resolves when the post-purchase refresh fails", async () => {
     const onPurchased = jest.fn().mockRejectedValue(new Error("refresh failed"));
 
     await expect(
       finalizeSuccessfulPaywallPurchase({
-        onClose,
         onPurchased,
       }),
     ).resolves.toBeUndefined();
 
-    expect(onClose).toHaveBeenCalledTimes(1);
     expect(onPurchased).toHaveBeenCalledTimes(1);
   });
 });

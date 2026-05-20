@@ -9,6 +9,7 @@ import {
   MobileBottomTabItem,
   MobileBottomTabKey,
 } from "../../../shared/components/mobileBottomTabModel";
+import { hasLockedExtraChildren } from "../../../shared/subscription/familyPremiumRules";
 
 type SourceQuickActionSpec = {
   nodeId: string;
@@ -863,7 +864,12 @@ export function resolveChildAccess(params: {
   children: Array<Pick<MobileChildSummary, "id">>;
   premiumActive: boolean;
 }): ChildAccessState {
-  if (params.premiumActive || params.children.length <= 1) {
+  if (
+    !hasLockedExtraChildren({
+      premiumActive: params.premiumActive,
+      currentChildrenCount: params.children.length,
+    })
+  ) {
     return {
       unlockedChildId: params.children[0]?.id ?? null,
       lockedChildIds: [],

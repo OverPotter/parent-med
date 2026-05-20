@@ -361,6 +361,32 @@ export const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: "600",
   },
+  lockedNoteWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  lockedNoteText: {
+    flex: 1,
+    minWidth: 180,
+  },
+  lockedBadge: {
+    minHeight: 24,
+    paddingHorizontal: 9,
+    borderRadius: 999,
+    backgroundColor: "#FFE9F1",
+    borderWidth: 1,
+    borderColor: "#F7BDD2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lockedBadgeText: {
+    color: "#D94D8E",
+    fontSize: 11,
+    lineHeight: 13,
+    fontWeight: "800",
+  },
   fieldError: {
     color: "#C75C52",
     fontSize: 12,

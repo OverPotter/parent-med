@@ -184,9 +184,26 @@ function FamilyInviteCard({
                 />
               </LinearGradient>
               <View style={styles.inviteTopCopy}>
-                <Text style={[styles.inviteTitle, { color: palette.textPrimary }]}>
-                  {content.inviteCodeTitle}
-                </Text>
+                <View style={styles.inviteTitleRow}>
+                  <Text style={[styles.inviteTitle, { color: palette.textPrimary }]}>
+                    {content.inviteCodeTitle}
+                  </Text>
+                  {inviteLocked ? (
+                    <View
+                      style={[
+                        styles.smallBadge,
+                        {
+                          backgroundColor: "#FFE9F1",
+                          borderColor: "#F7BDD2",
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.smallBadgeText, { color: "#D94D8E" }]}>
+                        Plus
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text style={[styles.inviteDescription, { color: palette.textSecondary }]}>
                   {inviteLocked
                     ? getInviteLockedDescription(locale)
