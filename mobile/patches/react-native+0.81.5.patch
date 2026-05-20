@@ -1,0 +1,31 @@
+diff --git a/node_modules/react-native/ReactCommon/hermes/inspector-modern/chrome/RuntimeAdapter.cpp b/node_modules/react-native/ReactCommon/hermes/inspector-modern/chrome/RuntimeAdapter.cpp
+new file mode 100644
+index 0000000..8f2780a
+--- /dev/null
++++ b/node_modules/react-native/ReactCommon/hermes/inspector-modern/chrome/RuntimeAdapter.cpp
+@@ -0,0 +1,13 @@
++#include <hermes/inspector/RuntimeAdapter.h>
++
++namespace facebook {
++namespace hermes {
++namespace inspector_modern {
++
++RuntimeAdapter::~RuntimeAdapter() = default;
++
++void RuntimeAdapter::tickleJs() {}
++
++} // namespace inspector_modern
++} // namespace hermes
++} // namespace facebook
+diff --git a/node_modules/react-native/scripts/react-native-xcode.sh b/node_modules/react-native/scripts/react-native-xcode.sh
+index 55d8d8b..378d50c 100755
+--- a/node_modules/react-native/scripts/react-native-xcode.sh
++++ b/node_modules/react-native/scripts/react-native-xcode.sh
+@@ -173,6 +173,7 @@ else
+   else
+     EXTRA_COMPILER_ARGS=-O
+   fi
++  EXTRA_COMPILER_ARGS="$EXTRA_COMPILER_ARGS -w"
+   if [[ $EMIT_SOURCEMAP == true ]]; then
+     EXTRA_COMPILER_ARGS="$EXTRA_COMPILER_ARGS -output-source-map"
+   fi
