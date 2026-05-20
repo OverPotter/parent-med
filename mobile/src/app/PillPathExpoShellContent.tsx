@@ -476,6 +476,7 @@ type OverlayScreensProps = {
   selectedIllnessActionKind: IllnessQuickActionKind;
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   familyMembers: MobileFamilyMember[];
+  familyPremiumActive: boolean;
   familyCanSeeInviteCard: boolean;
   familyInviteLocked: boolean;
   familyRoutinesCount: number;
@@ -618,6 +619,7 @@ type IllnessOverlayProps = {
   selectedIllnessActionKind: IllnessQuickActionKind;
   observationsByChildId: Record<string, MobileIllnessObservation | undefined>;
   familyMembers: MobileFamilyMember[];
+  familyPremiumActive: boolean;
   illnessFlow: OverlayScreensProps["illnessFlow"];
 };
 
@@ -629,6 +631,7 @@ function IllnessOverlays({
   selectedIllnessActionKind,
   observationsByChildId,
   familyMembers,
+  familyPremiumActive,
   illnessFlow,
 }: IllnessOverlayProps) {
   const focusedChild =
@@ -662,6 +665,7 @@ function IllnessOverlays({
           activeScreen === "illnessReminders" ||
           activeScreen === "illnessActionPlaceholder"
         }
+        showLiveActivityControls={familyPremiumActive}
         isLiveActivityEnabled={illnessFlow.isIllnessLiveActivityEnabled}
         onAddEntry={illnessFlow.onAddIllnessEntry}
         onOpenReminders={illnessFlow.onOpenIllnessReminders}
@@ -834,6 +838,7 @@ export function OverlayScreens({
   selectedIllnessActionKind,
   observationsByChildId,
   familyMembers,
+  familyPremiumActive,
   familyCanSeeInviteCard,
   familyInviteLocked,
   familyRoutinesCount,
@@ -873,6 +878,7 @@ export function OverlayScreens({
         selectedIllnessActionKind={selectedIllnessActionKind}
         observationsByChildId={observationsByChildId}
         familyMembers={familyMembers}
+        familyPremiumActive={familyPremiumActive}
         illnessFlow={illnessFlow}
       />
       <UtilityOverlays

@@ -800,6 +800,7 @@ export function usePillPathExpoShellState() {
         selectedJournalKind,
         selectedIllnessActionKind,
         observationsByChildId: activeIllnessObservationsByChildId,
+        familyPremiumActive,
         familyMembers:
           familyMembers.length > 0
             ? familyMembers
