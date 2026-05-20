@@ -415,6 +415,9 @@ export function RootTabContent({
         <PillboxHomeScreen
           accessToken={authSession?.accessToken ?? null}
           currentAccountId={authSession?.account.id ?? ""}
+          currentAccountDisplayName={authSession?.account.displayName}
+          currentAccountRelationshipLabel={authSession?.account.relationshipLabel}
+          currentAccountFamilyRole={authSession?.account.familyRole}
           familyMembers={familyMembers}
           onOpenAnalytics={onOpenPillboxAnalytics}
           createPlanLocked={createPillboxPlanLocked}

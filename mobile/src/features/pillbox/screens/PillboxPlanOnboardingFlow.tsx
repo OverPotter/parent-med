@@ -254,6 +254,9 @@ export function PillboxPlanOnboardingFlow({
   visible,
   accessToken,
   currentAccountId,
+  currentAccountDisplayName,
+  currentAccountRelationshipLabel,
+  currentAccountFamilyRole,
   familyMembers,
   onClose,
   onPlanSaved,
@@ -261,6 +264,9 @@ export function PillboxPlanOnboardingFlow({
   visible: boolean;
   accessToken: string | null;
   currentAccountId: string;
+  currentAccountDisplayName?: string | null;
+  currentAccountRelationshipLabel?: string | null;
+  currentAccountFamilyRole?: string | null;
   familyMembers: MobileFamilyMember[];
   onClose: () => void;
   onPlanSaved: (payload: { plan: MobilePillboxPlan; participantId: string }) => void;
@@ -301,6 +307,7 @@ export function PillboxPlanOnboardingFlow({
     participantTitle,
     recipientSheetMembers,
     resolvedRecipientIds,
+    currentUserLabel,
     currentCourseDurationDays,
     canGoNextFromParticipant,
     canGoNextFromList,
@@ -328,6 +335,9 @@ export function PillboxPlanOnboardingFlow({
     visible,
     accessToken,
     currentAccountId,
+    currentAccountDisplayName,
+    currentAccountRelationshipLabel,
+    currentAccountFamilyRole,
     familyMembers,
     locale,
     onClose,
@@ -656,9 +666,7 @@ export function PillboxPlanOnboardingFlow({
                   ? "Domyślnie wybrana jest osoba z planu."
               : "The plan participant is selected by default."
           }
-          currentUserLabel={
-            locale === "ru" ? "Вы" : locale === "de" ? "Du" : locale === "pl" ? "Ty" : "You"
-          }
+          currentUserLabel={currentUserLabel ?? ""}
           visible={isRecipientSheetOpen}
           isSaving={isSavingPlan}
           members={recipientSheetMembers}

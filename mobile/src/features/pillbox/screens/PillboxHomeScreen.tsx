@@ -23,6 +23,7 @@ import { pillboxTimeIcons } from "../assets/time";
 import { buildPillboxHomeScreenContent } from "../model/pillboxHomeScreen";
 import {
   PILLBOX_WEEKDAY_IDS,
+  resolveCurrentAccountBadgeLabel,
   type PillboxDraftMedicine,
 } from "../model/pillboxPlanOnboarding";
 import { pillboxHomeScreenStyles as styles } from "./pillboxHomeScreenStyles";
@@ -44,19 +45,6 @@ function getCreatePlanLockedHint(locale: string) {
     return "W wersji bezpłatnej dostępny jest 1 plan. Aby dodać więcej, potrzebny jest Plus.";
   }
   return "Free includes 1 plan. Upgrade to Plus to add more.";
-}
-
-function getCurrentUserLabel(locale: string) {
-  if (locale === "ru") {
-    return "Вы";
-  }
-  if (locale === "de") {
-    return "Du";
-  }
-  if (locale === "pl") {
-    return "Ty";
-  }
-  return "You";
 }
 
 function getUnknownRecipientLabel(locale: string, index: number) {
@@ -139,6 +127,9 @@ function getDeletePlanConfirmLabel(locale: string, deleting: boolean) {
 export function PillboxHomeScreen({
   accessToken,
   currentAccountId,
+  currentAccountDisplayName,
+  currentAccountRelationshipLabel,
+  currentAccountFamilyRole,
   onOpenCreatePlan = noop,
   onOpenAnalytics = noop,
   createPlanLocked = false,
@@ -155,6 +146,9 @@ export function PillboxHomeScreen({
 }: {
   accessToken: string | null;
   currentAccountId: string;
+  currentAccountDisplayName?: string | null;
+  currentAccountRelationshipLabel?: string | null;
+  currentAccountFamilyRole?: string | null;
   onOpenCreatePlan?: () => void;
   onOpenAnalytics?: () => void;
   createPlanLocked?: boolean;
@@ -223,6 +217,7 @@ export function PillboxHomeScreen({
     onMarkIntake,
     onTabBarModeChange,
   });
+  const isCreatePlanLocked = createPlanLocked && displayedPlans.length > 0;
   const pendingDeletePlanId = controllerPendingDeletePlanId;
   const recipientsPlan = recipientsPlanId ? expandedPlansById[recipientsPlanId] ?? null : null;
   const recipientSheetMembers =
@@ -235,12 +230,25 @@ export function PillboxHomeScreen({
             familyId: recipientsPlan.familyId,
             displayName:
               memberId === currentAccountId
-                ? getCurrentUserLabel(locale)
+                ? currentAccountDisplayName?.trim() ||
+                  currentAccountRelationshipLabel?.trim() ||
+                  getUnknownRecipientLabel(locale, index)
                 : getUnknownRecipientLabel(locale, index),
-            relationshipLabel: null,
+            relationshipLabel:
+              memberId === currentAccountId
+                ? resolveCurrentAccountBadgeLabel({
+                    currentAccountId,
+                    locale,
+                    currentAccountRelationshipLabel,
+                    currentAccountFamilyRole,
+                  })
+                : null,
             phone: null,
             preferredLanguage: locale,
-            familyRole: "member" as const,
+            familyRole:
+              memberId === currentAccountId
+                ? (currentAccountFamilyRole ?? "member")
+                : ("member" as const),
             accessPolicy: {
               allChildren: true,
               childIds: [],
@@ -407,7 +415,7 @@ export function PillboxHomeScreen({
   };
 
   const handleOpenCreatePlanFlow = () => {
-    if (createPlanLocked) {
+    if (isCreatePlanLocked) {
       onOpenLockedPlan();
       return;
     }
@@ -491,7 +499,7 @@ export function PillboxHomeScreen({
             onPress={handleOpenCreatePlanFlow}
             style={({ pressed }) => [
               styles.createPlanCta,
-              createPlanLocked ? styles.createPlanCtaLocked : null,
+              isCreatePlanLocked ? styles.createPlanCtaLocked : null,
               pressed ? styles.createPlanCtaPressed : null,
             ]}
           >
@@ -500,14 +508,14 @@ export function PillboxHomeScreen({
             </View>
             <View style={styles.createPlanLabelWrap}>
               <Text style={styles.createPlanLabel}>{content.createPlanLabel}</Text>
-              {createPlanLocked ? (
+              {isCreatePlanLocked ? (
                 <View style={styles.createPlanLockedBadge}>
                   <Text style={styles.createPlanLockedBadgeText}>Plus</Text>
                 </View>
               ) : null}
             </View>
           </Pressable>
-          {createPlanLocked ? (
+          {isCreatePlanLocked ? (
             <Text style={styles.createPlanLockedHint}>
               {getCreatePlanLockedHint(locale)}
             </Text>
@@ -703,7 +711,7 @@ export function PillboxHomeScreen({
               onPress={handleOpenCreatePlanFlow}
               style={({ pressed }) => [
                 styles.createPlanCta,
-                createPlanLocked ? styles.createPlanCtaLocked : null,
+                isCreatePlanLocked ? styles.createPlanCtaLocked : null,
                 pressed ? styles.createPlanCtaPressed : null,
               ]}
             >
@@ -712,7 +720,7 @@ export function PillboxHomeScreen({
               </View>
               <View style={styles.createPlanLabelWrap}>
                 <Text style={styles.createPlanLabel}>{content.createPlanLabel}</Text>
-                {createPlanLocked ? (
+                {isCreatePlanLocked ? (
                   <View style={styles.createPlanLockedBadge}>
                     <Text style={styles.createPlanLockedBadgeText}>Plus</Text>
                   </View>
@@ -727,6 +735,9 @@ export function PillboxHomeScreen({
         visible={isPlanFlowVisible}
         accessToken={accessToken}
         currentAccountId={currentAccountId}
+        currentAccountDisplayName={currentAccountDisplayName}
+        currentAccountRelationshipLabel={currentAccountRelationshipLabel}
+        currentAccountFamilyRole={currentAccountFamilyRole}
         familyMembers={familyMembers}
         onClose={() => setIsPlanFlowVisible(false)}
         onPlanSaved={() => handlePlanSaved()}
@@ -834,7 +845,14 @@ export function PillboxHomeScreen({
                 ? "Jeśli usuniesz wszystkich, domyślnie pozostaniesz tylko Ty."
                 : "If everyone is removed, you will remain selected by default."
         }
-        currentUserLabel={getCurrentUserLabel(locale)}
+        currentUserLabel={
+          resolveCurrentAccountBadgeLabel({
+            currentAccountId,
+            locale,
+            currentAccountRelationshipLabel,
+            currentAccountFamilyRole,
+          }) ?? ""
+        }
         visible={recipientsPlan !== null}
         isSaving={recipientsPlanId !== null && updatingPlanId === recipientsPlanId}
         members={recipientSheetMembers}

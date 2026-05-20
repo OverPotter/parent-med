@@ -28,6 +28,9 @@ export type PillboxWeekdayId = (typeof PILLBOX_WEEKDAY_IDS)[number];
 type ParticipantFallback = {
   currentAccountId: string;
   locale: MobileLocale;
+  currentAccountDisplayName?: string | null;
+  currentAccountRelationshipLabel?: string | null;
+  currentAccountFamilyRole?: string | null;
 };
 
 export type PillboxDraftMedicine = {
@@ -60,6 +63,59 @@ function getCurrentUserTitle(locale: MobileLocale) {
     return "Ty";
   }
   return "You";
+}
+
+function normalizeOptionalText(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function getFamilyRoleBadgeLabel(
+  role: string | null | undefined,
+  locale: MobileLocale,
+): string | null {
+  if (role === "owner") {
+    return locale === "ru"
+      ? "Владелец"
+      : locale === "de"
+        ? "Inhaber"
+        : locale === "pl"
+          ? "Właściciel"
+          : "Owner";
+  }
+
+  if (role === "admin") {
+    return locale === "ru" ? "Админ" : "Admin";
+  }
+
+  if (role === "member") {
+    return locale === "ru"
+      ? "Участник"
+      : locale === "de"
+        ? "Mitglied"
+        : locale === "pl"
+          ? "Członek"
+          : "Member";
+  }
+
+  return null;
+}
+
+function resolveCurrentAccountDisplayName(fallback: ParticipantFallback) {
+  return (
+    normalizeOptionalText(fallback.currentAccountDisplayName) ??
+    normalizeOptionalText(fallback.currentAccountRelationshipLabel) ??
+    getCurrentUserTitle(fallback.locale)
+  );
+}
+
+export function resolveCurrentAccountBadgeLabel(
+  fallback: ParticipantFallback,
+): string | null {
+  return (
+    normalizeOptionalText(fallback.currentAccountRelationshipLabel) ??
+    getFamilyRoleBadgeLabel(fallback.currentAccountFamilyRole, fallback.locale)
+  );
 }
 
 function getPlanOnboardingText(
@@ -176,12 +232,12 @@ export function buildParticipantOptions(
     return [];
   }
 
-  const fallbackTitle = getCurrentUserTitle(fallback.locale);
+  const fallbackTitle = resolveCurrentAccountDisplayName(fallback);
   return [
     {
       id: fallback.currentAccountId,
       title: fallbackTitle,
-      subtitle: null,
+      subtitle: resolveCurrentAccountBadgeLabel(fallback),
       avatarText: resolveAvatarText(fallbackTitle),
     },
   ];
@@ -262,17 +318,17 @@ export function buildPillboxRecipientSheetMembers(
   }
 
   if (fallback?.currentAccountId) {
-    const fallbackTitle = getCurrentUserTitle(fallback.locale);
+    const fallbackTitle = resolveCurrentAccountDisplayName(fallback);
     return [
       {
         id: fallback.currentAccountId,
         email: null,
         familyId: "local-family",
         displayName: fallbackTitle,
-        relationshipLabel: null,
+        relationshipLabel: resolveCurrentAccountBadgeLabel(fallback),
         phone: null,
         preferredLanguage: fallback.locale,
-        familyRole: "member",
+        familyRole: fallback.currentAccountFamilyRole ?? "member",
         accessPolicy: {
           allChildren: false,
           childIds: [],

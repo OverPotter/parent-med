@@ -15,6 +15,7 @@ import {
   buildParticipantOptions,
   createEmptyMedicineDraft,
   createInitialPlanDraft,
+  resolveCurrentAccountBadgeLabel,
   resolvePlanParticipantTitle,
   type PillboxDraftMedicine,
   type PillboxWeekdayId,
@@ -26,6 +27,9 @@ export function usePillboxPlanOnboardingController({
   visible,
   accessToken,
   currentAccountId,
+  currentAccountDisplayName,
+  currentAccountRelationshipLabel,
+  currentAccountFamilyRole,
   familyMembers,
   locale,
   onClose,
@@ -34,14 +38,31 @@ export function usePillboxPlanOnboardingController({
   visible: boolean;
   accessToken: string | null;
   currentAccountId: string;
+  currentAccountDisplayName?: string | null;
+  currentAccountRelationshipLabel?: string | null;
+  currentAccountFamilyRole?: string | null;
   familyMembers: MobileFamilyMember[];
   locale: MobileLocale;
   onClose: () => void;
   onPlanSaved: (payload: { plan: MobilePillboxPlan; participantId: string }) => void;
 }) {
   const participants = useMemo(
-    () => buildParticipantOptions(familyMembers, { currentAccountId, locale }),
-    [currentAccountId, familyMembers, locale],
+    () =>
+      buildParticipantOptions(familyMembers, {
+        currentAccountId,
+        locale,
+        currentAccountDisplayName,
+        currentAccountRelationshipLabel,
+        currentAccountFamilyRole,
+      }),
+    [
+      currentAccountDisplayName,
+      currentAccountFamilyRole,
+      currentAccountId,
+      currentAccountRelationshipLabel,
+      familyMembers,
+      locale,
+    ],
   );
   const [step, setStep] = useState<PillboxPlanFlowStep>("participant");
   const [draft, setDraft] = useState(() => createInitialPlanDraft());
@@ -85,8 +106,19 @@ export function usePillboxPlanOnboardingController({
       buildPillboxRecipientSheetMembers(familyMembers, participants, {
         currentAccountId,
         locale,
+        currentAccountDisplayName,
+        currentAccountRelationshipLabel,
+        currentAccountFamilyRole,
       }),
-    [currentAccountId, familyMembers, locale, participants],
+    [
+      currentAccountDisplayName,
+      currentAccountFamilyRole,
+      currentAccountId,
+      currentAccountRelationshipLabel,
+      familyMembers,
+      locale,
+      participants,
+    ],
   );
   const eligibleRecipientIds = useMemo(
     () => recipientSheetMembers.map((member) => member.id),
@@ -108,6 +140,16 @@ export function usePillboxPlanOnboardingController({
         members: recipientSheetMembers,
       }),
     [recipientSheetMembers, resolvedRecipientIds],
+  );
+  const currentUserLabel = useMemo(
+    () =>
+      resolveCurrentAccountBadgeLabel({
+        currentAccountId,
+        locale,
+        currentAccountRelationshipLabel,
+        currentAccountFamilyRole,
+      }),
+    [currentAccountFamilyRole, currentAccountId, currentAccountRelationshipLabel, locale],
   );
   const currentCourseDurationDays = medicineDraft?.courseDurationDays ?? null;
   const canGoNextFromParticipant = Boolean(draft.participantId);
@@ -412,6 +454,7 @@ export function usePillboxPlanOnboardingController({
     eligibleRecipientIds,
     resolvedRecipientIds,
     notificationRecipientTitle,
+    currentUserLabel,
     currentCourseDurationDays,
     canGoNextFromParticipant,
     canGoNextFromList,
