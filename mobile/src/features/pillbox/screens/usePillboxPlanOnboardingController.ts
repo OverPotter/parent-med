@@ -68,7 +68,6 @@ export function usePillboxPlanOnboardingController({
   const [draft, setDraft] = useState(() => createInitialPlanDraft());
   const [medicineDraft, setMedicineDraft] = useState<PillboxDraftMedicine | null>(null);
   const [editingMedicineId, setEditingMedicineId] = useState<string | null>(null);
-  const [showDiscardAlert, setShowDiscardAlert] = useState(false);
   const [activePickerField, setActivePickerField] = useState<"time" | null>(null);
   const [editingTimeIndex, setEditingTimeIndex] = useState<number | null>(null);
   const [isCourseSheetOpen, setIsCourseSheetOpen] = useState(false);
@@ -85,7 +84,6 @@ export function usePillboxPlanOnboardingController({
       setDraft(createInitialPlanDraft());
       setMedicineDraft(null);
       setEditingMedicineId(null);
-      setShowDiscardAlert(false);
       setActivePickerField(null);
       setEditingTimeIndex(null);
       setIsCourseSheetOpen(false);
@@ -175,7 +173,7 @@ export function usePillboxPlanOnboardingController({
 
   const handleRequestClose = () => {
     if (step === "participant") {
-      setShowDiscardAlert(true);
+      onClose();
       return;
     }
     if (step === "list") {
@@ -428,8 +426,6 @@ export function usePillboxPlanOnboardingController({
     draft,
     medicineDraft,
     setMedicineDraft,
-    showDiscardAlert,
-    setShowDiscardAlert,
     activePickerField,
     setActivePickerField,
     editingTimeIndex,

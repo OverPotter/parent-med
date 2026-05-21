@@ -25,12 +25,7 @@ import type {
 } from "../model/illnessObservation";
 import { CustomNumberPrompt } from "./CustomNumberPrompt";
 import {
-  ActionScreenHeader,
-  FormFieldWithIcon,
   IllnessEntryActionSection,
-  ReminderAlreadyGivenSection,
-  SmartNumberSelector,
-  SoftHintCard,
 } from "./IllnessActionSharedSections";
 import { ReminderActionForm } from "./ReminderActionForm";
 import { ReminderNumberOptionsSheet } from "./ReminderNumberOptionsSheet";
@@ -354,23 +349,6 @@ export function IllnessActionPlaceholderScreen({
               onSave={handleSaveReminder}
               saveEnabled={reminderSaveEnabled}
               setReminderError={reminderState.setReminderError}
-              parts={{
-                ActionScreenHeader: (props) => (
-                  <ActionScreenHeader {...props} styles={styles} />
-                ),
-                FormFieldWithIcon: (props) => (
-                  <FormFieldWithIcon {...props} styles={styles} />
-                ),
-                SmartNumberSelector: (props) => (
-                  <SmartNumberSelector {...props} styles={styles} />
-                ),
-                SoftHintCard: (props) => (
-                  <SoftHintCard {...props} styles={styles} />
-                ),
-                ReminderAlreadyGivenSection: (props) => (
-                  <ReminderAlreadyGivenSection {...props} styles={styles} />
-                ),
-              }}
             />
           ) : (
             <>

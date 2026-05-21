@@ -115,6 +115,15 @@ class PillboxService:
             if dose_log.scheduled_for is not None
         )
 
+    def _did_slot_exist_when_created(
+        self,
+        plan: PillboxPlan,
+        medication: PillboxMedication,
+        scheduled_for: datetime,
+    ) -> bool:
+        first_possible_at = max(plan.created_at, medication.created_at)
+        return scheduled_for >= first_possible_at
+
     def _is_valid_scheduled_slot(
         self, medication: PillboxMedication, scheduled_for: datetime
     ) -> bool:
@@ -205,6 +214,8 @@ class PillboxService:
         for medication in plan.medications:
             slots = self._build_medication_slots(medication, start_day, end_day)
             for index, scheduled_for in enumerate(slots):
+                if not self._did_slot_exist_when_created(plan, medication, scheduled_for):
+                    continue
                 if self._is_candidate_already_taken(plan, medication, scheduled_for):
                     continue
                 next_scheduled_for = slots[index + 1] if index + 1 < len(slots) else None

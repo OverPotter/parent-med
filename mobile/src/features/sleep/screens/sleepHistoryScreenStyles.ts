@@ -173,6 +173,10 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  timelineSwipeRow: {
+    flex: 1,
+    minWidth: 0,
+  },
   timelineDot: {
     width: 10,
     height: 10,

@@ -1,4 +1,3 @@
-import type { ReactElement } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Image, Pressable, Text, View } from "react-native";
 import { getLocalAssetDefaultSource } from "../../../shared/lib/assetSources";
@@ -11,43 +10,13 @@ import {
 } from "../../../shared/lib/backdatedDateTime";
 import { reminderFieldIcons } from "../assets";
 import type { MobileIllnessObservation } from "../model/illnessObservation";
-
-type HelperComponents = {
-  ActionScreenHeader: (props: {
-    title: string;
-    subtitle: string;
-    child: ChildCard;
-  }) => ReactElement;
-  FormFieldWithIcon: (props: {
-    iconSource: number;
-    label: string;
-    value: string;
-    onChangeText: (next: string) => void;
-    placeholder: string;
-    keyboardType?: "default" | "number-pad";
-    maxLength?: number;
-  }) => ReactElement;
-  SmartNumberSelector: (props: {
-    iconSource: number;
-    iconStyle?: object;
-    label: string;
-    value: number | null;
-    displayValue?: string | null;
-    placeholder: string;
-    onPress: () => void;
-  }) => ReactElement;
-  SoftHintCard: (props: { text: string }) => ReactElement;
-  ReminderAlreadyGivenSection: (props: {
-    title: string;
-    emptyText: string;
-    lastLabel: string;
-    todayLabel: string;
-    ofLabel: string;
-    entries: MobileIllnessObservation["entries"];
-    locale: MobileLocale;
-    maxDosesPerDay: number | null;
-  }) => ReactElement;
-};
+import {
+  ActionScreenHeader,
+  FormFieldWithIcon,
+  ReminderAlreadyGivenSection,
+  SmartNumberSelector,
+  SoftHintCard,
+} from "./IllnessActionSharedSections";
 
 type ReminderCopy = {
   title: string;
@@ -108,7 +77,6 @@ export function ReminderActionForm({
   onSave,
   saveEnabled,
   setReminderError,
-  parts,
 }: {
   child: ChildCard;
   reminderCopy: ReminderCopy;
@@ -145,22 +113,14 @@ export function ReminderActionForm({
   onSave: () => void;
   saveEnabled: boolean;
   setReminderError: (value: string | null) => void;
-  parts: HelperComponents;
 }) {
-  const {
-    ActionScreenHeader,
-    FormFieldWithIcon,
-    SmartNumberSelector,
-    SoftHintCard,
-    ReminderAlreadyGivenSection,
-  } = parts;
-
   return (
     <>
       <ActionScreenHeader
         title={`${reminderCopy.title} · ${child.name}`}
         subtitle={reminderCopy.subtitle}
         child={child}
+        styles={styles}
       />
 
       <View style={[styles.formCard, styles.formCardReminder]}>
@@ -174,6 +134,7 @@ export function ReminderActionForm({
           }}
           placeholder={reminderCopy.medicinePlaceholder}
           maxLength={80}
+          styles={styles}
         />
 
         <FormFieldWithIcon
@@ -186,6 +147,7 @@ export function ReminderActionForm({
           }}
           placeholder={reminderCopy.dosePlaceholder}
           maxLength={40}
+          styles={styles}
         />
 
         <SmartNumberSelector
@@ -217,6 +179,7 @@ export function ReminderActionForm({
             onOpenIntervalSheet();
             setReminderError(null);
           }}
+          styles={styles}
         />
 
         <SmartNumberSelector
@@ -229,8 +192,9 @@ export function ReminderActionForm({
             onOpenLimitSheet();
             setReminderError(null);
           }}
+          styles={styles}
         />
-        <SoftHintCard text={reminderCopy.dailyLimitHelper} />
+        <SoftHintCard text={reminderCopy.dailyLimitHelper} styles={styles} />
       </View>
 
       <View style={[styles.formCard, styles.reminderAlreadyCard]}>
@@ -364,6 +328,7 @@ export function ReminderActionForm({
                 entries={matchingMedicineEntries}
                 locale={locale}
                 maxDosesPerDay={reminderMaxDosesPerDay}
+                styles={styles}
               />
             ) : null}
           </>

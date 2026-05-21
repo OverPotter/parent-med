@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -232,6 +232,99 @@ async def test_illness_delivery_retries_only_failed_recipient_next_tick(monkeypa
     assert (account_b_id, "due", next_allowed_at) in sent_deliveries
 
 
+@pytest.mark.asyncio
+async def test_pillbox_delivery_uses_only_selected_plan_recipients() -> None:
+    family_id = uuid4()
+    selected_account_id = uuid4()
+    unselected_account_id = uuid4()
+    plan_id = uuid4()
+    medication_id = uuid4()
+    now = datetime(2026, 4, 20, 5, 0, tzinfo=UTC)
+    plan = SimpleNamespace(
+        id=plan_id,
+        family_id=family_id,
+        status="active",
+        member_account_ids=[selected_account_id],
+        created_at=now - timedelta(hours=1),
+        medications=[
+            SimpleNamespace(
+                id=medication_id,
+                course_mode="continuous",
+                course_start_date=None,
+                course_end_date=None,
+                repeat_days=[1, 2, 3, 4, 5, 6, 7],
+                times=[time(8, 0)],
+                created_at=now - timedelta(hours=1),
+                custom_medicine_name="Ибупрофен",
+                dose_amount="5 мл",
+                meal_rule="after_meal",
+            )
+        ],
+        dose_logs=[],
+    )
+    selected_account = SimpleNamespace(
+        id=selected_account_id,
+        family_id=family_id,
+        display_name="Мама",
+        preferred_language="ru",
+        pillbox_push_enabled=True,
+        pillbox_push_before_reminder_minutes=10,
+        access_policy=FamilyAccessPolicy(pillbox_access="act"),
+    )
+    unselected_account = SimpleNamespace(
+        id=unselected_account_id,
+        family_id=family_id,
+        display_name="Папа",
+        preferred_language="ru",
+        pillbox_push_enabled=True,
+        pillbox_push_before_reminder_minutes=10,
+        access_policy=FamilyAccessPolicy(pillbox_access="act"),
+    )
+    session = _PillboxSession([plan])
+    looked_up_accounts: list[object] = []
+    subscription_requests: list[object] = []
+    sent_accounts: list[object] = []
+
+    class _AccountRepo:
+        async def get_by_id(self, account_id):
+            looked_up_accounts.append(account_id)
+            if account_id == selected_account_id:
+                return selected_account
+            if account_id == unselected_account_id:
+                return unselected_account
+            return None
+
+    class _SubscriptionRepo:
+        async def get_by_account_id(self, account_id):
+            subscription_requests.append(account_id)
+            return [SimpleNamespace(account_id=account_id, endpoint=str(account_id), channel="web")]
+
+    scheduler = PushNotificationScheduler(session_factory=lambda: session)
+
+    async def _has_delivery(**_kwargs):
+        return False
+
+    async def _send_to_subscriptions(*, subscriptions, **_kwargs):
+        sent_accounts.append(subscriptions[0].account_id)
+        return True
+
+    scheduler._has_pillbox_delivery = _has_delivery  # type: ignore[method-assign]  # noqa: SLF001
+    scheduler._send_to_subscriptions = _send_to_subscriptions  # type: ignore[method-assign]  # noqa: SLF001
+
+    await scheduler._process_pillbox_plan_reminders(  # noqa: SLF001
+        session=session,
+        account_repo=_AccountRepo(),
+        subscription_repo=_SubscriptionRepo(),
+        now=now,
+    )
+
+    assert looked_up_accounts
+    assert subscription_requests
+    assert set(looked_up_accounts) == {selected_account_id}
+    assert set(subscription_requests) == {selected_account_id}
+    assert sent_accounts == [selected_account_id]
+
+
 class _FixedDateTime:
     def __init__(self, now: datetime) -> None:
         self._now = now
@@ -244,3 +337,26 @@ class _FixedDateTime:
 
 async def _noop_async(**_kwargs) -> None:
     return None
+
+
+class _PillboxSession:
+    def __init__(self, plans: list[SimpleNamespace]) -> None:
+        self.plans = plans
+        self.added: list[object] = []
+
+    async def execute(self, _query):
+        return _PillboxExecuteResult(self.plans)
+
+    def add(self, item: object) -> None:
+        self.added.append(item)
+
+
+class _PillboxExecuteResult:
+    def __init__(self, plans: list[SimpleNamespace]) -> None:
+        self.plans = plans
+
+    def scalars(self):
+        return self
+
+    def all(self):
+        return self.plans

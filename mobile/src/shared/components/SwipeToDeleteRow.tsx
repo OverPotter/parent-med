@@ -5,12 +5,15 @@ import {
   PanResponder,
   Pressable,
   StyleSheet,
+  type StyleProp,
   Text,
   View,
+  type ViewStyle,
 } from "react-native";
 
 type SwipeToDeleteRowProps = {
   children: ReactNode;
+  style?: StyleProp<ViewStyle>;
   onDelete: () => void;
   onPress?: () => void;
   isOpen?: boolean;
@@ -26,6 +29,7 @@ const noop = () => {};
 
 export function SwipeToDeleteRow({
   children,
+  style,
   onDelete,
   onPress = noop,
   isOpen: isOpenProp,
@@ -123,6 +127,7 @@ export function SwipeToDeleteRow({
       style={[
         styles.container,
         { borderRadius, backgroundColor: isOpen ? deleteColor : "transparent" },
+        style,
       ]}
     >
       <View

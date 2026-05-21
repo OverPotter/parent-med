@@ -110,6 +110,7 @@ export function TimelineRow({
         <View style={styles.timelineLine} />
       </View>
       <SwipeToDeleteRow
+        style={styles.timelineSwipeRow}
         onDelete={onDelete}
         deleteColor="#8F80E3"
         deletePressedColor="#7D6FD4"

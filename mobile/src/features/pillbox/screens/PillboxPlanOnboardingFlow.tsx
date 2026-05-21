@@ -2,7 +2,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import {
-  Alert,
   Animated,
   ImageBackground,
   Pressable,
@@ -198,58 +197,6 @@ function getSaveLabel(locale: "ru" | "en" | "de" | "pl") {
   return "Save";
 }
 
-function getDiscardPlanTitle(locale: "ru" | "en" | "de" | "pl") {
-  if (locale === "ru") {
-    return "Не сохранять план?";
-  }
-  if (locale === "de") {
-    return "Plan nicht speichern?";
-  }
-  if (locale === "pl") {
-    return "Nie zapisywać planu?";
-  }
-  return "Discard plan?";
-}
-
-function getDiscardPlanText(locale: "ru" | "en" | "de" | "pl") {
-  if (locale === "ru") {
-    return "Введённые данные будут потеряны.";
-  }
-  if (locale === "de") {
-    return "Die eingegebenen Daten gehen verloren.";
-  }
-  if (locale === "pl") {
-    return "Wprowadzone dane zostaną utracone.";
-  }
-  return "Entered data will be lost.";
-}
-
-function getContinueEditingLabel(locale: "ru" | "en" | "de" | "pl") {
-  if (locale === "ru") {
-    return "Продолжить";
-  }
-  if (locale === "de") {
-    return "Weiter bearbeiten";
-  }
-  if (locale === "pl") {
-    return "Kontynuuj edycję";
-  }
-  return "Continue editing";
-}
-
-function getDiscardLabel(locale: "ru" | "en" | "de" | "pl") {
-  if (locale === "ru") {
-    return "Не сохранять";
-  }
-  if (locale === "de") {
-    return "Nicht speichern";
-  }
-  if (locale === "pl") {
-    return "Nie zapisuj";
-  }
-  return "Discard";
-}
-
 export function PillboxPlanOnboardingFlow({
   visible,
   accessToken,
@@ -285,8 +232,6 @@ export function PillboxPlanOnboardingFlow({
     draft,
     medicineDraft,
     setMedicineDraft,
-    showDiscardAlert,
-    setShowDiscardAlert,
     activePickerField,
     setActivePickerField,
     setEditingTimeIndex,
@@ -348,7 +293,6 @@ export function PillboxPlanOnboardingFlow({
     enabled:
       visible &&
       activePickerField === null &&
-      !showDiscardAlert &&
       !isCourseSheetOpen &&
       !isCustomCourseSheetOpen &&
       !isRecipientSheetOpen,
@@ -501,43 +445,6 @@ export function PillboxPlanOnboardingFlow({
             />
           ) : null}
         </View>
-
-        {showDiscardAlert ? (
-          <View style={styles.overlayScrim}>
-            <View style={styles.alertCard}>
-              <Text style={styles.alertTitle}>
-                {getDiscardPlanTitle(locale)}
-              </Text>
-              <Text style={styles.alertText}>{getDiscardPlanText(locale)}</Text>
-              <View style={styles.alertActions}>
-                <Pressable
-                  onPress={() => setShowDiscardAlert(false)}
-                  style={({ pressed }) => [
-                    styles.alertAction,
-                    pressed ? styles.backLinkPressed : null,
-                  ]}
-                >
-                  <Text style={styles.alertActionText}>{getContinueEditingLabel(locale)}</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setShowDiscardAlert(false);
-                    onClose();
-                  }}
-                  style={({ pressed }) => [
-                    styles.alertAction,
-                    styles.alertActionDanger,
-                    pressed ? styles.backLinkPressed : null,
-                  ]}
-                >
-                  <Text style={[styles.alertActionText, styles.alertActionTextDanger]}>
-                    {getDiscardLabel(locale)}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        ) : null}
 
         <BackdatedDateTimePickerSheet
           visible={activePickerField !== null}

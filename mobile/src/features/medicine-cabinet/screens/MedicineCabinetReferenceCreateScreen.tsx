@@ -1,8 +1,6 @@
-import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, Text, View } from "react-native";
+import { View } from "react-native";
 import { Animated, useWindowDimensions } from "react-native";
 import { BackdatedDateTimePickerSheet } from "../../../shared/components/BackdatedDateTimePickerSheet";
-import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import { MedicineCabinetAfterOpeningSheets } from "./MedicineCabinetAfterOpeningSheets";
@@ -124,66 +122,6 @@ export function MedicineCabinetReferenceCreateScreen({
         onSaveCustom={flow.handleSaveCustomShelfValue}
         styles={styles}
       />
-
-      <FormBottomSheet
-        visible={flow.isSuccessSheetOpen}
-        onClose={flow.handleSuccessClose}
-        overlayStyle={styles.sheetOverlay}
-        backdropStyle={styles.sheetBackdrop}
-        sheetStyle={styles.customValueSheetCard}
-      >
-        {({ panHandlers, requestClose }) => (
-          <>
-            <View style={styles.sheetDragZone} {...panHandlers}>
-              <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>
-                {flow.uiLocale === "ru"
-                  ? "Препарат добавлен"
-                  : flow.uiLocale === "de"
-                    ? "Medikament hinzugefügt"
-                    : flow.uiLocale === "pl"
-                      ? "Lek dodany"
-                      : "Medicine added"}
-              </Text>
-              <Text style={styles.sheetSubtitle}>
-                {flow.uiLocale === "ru"
-                  ? "Теперь он появится в домашней аптечке."
-                  : flow.uiLocale === "de"
-                    ? "Es erscheint jetzt in der Hausapotheke."
-                    : flow.uiLocale === "pl"
-                      ? "Pojawi się teraz w domowej apteczce."
-                      : "It will now appear in your home cabinet."}
-              </Text>
-            </View>
-
-            <View style={styles.sheetSingleAction}>
-              <Pressable
-                onPress={() => requestClose(flow.handleSuccessClose)}
-                style={({ pressed }) => [
-                  styles.customValueSaveButton,
-                  pressed ? styles.primaryButtonPressed : null,
-                ]}
-              >
-                <LinearGradient
-                  colors={["#F56565", "#EF4F4F"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.customValueSaveGradient}
-                />
-                <Text style={styles.customValueSaveText}>
-                  {flow.uiLocale === "ru"
-                    ? "Готово"
-                    : flow.uiLocale === "de"
-                      ? "Fertig"
-                      : flow.uiLocale === "pl"
-                        ? "Gotowe"
-                        : "Done"}
-                </Text>
-              </Pressable>
-            </View>
-          </>
-        )}
-      </FormBottomSheet>
     </View>
   );
 }

@@ -114,38 +114,8 @@ export function useManualMedicineCreateFlow({
       comment: storageComment.trim() || null,
     })
       .then(() => {
-        Alert.alert(
-          isRu
-            ? "Препарат добавлен"
-            : locale === "de"
-              ? "Medikament hinzugefügt"
-              : locale === "pl"
-                ? "Lek dodany"
-                : "Medicine added",
-          isRu
-            ? "Теперь он появится в домашней аптечке."
-            : locale === "de"
-              ? "Es erscheint jetzt in der Hausapotheke."
-              : locale === "pl"
-                ? "Pojawi się teraz w domowej apteczce."
-                : "It will now appear in your home cabinet.",
-          [
-          {
-            text:
-              isRu
-                ? "Ок"
-                : locale === "de"
-                  ? "OK"
-                  : locale === "pl"
-                    ? "OK"
-                    : "OK",
-            onPress: () => {
-              onCreated();
-              onBack();
-            },
-          },
-          ],
-        );
+        onCreated();
+        onBack();
       })
       .catch((error: unknown) => {
         const message =

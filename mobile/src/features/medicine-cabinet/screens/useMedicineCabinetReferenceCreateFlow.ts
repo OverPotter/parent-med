@@ -64,7 +64,6 @@ export function useMedicineCabinetReferenceCreateFlow({
   const [openedShelfMode, setOpenedShelfMode] = useState<AfterOpeningMode>(null);
   const [comment, setComment] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [isSuccessSheetOpen, setIsSuccessSheetOpen] = useState(false);
   const [isShelfSheetOpen, setIsShelfSheetOpen] = useState(false);
   const [isCustomShelfSheetOpen, setIsCustomShelfSheetOpen] = useState(false);
   const [customShelfValue, setCustomShelfValue] = useState("");
@@ -276,7 +275,8 @@ export function useMedicineCabinetReferenceCreateFlow({
       comment: comment.trim() || null,
     })
       .then(() => {
-        setIsSuccessSheetOpen(true);
+        onCreated();
+        onBack();
       })
       .catch((error: unknown) => {
         const message =
@@ -324,8 +324,6 @@ export function useMedicineCabinetReferenceCreateFlow({
     comment,
     setComment,
     isSaving,
-    isSuccessSheetOpen,
-    setIsSuccessSheetOpen,
     canSubmitStorage,
     isShelfSheetOpen,
     setIsShelfSheetOpen,
@@ -346,10 +344,5 @@ export function useMedicineCabinetReferenceCreateFlow({
     handleSelectShelfOption,
     handleOpenCustomShelf,
     handleSaveCustomShelfValue,
-    handleSuccessClose: () => {
-      setIsSuccessSheetOpen(false);
-      onCreated();
-      onBack();
-    },
   };
 }

@@ -109,6 +109,27 @@ describe("usePillboxPlanOnboardingController", () => {
     expect(latestController?.participantTitle).toBe("Артём");
   });
 
+  it("closes immediately from the first step without discard confirmation", async () => {
+    const onClose = jest.fn();
+    const onPlanSaved = jest.fn();
+
+    await act(async () => {
+      TestRenderer.create(
+        React.createElement(Probe, {
+          familyMembers: [makeFamilyMember("acc-1", "Мила")],
+          onClose,
+          onPlanSaved,
+        }),
+      );
+    });
+
+    act(() => {
+      latestController?.handleRequestClose();
+    });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps medicine editor inside step 2 and saves medicine back to the list", async () => {
     const onClose = jest.fn();
     const onPlanSaved = jest.fn();

@@ -1159,6 +1159,275 @@ async def test_pillbox_create_defaults_empty_recipients_to_current_account() -> 
 
 
 @pytest.mark.asyncio
+async def test_pillbox_summary_skips_same_day_slot_created_after_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    family_id = uuid4()
+    plan_id = uuid4()
+    medication_id = uuid4()
+    actor_id = uuid4()
+    now = datetime(2026, 4, 20, 9, 0, tzinfo=UTC)
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):  # noqa: ANN001
+            if tz is None:
+                return now.replace(tzinfo=None)
+            return now.astimezone(tz)
+
+    monkeypatch.setattr("src.application.services.pillbox_service.datetime", FrozenDateTime)
+
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository(
+            [
+                PillboxPlan(
+                    id=plan_id,
+                    family_id=family_id,
+                    title="Курс",
+                    status="active",
+                    member_account_ids=[actor_id],
+                    created_by_account_id=actor_id,
+                    created_at=now,
+                    updated_at=now,
+                    medications=[
+                        PillboxMedication(
+                            id=medication_id,
+                            plan_id=plan_id,
+                            household_medicine_id=None,
+                            custom_medicine_name="Ибупрофен",
+                            dose_amount="5 мл",
+                            meal_rule="after_meal",
+                            repeat_days=[1, 2, 3, 4, 5, 6, 7],
+                            times=[time(8, 0)],
+                            course_mode="continuous",
+                            course_start_date=None,
+                            course_end_date=None,
+                            position=0,
+                            created_at=now,
+                            updated_at=now,
+                        )
+                    ],
+                    dose_logs=[],
+                )
+            ]
+        ),
+        account_repo=StubAccountRepository(family_id),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(pillbox_access="view"),
+    )
+
+    summaries = await service.list_by_family_id(account)
+
+    assert summaries[0].next_dose_at == datetime(2026, 4, 21, 5, 0, tzinfo=UTC)
+
+
+@pytest.mark.asyncio
+async def test_pillbox_summary_keeps_existing_same_day_slot_after_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    family_id = uuid4()
+    plan_id = uuid4()
+    medication_id = uuid4()
+    actor_id = uuid4()
+    created_at = datetime(2026, 4, 20, 4, 0, tzinfo=UTC)
+    now = datetime(2026, 4, 20, 8, 30, tzinfo=UTC)
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):  # noqa: ANN001
+            if tz is None:
+                return now.replace(tzinfo=None)
+            return now.astimezone(tz)
+
+    monkeypatch.setattr("src.application.services.pillbox_service.datetime", FrozenDateTime)
+
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository(
+            [
+                PillboxPlan(
+                    id=plan_id,
+                    family_id=family_id,
+                    title="Курс",
+                    status="active",
+                    member_account_ids=[actor_id],
+                    created_by_account_id=actor_id,
+                    created_at=created_at,
+                    updated_at=created_at,
+                    medications=[
+                        PillboxMedication(
+                            id=medication_id,
+                            plan_id=plan_id,
+                            household_medicine_id=None,
+                            custom_medicine_name="Ибупрофен",
+                            dose_amount="5 мл",
+                            meal_rule="after_meal",
+                            repeat_days=[1, 2, 3, 4, 5, 6, 7],
+                            times=[time(8, 0)],
+                            course_mode="continuous",
+                            course_start_date=None,
+                            course_end_date=None,
+                            position=0,
+                            created_at=created_at,
+                            updated_at=created_at,
+                        )
+                    ],
+                    dose_logs=[],
+                )
+            ]
+        ),
+        account_repo=StubAccountRepository(family_id),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(pillbox_access="view"),
+    )
+
+    summaries = await service.list_by_family_id(account)
+
+    assert summaries[0].next_dose_at == datetime(2026, 4, 20, 5, 0, tzinfo=UTC)
+
+
+@pytest.mark.asyncio
+async def test_pillbox_summary_keeps_new_same_day_future_slot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    family_id = uuid4()
+    plan_id = uuid4()
+    medication_id = uuid4()
+    actor_id = uuid4()
+    now = datetime(2026, 4, 20, 9, 0, tzinfo=UTC)
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):  # noqa: ANN001
+            if tz is None:
+                return now.replace(tzinfo=None)
+            return now.astimezone(tz)
+
+    monkeypatch.setattr("src.application.services.pillbox_service.datetime", FrozenDateTime)
+
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository(
+            [
+                PillboxPlan(
+                    id=plan_id,
+                    family_id=family_id,
+                    title="Курс",
+                    status="active",
+                    member_account_ids=[actor_id],
+                    created_by_account_id=actor_id,
+                    created_at=now,
+                    updated_at=now,
+                    medications=[
+                        PillboxMedication(
+                            id=medication_id,
+                            plan_id=plan_id,
+                            household_medicine_id=None,
+                            custom_medicine_name="Ибупрофен",
+                            dose_amount="5 мл",
+                            meal_rule="after_meal",
+                            repeat_days=[1, 2, 3, 4, 5, 6, 7],
+                            times=[time(13, 0)],
+                            course_mode="continuous",
+                            course_start_date=None,
+                            course_end_date=None,
+                            position=0,
+                            created_at=now,
+                            updated_at=now,
+                        )
+                    ],
+                    dose_logs=[],
+                )
+            ]
+        ),
+        account_repo=StubAccountRepository(family_id),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(pillbox_access="view"),
+    )
+
+    summaries = await service.list_by_family_id(account)
+
+    assert summaries[0].next_dose_at == datetime(2026, 4, 20, 10, 0, tzinfo=UTC)
+
+
+@pytest.mark.asyncio
+async def test_pillbox_summary_keeps_future_period_slot_after_creation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    family_id = uuid4()
+    plan_id = uuid4()
+    medication_id = uuid4()
+    actor_id = uuid4()
+    now = datetime(2026, 4, 20, 9, 0, tzinfo=UTC)
+
+    class FrozenDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):  # noqa: ANN001
+            if tz is None:
+                return now.replace(tzinfo=None)
+            return now.astimezone(tz)
+
+    monkeypatch.setattr("src.application.services.pillbox_service.datetime", FrozenDateTime)
+
+    service = PillboxService(
+        pillbox_repo=StubPillboxRepository(
+            [
+                PillboxPlan(
+                    id=plan_id,
+                    family_id=family_id,
+                    title="Курс",
+                    status="active",
+                    member_account_ids=[actor_id],
+                    created_by_account_id=actor_id,
+                    created_at=now,
+                    updated_at=now,
+                    medications=[
+                        PillboxMedication(
+                            id=medication_id,
+                            plan_id=plan_id,
+                            household_medicine_id=None,
+                            custom_medicine_name="Ибупрофен",
+                            dose_amount="5 мл",
+                            meal_rule="after_meal",
+                            repeat_days=[2],
+                            times=[time(8, 0)],
+                            course_mode="period",
+                            course_start_date=datetime(2026, 4, 21, tzinfo=UTC).date(),
+                            course_end_date=datetime(2026, 4, 23, tzinfo=UTC).date(),
+                            position=0,
+                            created_at=now,
+                            updated_at=now,
+                        )
+                    ],
+                    dose_logs=[],
+                )
+            ]
+        ),
+        account_repo=StubAccountRepository(family_id),
+        household_repo=StubHouseholdMedicineRepository([]),
+        family_repo=StubFamilyRepository(family_id),
+    )
+    account = build_account(
+        family_id=family_id,
+        access_policy=FamilyAccessPolicyDto(pillbox_access="view"),
+    )
+
+    summaries = await service.list_by_family_id(account)
+
+    assert summaries[0].next_dose_at == datetime(2026, 4, 21, 5, 0, tzinfo=UTC)
+
+
+@pytest.mark.asyncio
 async def test_pillbox_update_defaults_empty_recipients_to_current_account() -> None:
     family_id = uuid4()
     account = build_account(
