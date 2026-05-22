@@ -108,6 +108,7 @@ export function AuthInputField({
   field,
   value,
   error,
+  visualState,
   fieldStyle,
   passwordVisibility,
   onChangeText,
@@ -120,6 +121,7 @@ export function AuthInputField({
   field: AuthFieldConfig;
   value: string;
   error?: string;
+  visualState?: "error" | "success";
   fieldStyle: StyleProp<ViewStyle>;
   passwordVisibility: PasswordVisibilityState;
   onChangeText: (next: string) => void;
@@ -139,7 +141,8 @@ export function AuthInputField({
         style={[
           styles.fieldShell,
           fieldStyle,
-          error ? styles.fieldShellError : null,
+          error || visualState === "error" ? styles.fieldShellError : null,
+          visualState === "success" ? styles.fieldShellSuccess : null,
         ]}
       >
         <MaterialCommunityIcons
@@ -192,6 +195,7 @@ export function FamilyCodeCard({
   familyCodeValue,
   verifiedFamilyCode,
   familyCodeError,
+  isVerifyingFamilyCode,
   onToggleOpen,
   onChangeFamilyCode,
   onFocusFamilyCode,
@@ -205,6 +209,7 @@ export function FamilyCodeCard({
   familyCodeValue: string;
   verifiedFamilyCode: VerifiedFamilyCode | null;
   familyCodeError: string | null;
+  isVerifyingFamilyCode: boolean;
   onToggleOpen: () => void;
   onChangeFamilyCode: (next: string) => void;
   onFocusFamilyCode: () => void;
@@ -261,7 +266,13 @@ export function FamilyCodeCard({
               </Pressable>
             </View>
           ) : (
-            <View style={[styles.fieldShell, styles.fieldSingle]}>
+            <View
+              style={[
+                styles.fieldShell,
+                styles.fieldSingle,
+                familyCodeError ? styles.fieldShellError : null,
+              ]}
+            >
               <MaterialCommunityIcons
                 name={"account-group-outline" as never}
                 size={20}
@@ -279,6 +290,9 @@ export function FamilyCodeCard({
                 onBlur={onBlurFamilyCode}
                 style={styles.input}
               />
+              {isVerifyingFamilyCode ? (
+                <Text style={styles.familyCodeInlineStatus}>...</Text>
+              ) : null}
             </View>
           )}
           {familyCodeError ? (
@@ -295,19 +309,11 @@ export function AuthBottomArea({
   supportLabel,
   termsLabel,
   privacyLabel,
-  showVerifyAction,
-  verifyLabel,
-  isVerifying,
-  onVerify,
 }: {
   showLegal: boolean;
   supportLabel: string;
   termsLabel: string;
   privacyLabel: string;
-  showVerifyAction: boolean;
-  verifyLabel: string;
-  isVerifying: boolean;
-  onVerify: () => void;
 }) {
   return (
     <>
@@ -325,22 +331,6 @@ export function AuthBottomArea({
               <Text style={styles.legalFooterLink}>{privacyLabel}</Text>
             </Pressable>
           </View>
-        </View>
-      ) : null}
-
-      {showVerifyAction ? (
-        <View style={styles.bottomSecondaryActionWrap}>
-          <Pressable
-            onPress={onVerify}
-            disabled={isVerifying}
-            style={({ pressed }) => [
-              styles.bottomSecondaryActionButton,
-              isVerifying ? styles.familyCodeActionButtonDisabled : null,
-              pressed ? styles.familyCodeActionButtonPressed : null,
-            ]}
-          >
-            <Text style={styles.bottomSecondaryActionLabel}>{verifyLabel}</Text>
-          </Pressable>
         </View>
       ) : null}
     </>

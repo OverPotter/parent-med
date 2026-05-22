@@ -194,6 +194,13 @@ export const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: "700",
   },
+  familyCodeInlineStatus: {
+    color: "#F87566",
+    fontSize: 15,
+    lineHeight: 18,
+    fontWeight: "800",
+    marginLeft: 8,
+  },
   fieldBlock: {
     gap: 6,
   },
@@ -224,6 +231,11 @@ export const styles = StyleSheet.create({
   },
   fieldShellError: {
     borderColor: "#E6A399",
+    backgroundColor: "rgba(255,246,244,0.96)",
+  },
+  fieldShellSuccess: {
+    borderColor: "#7DBB86",
+    backgroundColor: "rgba(246,255,247,0.96)",
   },
   fieldIcon: {
     marginRight: 12,
@@ -308,29 +320,6 @@ export const styles = StyleSheet.create({
     width: "100%",
     paddingHorizontal: 14,
     alignItems: "center",
-  },
-  bottomSecondaryActionWrap: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 18,
-    alignItems: "center",
-  },
-  bottomSecondaryActionButton: {
-    minHeight: 34,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,253,249,0.92)",
-    borderWidth: 1,
-    borderColor: "rgba(239,218,210,0.92)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-  },
-  bottomSecondaryActionLabel: {
-    color: "#F87566",
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: "700",
   },
   supportLinkButton: {
     paddingVertical: 6,

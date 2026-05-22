@@ -110,15 +110,10 @@ describe("AuthScreen", () => {
     fireEvent.changeText(screen.getByPlaceholderText("Повторите пароль"), "password-123");
     fireEvent.press(screen.getByText("Есть код семьи?"));
     fireEvent.changeText(screen.getByPlaceholderText("Например: ABC12345"), "ABC12345");
-    fireEvent.press(screen.getByText("Проверить код"));
+    fireEvent.press(screen.getByText("Присоединиться к семье"));
 
     await waitFor(() => {
       expect(mockedFetchFamilyInvitePreview).toHaveBeenCalledWith("ABC12345");
-    });
-
-    fireEvent.press(screen.getByText("Создать аккаунт"));
-
-    await waitFor(() => {
       expect(mockedRegisterWithPassword).toHaveBeenCalledWith({
         email: "new@example.com",
         password: "password-123",

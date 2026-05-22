@@ -27,6 +27,21 @@ function resolveFieldStyle(fieldId: AuthFieldId, fieldsLength: number) {
   return styles.fieldMiddle;
 }
 
+function resolvePasswordConfirmVisualState(formState: FormState) {
+  if (!formState.passwordConfirm) {
+    return undefined;
+  }
+
+  if (
+    formState.password.trim().length >= 8 &&
+    formState.password === formState.passwordConfirm
+  ) {
+    return "success" as const;
+  }
+
+  return "error" as const;
+}
+
 export function AuthFormCard({
   content,
   activeTab,
@@ -43,9 +58,11 @@ export function AuthFormCard({
   familyCodeOpen,
   verifiedFamilyCode,
   familyCodeError,
+  isVerifyingFamilyCode,
   isRegisterMode,
-  isFormValid,
   isSubmitting,
+  isJoiningFamily,
+  canSubmit,
   onTabsLayout,
   onSelectTab,
   onChangeField,
@@ -75,9 +92,11 @@ export function AuthFormCard({
   familyCodeOpen: boolean;
   verifiedFamilyCode: VerifiedFamilyCode | null;
   familyCodeError: string | null;
+  isVerifyingFamilyCode: boolean;
   isRegisterMode: boolean;
-  isFormValid: boolean;
   isSubmitting: boolean;
+  isJoiningFamily: boolean;
+  canSubmit: boolean;
   onTabsLayout: (event: LayoutChangeEvent) => void;
   onSelectTab: (tab: AuthTabKey) => void;
   onChangeField: (key: keyof FormState, value: string) => void;
@@ -108,7 +127,13 @@ export function AuthFormCard({
         {fields.map((field) => {
           const value = formState[field.id as keyof FormState];
           const error =
-            submitted || touchedFields[field.id] ? errors[field.id] : undefined;
+            field.id === "passwordConfirm"
+              ? undefined
+              : submitted || touchedFields[field.id] ? errors[field.id] : undefined;
+          const visualState =
+            field.id === "passwordConfirm"
+              ? resolvePasswordConfirmVisualState(formState)
+              : undefined;
 
           return (
             <AuthInputField
@@ -116,6 +141,7 @@ export function AuthFormCard({
               field={field}
               value={value}
               error={error}
+              visualState={visualState}
               fieldStyle={resolveFieldStyle(field.id, fields.length)}
               passwordVisibility={passwordVisibility}
               onChangeText={(next) =>
@@ -143,6 +169,7 @@ export function AuthFormCard({
             familyCodeValue={formState.familyCode}
             verifiedFamilyCode={verifiedFamilyCode}
             familyCodeError={familyCodeError}
+            isVerifyingFamilyCode={isVerifyingFamilyCode}
             onToggleOpen={onToggleFamilyCodeOpen}
             onChangeFamilyCode={(next) => onChangeField("familyCode", next)}
             onFocusFamilyCode={() => onFieldFocus("familyCode")}
@@ -157,7 +184,7 @@ export function AuthFormCard({
           onPress={onSubmit}
           style={({ pressed }) => [
             styles.primaryButton,
-            !isFormValid || isSubmitting ? styles.primaryButtonDisabled : null,
+            !canSubmit || isSubmitting ? styles.primaryButtonDisabled : null,
             pressed ? styles.primaryButtonPressed : null,
           ]}
         >
@@ -170,10 +197,14 @@ export function AuthFormCard({
           <Text style={styles.primaryButtonLabel}>
             {isSubmitting
               ? isRegisterMode
-                ? content.registerSubmittingLabel
+                ? isJoiningFamily
+                  ? content.joinFamilySubmittingLabel
+                  : content.registerSubmittingLabel
                 : content.loginSubmittingLabel
               : isRegisterMode
-                ? content.registerButtonLabel
+                ? isJoiningFamily
+                  ? content.joinFamilyButtonLabel
+                  : content.registerButtonLabel
                 : content.loginButtonLabel}
           </Text>
         </Pressable>

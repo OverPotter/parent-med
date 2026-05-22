@@ -37,10 +37,10 @@ export type AuthScreenContent = {
   loginSubmittingLabel: string;
   registerButtonLabel: string;
   registerSubmittingLabel: string;
+  joinFamilyButtonLabel: string;
+  joinFamilySubmittingLabel: string;
   familyCodeToggleLabel: string;
   familyCodePlaceholder: string;
-  familyCodeVerifyLabel: string;
-  familyCodeVerifyingLabel: string;
   familyCodeVerifiedLabel: string;
   familyCodeChangeLabel: string;
   familyCodeVerifyFailedError: string;
@@ -181,10 +181,22 @@ export function buildAuthScreenContent(
     loginSubmittingLabel: isRu ? "Входим…" : isDe ? "Anmeldung…" : isPl ? "Logowanie…" : "Signing in…",
     registerButtonLabel: isRu ? "Создать аккаунт" : isDe ? "Konto erstellen" : isPl ? "Utwórz konto" : "Create account",
     registerSubmittingLabel: isRu ? "Создаём…" : isDe ? "Wird erstellt…" : isPl ? "Tworzenie…" : "Creating…",
+    joinFamilyButtonLabel: isRu
+      ? "Присоединиться к семье"
+      : isDe
+        ? "Familie beitreten"
+      : isPl
+        ? "Dołącz do rodziny"
+      : "Join family",
+    joinFamilySubmittingLabel: isRu
+      ? "Присоединяем…"
+      : isDe
+        ? "Beitritt…"
+      : isPl
+        ? "Dołączanie…"
+      : "Joining…",
     familyCodeToggleLabel: isRu ? "Есть код семьи?" : isDe ? "Haben Sie einen Familiencode?" : isPl ? "Masz kod rodziny?" : "Have a family code?",
     familyCodePlaceholder: isRu ? "Например: ABC12345" : isDe ? "Zum Beispiel: ABC12345" : isPl ? "Na przykład: ABC12345" : "Example: ABC12345",
-    familyCodeVerifyLabel: isRu ? "Проверить код" : isDe ? "Code prüfen" : isPl ? "Sprawdź kod" : "Verify code",
-    familyCodeVerifyingLabel: isRu ? "Проверяем код…" : isDe ? "Code wird geprüft…" : isPl ? "Sprawdzanie kodu…" : "Verifying code…",
     familyCodeVerifiedLabel: isRu ? "Код подтверждён" : isDe ? "Code bestätigt" : isPl ? "Kod potwierdzony" : "Code confirmed",
     familyCodeChangeLabel: isRu ? "Изменить код" : isDe ? "Code ändern" : isPl ? "Zmień kod" : "Change code",
     familyCodeVerifyFailedError: isRu ? "Не удалось проверить код семьи." : isDe ? "Der Familiencode konnte nicht geprüft werden." : isPl ? "Nie udało się sprawdzić kodu rodziny." : "Could not verify the family code.",

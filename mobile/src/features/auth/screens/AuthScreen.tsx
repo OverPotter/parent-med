@@ -43,7 +43,6 @@ import {
 import {
   buildVerifiedFamilyCode,
   normalizeFamilyCodeInput,
-  resolveFamilyCodeSubmitError,
   resolveFamilyCodeVerifyError,
   resetVerifiedFamilyCode,
   shouldAutoVerifyFamilyCode,
@@ -153,6 +152,7 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
   const keyboardHeightRef = useRef(0);
   const scrollOffsetYRef = useRef(0);
   const fieldLayoutsRef = useRef<Partial<Record<LayoutFieldId, FieldLayout>>>({});
+  const familyCodeVerificationIdRef = useRef(0);
 
   const isRegisterMode = activeTab === "register";
   const formState = formStateByTab[activeTab];
@@ -167,9 +167,13 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
     () => buildAuthFormErrors(formState, isRegisterMode, content.errors),
     [content.errors, formState, isRegisterMode],
   );
+  const trimmedFamilyCode = normalizeFamilyCodeInput(formState.familyCode);
 
   const isFormValid =
     Object.keys(errors).length === 0 && !passwordsMismatch;
+  const isJoiningFamily = isRegisterMode && familyCodeOpen;
+  const canSubmit =
+    isFormValid && (!isJoiningFamily || trimmedFamilyCode.length > 0);
   const forgotPasswordErrors = useMemo(
     () => buildForgotPasswordErrors(forgotPasswordState, content.errors),
     [content.errors, forgotPasswordState],
@@ -179,17 +183,13 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
   const visibleFormError = useMemo(
     () =>
       findFirstVisibleError<AuthFieldId>(
-        isRegisterMode
-          ? ["email", "password", "passwordConfirm"]
-          : ["email", "password"],
+        isRegisterMode ? ["email", "password"] : ["email", "password"],
         errors,
         submitted,
         touchedFields,
       ) ?? submitError,
     [errors, isRegisterMode, submitted, submitError, touchedFields],
   );
-  const trimmedFamilyCode = normalizeFamilyCodeInput(formState.familyCode);
-
   const pillInset = 4;
   const segmentCount = content.tabs.length || 1;
   const segmentWidth = tabsWidth
@@ -318,6 +318,8 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
 
   const verifyFamilyCode = async (tokenOverride?: string) => {
     const token = normalizeFamilyCodeInput(tokenOverride ?? formState.familyCode);
+    const verificationId = familyCodeVerificationIdRef.current + 1;
+    familyCodeVerificationIdRef.current = verificationId;
     const verifyError = resolveFamilyCodeVerifyError(
       token,
       content.errors.familyCodeRequiredForPreview,
@@ -335,13 +337,18 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
 
     setFamilyCodeError(null);
     setIsVerifyingFamilyCode(true);
-
     try {
       const preview = await fetchFamilyInvitePreview(token);
+      if (familyCodeVerificationIdRef.current !== verificationId) {
+        return null;
+      }
       const nextVerifiedFamilyCode = buildVerifiedFamilyCode(token, preview);
       setVerifiedFamilyCode(nextVerifiedFamilyCode);
       return nextVerifiedFamilyCode;
     } catch (error) {
+      if (familyCodeVerificationIdRef.current !== verificationId) {
+        return null;
+      }
       setVerifiedFamilyCode(null);
       setFamilyCodeError(
         getAuthErrorMessage(
@@ -352,13 +359,18 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
       );
       return null;
     } finally {
-      setIsVerifyingFamilyCode(false);
+      if (familyCodeVerificationIdRef.current === verificationId) {
+        setIsVerifyingFamilyCode(false);
+      }
     }
   };
 
   const handleSubmit = async () => {
     setSubmitted(true);
-    if (!isFormValid) {
+    if (!canSubmit) {
+      if (isJoiningFamily && !trimmedFamilyCode) {
+        setFamilyCodeError(content.errors.familyCodeRequiredForPreview);
+      }
       return;
     }
 
@@ -368,30 +380,17 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
     try {
       let inviteToken: string | undefined;
 
-      if (activeTab === "register") {
-        const familyCodeSubmitError = resolveFamilyCodeSubmitError(
-          trimmedFamilyCode,
-          verifiedFamilyCode,
-          content.errors.familyCodeNeedsVerification,
-        );
+      if (isJoiningFamily) {
+        const verifiedCode =
+          verifiedFamilyCode?.token === trimmedFamilyCode
+            ? verifiedFamilyCode
+            : await verifyFamilyCode(trimmedFamilyCode);
 
-        if (familyCodeSubmitError && !shouldAutoVerifyFamilyCode(trimmedFamilyCode)) {
-          setFamilyCodeError(familyCodeSubmitError);
+        if (!verifiedCode) {
           return;
         }
 
-        if (trimmedFamilyCode) {
-          const verifiedCode =
-            verifiedFamilyCode?.token === trimmedFamilyCode
-              ? verifiedFamilyCode
-              : await verifyFamilyCode(trimmedFamilyCode);
-
-          if (!verifiedCode) {
-            return;
-          }
-
-          inviteToken = verifiedCode.token;
-        }
+        inviteToken = verifiedCode.token;
       }
 
       const session =
@@ -481,6 +480,40 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
       useNativeDriver: true,
     }).start();
   }, [activeTab, content.tabs, indicatorX, segmentWidth, tabsWidth]);
+
+  useEffect(() => {
+    if (!isJoiningFamily) {
+      return;
+    }
+
+    if (!trimmedFamilyCode) {
+      familyCodeVerificationIdRef.current += 1;
+      setIsVerifyingFamilyCode(false);
+      setVerifiedFamilyCode(null);
+      setFamilyCodeError(null);
+      return;
+    }
+
+    if (verifiedFamilyCode?.token === trimmedFamilyCode) {
+      return;
+    }
+
+    if (!shouldAutoVerifyFamilyCode(trimmedFamilyCode)) {
+      familyCodeVerificationIdRef.current += 1;
+      setIsVerifyingFamilyCode(false);
+      setVerifiedFamilyCode(null);
+      setFamilyCodeError(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      void verifyFamilyCode(trimmedFamilyCode);
+    }, 350);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [isJoiningFamily, trimmedFamilyCode, verifiedFamilyCode?.token]);
 
   useEffect(() => {
     const showEvent =
@@ -587,9 +620,11 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
                   familyCodeOpen={familyCodeOpen}
                   verifiedFamilyCode={verifiedFamilyCode}
                   familyCodeError={familyCodeError}
+                  isVerifyingFamilyCode={isVerifyingFamilyCode}
                   isRegisterMode={isRegisterMode}
-                  isFormValid={isFormValid}
                   isSubmitting={isSubmitting}
+                  isJoiningFamily={isJoiningFamily}
+                  canSubmit={canSubmit}
                   onTabsLayout={(event) => setTabsWidth(event.nativeEvent.layout.width)}
                   onSelectTab={handleSelectTab}
                   onChangeField={handleChangeField}
@@ -622,20 +657,10 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
                 />
 
                 <AuthBottomArea
-                  showLegal={!(isRegisterMode && familyCodeOpen && !verifiedFamilyCode)}
+                  showLegal
                   supportLabel={content.supportLabel}
                   termsLabel={content.legalConsentTermsLabel}
                   privacyLabel={content.legalConsentPrivacyLabel}
-                  showVerifyAction={isRegisterMode && familyCodeOpen && !verifiedFamilyCode}
-                  verifyLabel={
-                    isVerifyingFamilyCode
-                      ? content.familyCodeVerifyingLabel
-                      : content.familyCodeVerifyLabel
-                  }
-                  isVerifying={isVerifyingFamilyCode}
-                  onVerify={() => {
-                    void verifyFamilyCode();
-                  }}
                 />
               </View>
             </View>
