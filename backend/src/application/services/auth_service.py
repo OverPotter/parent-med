@@ -23,7 +23,10 @@ from src.application.services.base_auth_service import BaseAuthService
 from src.application.services.family_invite_state import (
     resolve_active_family_invite,
 )
-from src.application.services.subscription_policy import has_billing_ownership_context
+from src.application.services.subscription_policy import (
+    has_billing_ownership_context,
+    resolve_family_plan_policy,
+)
 from src.core.config import settings
 from src.core.exceptions import ForbiddenError, NotFoundError, UnauthorizedError, ValidationError
 from src.core.security import (
@@ -231,6 +234,62 @@ class AuthService(BaseAuthService):
 
     async def register(self, dto: RegisterDto) -> AuthResponseDto:
         return await self.signup(dto)
+
+    async def accept_family_invite(
+        self,
+        account_id: UUID,
+        invite_token: str,
+        remember_me: bool = True,
+    ) -> AuthResponseDto:
+        account = await self._account_repo.get_by_id(account_id)
+        if account is None or account.family_role == "deleted":
+            raise UnauthorizedError()
+
+        invite, target_family = await self._require_active_invite_by_token(invite_token)
+        if account.family_id == target_family.id:
+            raise ValidationError(
+                "Аккаунт уже состоит в этой семье",
+                code="FAMILY_INVITE_ALREADY_JOINED",
+            )
+
+        current_family = await self._family_repo.get_by_id(account.family_id)
+        if current_family and current_family.owner_account_id == account.id:
+            current_policy = resolve_family_plan_policy(current_family)
+            if current_policy.premium_active or has_billing_ownership_context(current_family):
+                raise ValidationError(
+                    "Аккаунт с семейной подпиской не может вступить в другую семью",
+                    code="FAMILY_INVITE_PREMIUM_OWNER_CANNOT_JOIN",
+                )
+            current_family_accounts = await self._account_repo.list_by_family_id(
+                current_family.id
+            )
+            active_current_family_accounts = [
+                member
+                for member in current_family_accounts
+                if member.family_role != "deleted"
+            ]
+            if len(active_current_family_accounts) > 1:
+                raise ValidationError(
+                    "Владелец семьи с участниками не может вступить в другую семью",
+                    code="FAMILY_INVITE_OWNER_WITH_MEMBERS_CANNOT_JOIN",
+                )
+
+        updated_account = await self._account_repo.update(
+            copy_account(
+                account,
+                family_id=target_family.id,
+                family_role=normalize_family_role(invite.family_role),
+                session_version=account.session_version + 1,
+                access_policy=build_default_family_access_policy(),
+            )
+        )
+        await self._accept_signup_invite(invite, updated_account.id)
+        await self._session_repo.delete_by_account_id(updated_account.id)
+        return await self._create_auth_response(
+            updated_account,
+            target_family,
+            remember_me=remember_me,
+        )
 
     async def _authenticate_account_by_login(self, dto: LoginDto) -> tuple[Account, Family]:
         identifier = dto.email.strip().lower()

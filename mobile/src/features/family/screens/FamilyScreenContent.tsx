@@ -1,7 +1,7 @@
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, TextInput, View } from "react-native";
 import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import type {
@@ -48,6 +48,123 @@ function getInviteLockedDescription(locale: string) {
   return "Family invites are available in Plus.";
 }
 
+export function JoinFamilyCodeCard({
+  content,
+  code,
+  error,
+  isSubmitting,
+  isVerifying,
+  previewFamilyName,
+  onAccept,
+  onChangeCode,
+  onVerify,
+  palette,
+}: {
+  content: FamilyScreenContent;
+  code: string;
+  error: string | null;
+  isSubmitting: boolean;
+  isVerifying: boolean;
+  previewFamilyName: string | null;
+  onAccept: () => void;
+  onChangeCode: (next: string) => void;
+  onVerify: () => void;
+  palette: FamilyPalette;
+}) {
+  return (
+    <View
+      style={[
+        styles.card,
+        styles.joinFamilyCard,
+        {
+          backgroundColor: palette.cardBg,
+          borderColor: palette.cardBorder,
+        },
+      ]}
+    >
+      <View style={styles.inviteTopRow}>
+        <View style={[styles.inviteIconTile, { backgroundColor: "#EEF7F0" }]}>
+          <MaterialCommunityIcons
+            name={"account-multiple-plus-outline" as never}
+            size={25}
+            color="#4E8B60"
+          />
+        </View>
+        <View style={styles.inviteTopCopy}>
+          <Text style={[styles.inviteTitle, { color: palette.textPrimary }]}>
+            {content.joinFamilyTitle}
+          </Text>
+          <Text style={[styles.inviteDescription, { color: palette.textSecondary }]}>
+            {content.joinFamilyDescription}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.joinFamilyInputShell}>
+        <MaterialCommunityIcons
+          name={"account-group-outline" as never}
+          size={20}
+          color="#9A8F89"
+        />
+        <TextInput
+          value={code}
+          onChangeText={onChangeCode}
+          placeholder={content.joinFamilyPlaceholder}
+          placeholderTextColor="#B4A7A1"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          style={styles.joinFamilyInput}
+        />
+      </View>
+
+      {previewFamilyName ? (
+        <View style={styles.inviteStatusRow}>
+          <Feather name="check-circle" size={16} color="#4E8B60" />
+          <Text style={[styles.inviteStatusText, { color: palette.greenText }]}>
+            {content.joinFamilyPreviewLabel(previewFamilyName)}
+          </Text>
+        </View>
+      ) : null}
+
+      {error ? <Text style={styles.joinFamilyError}>{error}</Text> : null}
+
+      <View style={styles.inviteButtonsRow}>
+        <Pressable
+          onPress={onVerify}
+          disabled={isVerifying || isSubmitting}
+          style={({ pressed }) => [
+            styles.actionButton,
+            styles.actionButtonSecondary,
+            { borderColor: palette.cardBorder, backgroundColor: "rgba(255,255,255,0.55)" },
+            pressed ? styles.actionButtonPressed : null,
+          ]}
+        >
+          <Text style={[styles.actionButtonText, { color: palette.textPrimary }]}>
+            {isVerifying
+              ? content.joinFamilyVerifyingLabel
+              : content.joinFamilyVerifyLabel}
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={onAccept}
+          disabled={isVerifying || isSubmitting}
+          style={({ pressed }) => [
+            styles.actionButton,
+            styles.actionButtonPrimary,
+            { backgroundColor: palette.primaryCoral },
+            pressed ? styles.actionButtonPressed : null,
+          ]}
+        >
+          <Text style={[styles.actionButtonText, { color: "#FFFFFF" }]}>
+            {isSubmitting
+              ? content.joinFamilySubmittingLabel
+              : content.joinFamilySubmitLabel}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
 function FamilyStatsCards({
   compact,
@@ -398,12 +515,22 @@ export function FamilyOverviewContent({
   inviteCopied,
   inviteExpanded,
   inviteLocked,
+  joinFamilyCode,
+  joinFamilyError,
+  joinFamilyPreviewName,
+  joinFamilySuccessMessage,
+  joinFamilySubmitting,
+  joinFamilyVerifying,
   showInviteCard,
+  showJoinFamilyCard,
   memberRows,
+  onAcceptJoinFamilyCode,
+  onChangeJoinFamilyCode,
   onCopyInvite,
   onPressFamilyStat,
   onRefreshInviteCode,
   onShareInvite,
+  onVerifyJoinFamilyCode,
   onToggleInviteExpanded,
   ownerTone,
   palette,
@@ -422,12 +549,22 @@ export function FamilyOverviewContent({
   inviteCopied: boolean;
   inviteExpanded: boolean;
   inviteLocked: boolean;
+  joinFamilyCode: string;
+  joinFamilyError: string | null;
+  joinFamilyPreviewName: string | null;
+  joinFamilySuccessMessage: string | null;
+  joinFamilySubmitting: boolean;
+  joinFamilyVerifying: boolean;
   showInviteCard: boolean;
+  showJoinFamilyCard: boolean;
   memberRows: React.ReactNode;
+  onAcceptJoinFamilyCode: () => void;
+  onChangeJoinFamilyCode: (next: string) => void;
   onCopyInvite: () => void;
   onPressFamilyStat: (key: "adults" | "children" | "routines") => void;
   onRefreshInviteCode: () => void;
   onShareInvite: () => void;
+  onVerifyJoinFamilyCode: () => void;
   onToggleInviteExpanded: () => void;
   ownerTone: RoleTone;
   palette: FamilyPalette;
@@ -463,6 +600,38 @@ export function FamilyOverviewContent({
           {renderFamilyTitleIcon}
         </View>
       </View>
+
+      {joinFamilySuccessMessage ? (
+        <View style={styles.screenBlock}>
+          <View
+            style={[
+              styles.card,
+              styles.joinFamilySuccessCard,
+              {
+                backgroundColor: "#F1FAF4",
+                borderColor: "#B8E2C5",
+              },
+            ]}
+          >
+            <View style={styles.joinFamilySuccessIcon}>
+              <Feather name="check" size={18} color="#4E8B60" />
+            </View>
+            <View style={styles.joinFamilySuccessCopy}>
+              <Text style={[styles.joinFamilySuccessTitle, { color: palette.greenText }]}>
+                {content.joinFamilySuccessTitle}
+              </Text>
+              <Text
+                style={[
+                  styles.joinFamilySuccessText,
+                  { color: palette.textSecondary },
+                ]}
+              >
+                {joinFamilySuccessMessage}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
 
       <View style={styles.screenBlock}>
         <View
@@ -543,6 +712,23 @@ export function FamilyOverviewContent({
             onToggleInviteExpanded={onToggleInviteExpanded}
             palette={palette}
             stackInviteButtons={stackInviteButtons}
+          />
+        </View>
+      ) : null}
+
+      {showJoinFamilyCard ? (
+        <View style={styles.screenBlock}>
+          <JoinFamilyCodeCard
+            content={content}
+            code={joinFamilyCode}
+            error={joinFamilyError}
+            isSubmitting={joinFamilySubmitting}
+            isVerifying={joinFamilyVerifying}
+            onAccept={onAcceptJoinFamilyCode}
+            onChangeCode={onChangeJoinFamilyCode}
+            onVerify={onVerifyJoinFamilyCode}
+            palette={palette}
+            previewFamilyName={joinFamilyPreviewName}
           />
         </View>
       ) : null}

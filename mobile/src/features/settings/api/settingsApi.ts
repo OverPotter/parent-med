@@ -342,6 +342,22 @@ export async function resetBillingDebugToFree(payload: {
   );
 }
 
+export async function activateBillingDebugPlus(payload: {
+  accessToken: string | null;
+}): Promise<MobileBillingDebugResult> {
+  return requestAuthedJson<MobileBillingDebugResult>(
+    "/billing/debug/apply",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        plan_code: "plus",
+        status: "active",
+      }),
+    },
+    payload.accessToken,
+  );
+}
+
 export async function upsertPushSubscription(payload: {
   accessToken: string | null;
   subscription: MobilePushSubscription;

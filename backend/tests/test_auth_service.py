@@ -324,6 +324,114 @@ async def test_signup_with_invite_rejects_if_code_was_consumed_concurrently() ->
 
 
 @pytest.mark.asyncio
+async def test_existing_free_account_accepts_family_invite() -> None:
+    current_family = Family(id=uuid4(), name="Моя семья", owner_account_id=uuid4())
+    target_family = Family(
+        id=uuid4(),
+        name="Семья Петровых",
+        owner_account_id=uuid4(),
+        plan_code="plus",
+        subscription_status="active",
+    )
+    account = build_account(
+        family_id=current_family.id,
+        email="dad@example.com",
+        display_name="Папа",
+        family_role="admin",
+    )
+    current_family.owner_account_id = account.id
+    raw_token = "invite-token"
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash=hash_session_token(raw_token),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(hours=3),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    await account_repo.add(account)
+    session_repo = StubSessionRepository()
+    family_repo = StubFamilyRepository(current_family)
+    family_repo.items[target_family.id] = target_family
+    family_invite_repo = StubFamilyInviteRepository(invite)
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=session_repo,
+        family_repo=family_repo,
+        family_invite_repo=family_invite_repo,
+    )
+
+    result = await service.accept_family_invite(account.id, raw_token)
+
+    updated_account = await account_repo.get_by_id(account.id)
+    assert updated_account.family_id == target_family.id
+    assert updated_account.family_role == "member"
+    assert updated_account.session_version == account.session_version + 1
+    assert result.family.id == target_family.id
+    assert result.account.family_role == "member"
+    assert decode_access_token(result.access_token or "")["family_id"] == str(target_family.id)
+    assert family_invite_repo.invite is not None
+    assert family_invite_repo.invite.accepted_by_account_id == account.id
+    assert session_repo.deleted_account_ids == [account.id]
+
+
+@pytest.mark.asyncio
+async def test_premium_owner_cannot_accept_family_invite() -> None:
+    current_family = Family(
+        id=uuid4(),
+        name="Премиум семья",
+        owner_account_id=uuid4(),
+        plan_code="plus",
+        subscription_status="active",
+    )
+    target_family = Family(
+        id=uuid4(),
+        name="Семья Петровых",
+        owner_account_id=uuid4(),
+        plan_code="plus",
+        subscription_status="active",
+    )
+    account = build_account(
+        family_id=current_family.id,
+        email="owner@example.com",
+        display_name="Owner",
+        family_role="admin",
+    )
+    current_family.owner_account_id = account.id
+    raw_token = "invite-token"
+    invite = FamilyInvite(
+        id=uuid4(),
+        family_id=target_family.id,
+        created_by_account_id=target_family.owner_account_id,
+        token_hash=hash_session_token(raw_token),
+        family_role="member",
+        created_at=datetime.now(UTC) - timedelta(minutes=5),
+        expires_at=datetime.now(UTC) + timedelta(hours=3),
+        accepted_at=None,
+        accepted_by_account_id=None,
+    )
+    account_repo = StubAccountRepository()
+    await account_repo.add(account)
+    family_repo = StubFamilyRepository(current_family)
+    family_repo.items[target_family.id] = target_family
+    service = AuthService(
+        account_repo=account_repo,
+        session_repo=StubSessionRepository(),
+        family_repo=family_repo,
+        family_invite_repo=StubFamilyInviteRepository(invite),
+    )
+
+    with pytest.raises(ValidationError) as exc_info:
+        await service.accept_family_invite(account.id, raw_token)
+
+    assert exc_info.value.code == "FAMILY_INVITE_PREMIUM_OWNER_CANNOT_JOIN"
+
+
+@pytest.mark.asyncio
 async def test_leave_family_creates_new_family_for_member() -> None:
     family = Family(id=uuid4(), name="Семья Петровых", owner_account_id=uuid4())
     account_repo = StubAccountRepository()

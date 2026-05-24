@@ -10,7 +10,12 @@ import {
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
 import { useMobileI18n } from "../../../shared/i18n/mobileI18n";
 import { useMobileSurfaceTheme } from "../../../shared/theme/mobileSurfaceTheme";
-import type { MobileAuthSession } from "../../auth/api/authApi";
+import {
+  acceptFamilyInvite,
+  fetchFamilyInvitePreview,
+  type MobileAuthSession,
+} from "../../auth/api/authApi";
+import { normalizeFamilyCodeInput } from "../../auth/model/familyCode";
 import {
   createMobileFamilyInvite,
   type MobileFamilyMember,
@@ -56,6 +61,8 @@ type FamilyScreenProps = {
   showInviteCard: boolean;
   inviteLocked?: boolean;
   onOpenLockedInvite?: () => void;
+  showJoinFamilyCard: boolean;
+  onFamilyInviteAccepted: (session: MobileAuthSession) => Promise<void> | void;
   familyMembers: MobileFamilyMember[];
   routinesCount: number;
   childrenCards: ChildCard[];
@@ -79,6 +86,8 @@ export function FamilyScreen({
   showInviteCard,
   inviteLocked = false,
   onOpenLockedInvite,
+  showJoinFamilyCard,
+  onFamilyInviteAccepted,
   familyMembers,
   routinesCount,
   childrenCards,
@@ -118,6 +127,19 @@ export function FamilyScreen({
     null,
   );
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
+  const [joinFamilyCode, setJoinFamilyCode] = useState("");
+  const [joinFamilyError, setJoinFamilyError] = useState<string | null>(null);
+  const [joinFamilyPreviewName, setJoinFamilyPreviewName] = useState<string | null>(
+    null,
+  );
+  const [joinFamilySuccessMessage, setJoinFamilySuccessMessage] = useState<string | null>(
+    null,
+  );
+  const [joinFamilyVerifiedToken, setJoinFamilyVerifiedToken] = useState<string | null>(
+    null,
+  );
+  const [isVerifyingJoinFamilyCode, setIsVerifyingJoinFamilyCode] = useState(false);
+  const [isJoiningFamily, setIsJoiningFamily] = useState(false);
   const [isSavingAccess, setIsSavingAccess] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   useEffect(() => {
@@ -132,6 +154,11 @@ export function FamilyScreen({
     setMemberActionMemberId(null);
     setProfileEditDraft(null);
     setAccessDraft(null);
+    setJoinFamilyCode("");
+    setJoinFamilyError(null);
+    setJoinFamilyPreviewName(null);
+    setJoinFamilyVerifiedToken(null);
+    setJoinFamilySuccessMessage(null);
   }, [visible]);
 
   useEffect(() => {
@@ -287,6 +314,74 @@ export function FamilyScreen({
     Alert.alert(title, message);
   };
 
+  const verifyJoinFamilyCode = async () => {
+    const token = normalizeFamilyCodeInput(joinFamilyCode);
+    if (!token) {
+      setJoinFamilyError(content.genericActionError);
+      setJoinFamilyPreviewName(null);
+      setJoinFamilyVerifiedToken(null);
+      return null;
+    }
+
+    if (joinFamilyVerifiedToken === token && joinFamilyPreviewName) {
+      return { token, familyName: joinFamilyPreviewName };
+    }
+
+    setIsVerifyingJoinFamilyCode(true);
+    setJoinFamilyError(null);
+
+    try {
+      const preview = await fetchFamilyInvitePreview(token);
+      setJoinFamilyPreviewName(preview.familyName);
+      setJoinFamilyVerifiedToken(token);
+      return { token, familyName: preview.familyName };
+    } catch (error) {
+      setJoinFamilyError(
+        error instanceof Error ? error.message : content.genericActionError,
+      );
+      setJoinFamilyPreviewName(null);
+      setJoinFamilyVerifiedToken(null);
+      return null;
+    } finally {
+      setIsVerifyingJoinFamilyCode(false);
+    }
+  };
+
+  const handleAcceptJoinFamilyCode = async () => {
+    if (isJoiningFamily || isVerifyingJoinFamilyCode) {
+      return;
+    }
+
+    const verified = await verifyJoinFamilyCode();
+    if (!verified) {
+      return;
+    }
+
+    setIsJoiningFamily(true);
+    setJoinFamilyError(null);
+
+    try {
+      const nextSession = await acceptFamilyInvite({
+        accessToken: session.accessToken,
+        inviteToken: verified.token,
+      });
+      await onFamilyInviteAccepted(nextSession);
+      setJoinFamilyCode("");
+      setJoinFamilyPreviewName(null);
+      setJoinFamilyVerifiedToken(null);
+      setJoinFamilySuccessMessage(
+        content.joinFamilySuccessMessage(verified.familyName),
+      );
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    } catch (error) {
+      setJoinFamilyError(
+        error instanceof Error ? error.message : content.genericActionError,
+      );
+    } finally {
+      setIsJoiningFamily(false);
+    }
+  };
+
   const handleRefreshInviteCode = async () => {
     if (inviteLocked) {
       onOpenLockedInvite?.();
@@ -434,6 +529,12 @@ export function FamilyScreen({
         inviteExpanded={inviteExpanded}
         showInviteCard={showInviteCard}
         inviteLocked={inviteLocked}
+        joinFamilyCode={joinFamilyCode}
+        joinFamilyError={joinFamilyError}
+        joinFamilyPreviewName={joinFamilyPreviewName}
+        joinFamilySuccessMessage={joinFamilySuccessMessage}
+        joinFamilySubmitting={isJoiningFamily}
+        joinFamilyVerifying={isVerifyingJoinFamilyCode}
         memberRows={familyState.members.map((member, index) => (
           <MemberRow
             key={member.id}
@@ -443,15 +544,28 @@ export function FamilyScreen({
             onPressAction={() => handleOpenMemberActions(member.id)}
           />
         ))}
+        onAcceptJoinFamilyCode={handleAcceptJoinFamilyCode}
+        onChangeJoinFamilyCode={(next) => {
+          setJoinFamilyCode(next);
+          setJoinFamilyError(null);
+          if (normalizeFamilyCodeInput(next) !== joinFamilyVerifiedToken) {
+            setJoinFamilyPreviewName(null);
+            setJoinFamilyVerifiedToken(null);
+          }
+        }}
         onCopyInvite={handleCopyInvite}
         onPressFamilyStat={handlePressFamilyStat}
         onRefreshInviteCode={handleRefreshInviteCode}
         onShareInvite={handleShareInvite}
+        onVerifyJoinFamilyCode={() => {
+          void verifyJoinFamilyCode();
+        }}
         onToggleInviteExpanded={() => setInviteExpanded((current) => !current)}
         ownerTone={ownerTone}
         palette={palette}
         renderFamilyTitleIcon={<FamilyTitleIcon />}
         roleRules={roleRules}
+        showJoinFamilyCard={showJoinFamilyCard}
         stackInviteButtons={stackInviteButtons}
         stats={stats}
         subtitleColor={surfaceTheme.textSecondaryColor}

@@ -885,6 +885,7 @@ export function usePillPathExpoShellState() {
           onOpenTermsOfUse: handleOpenTermsOfUse,
           onRefreshFamilyMembers: handleRefreshFamilyMembers,
           onUpdateCurrentProfile: handleUpdateAuthSession,
+          onFamilyInviteAccepted: handleAuthenticated,
           onSessionDeleted: handleSessionDeleted,
           onUpdatePreferredLanguage: handleUpdatePreferredLanguage,
           onPushPreferencesChanged: handlePushPreferencesChanged,

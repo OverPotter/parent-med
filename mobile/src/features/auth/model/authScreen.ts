@@ -39,10 +39,6 @@ export type AuthScreenContent = {
   registerSubmittingLabel: string;
   familyCodeToggleLabel: string;
   familyCodePlaceholder: string;
-  familyCodeVerifyLabel: string;
-  familyCodeVerifyingLabel: string;
-  familyCodeVerifiedLabel: string;
-  familyCodeChangeLabel: string;
   familyCodeVerifyFailedError: string;
   supportLabel: string;
   legalConsentTermsLabel: string;
@@ -183,10 +179,6 @@ export function buildAuthScreenContent(
     registerSubmittingLabel: isRu ? "Создаём…" : isDe ? "Wird erstellt…" : isPl ? "Tworzenie…" : "Creating…",
     familyCodeToggleLabel: isRu ? "Есть код семьи?" : isDe ? "Haben Sie einen Familiencode?" : isPl ? "Masz kod rodziny?" : "Have a family code?",
     familyCodePlaceholder: isRu ? "Например: ABC12345" : isDe ? "Zum Beispiel: ABC12345" : isPl ? "Na przykład: ABC12345" : "Example: ABC12345",
-    familyCodeVerifyLabel: isRu ? "Проверить код" : isDe ? "Code prüfen" : isPl ? "Sprawdź kod" : "Verify code",
-    familyCodeVerifyingLabel: isRu ? "Проверяем код…" : isDe ? "Code wird geprüft…" : isPl ? "Sprawdzanie kodu…" : "Verifying code…",
-    familyCodeVerifiedLabel: isRu ? "Код подтверждён" : isDe ? "Code bestätigt" : isPl ? "Kod potwierdzony" : "Code confirmed",
-    familyCodeChangeLabel: isRu ? "Изменить код" : isDe ? "Code ändern" : isPl ? "Zmień kod" : "Change code",
     familyCodeVerifyFailedError: isRu ? "Не удалось проверить код семьи." : isDe ? "Der Familiencode konnte nicht geprüft werden." : isPl ? "Nie udało się sprawdzić kodu rodziny." : "Could not verify the family code.",
     supportLabel: isRu ? "Поддержка" : isDe ? "Support" : isPl ? "Wsparcie" : "Support",
     legalConsentTermsLabel: isRu ? "Условия использования" : isDe ? "Nutzungsbedingungen" : isPl ? "Warunki korzystania" : "Terms of Use",

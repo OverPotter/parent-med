@@ -43,6 +43,7 @@ export function AuthFormCard({
   familyCodeOpen,
   verifiedFamilyCode,
   familyCodeError,
+  isVerifyingFamilyCode,
   isRegisterMode,
   isFormValid,
   isSubmitting,
@@ -54,7 +55,6 @@ export function AuthFormCard({
   onFamilyCodeBlur,
   onTogglePasswordVisibility,
   onToggleFamilyCodeOpen,
-  onResetVerifiedFamilyCode,
   onSubmit,
   onOpenForgotPassword,
   getFieldRef,
@@ -75,6 +75,7 @@ export function AuthFormCard({
   familyCodeOpen: boolean;
   verifiedFamilyCode: VerifiedFamilyCode | null;
   familyCodeError: string | null;
+  isVerifyingFamilyCode: boolean;
   isRegisterMode: boolean;
   isFormValid: boolean;
   isSubmitting: boolean;
@@ -86,7 +87,6 @@ export function AuthFormCard({
   onFamilyCodeBlur: () => void;
   onTogglePasswordVisibility: (fieldId: AuthFieldId) => void;
   onToggleFamilyCodeOpen: () => void;
-  onResetVerifiedFamilyCode: () => void;
   onSubmit: () => void;
   onOpenForgotPassword: () => void;
   getFieldRef: (fieldId: LayoutFieldId) => (node: View | null) => void;
@@ -143,11 +143,11 @@ export function AuthFormCard({
             familyCodeValue={formState.familyCode}
             verifiedFamilyCode={verifiedFamilyCode}
             familyCodeError={familyCodeError}
+            isVerifying={isVerifyingFamilyCode}
             onToggleOpen={onToggleFamilyCodeOpen}
             onChangeFamilyCode={(next) => onChangeField("familyCode", next)}
             onFocusFamilyCode={() => onFieldFocus("familyCode")}
             onBlurFamilyCode={onFamilyCodeBlur}
-            onResetVerifiedFamilyCode={onResetVerifiedFamilyCode}
             fieldRef={getFieldRef("familyCode")}
             onLayout={getFieldLayout("familyCode")}
           />

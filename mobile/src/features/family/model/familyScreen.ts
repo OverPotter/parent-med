@@ -91,6 +91,16 @@ export type FamilyScreenContent = {
   inviteReadyDescription: string;
   inviteEmptyDescription: string;
   inviteReadyStatus: string;
+  joinFamilyTitle: string;
+  joinFamilyDescription: string;
+  joinFamilyPlaceholder: string;
+  joinFamilyPreviewLabel: (familyName: string) => string;
+  joinFamilyVerifyLabel: string;
+  joinFamilyVerifyingLabel: string;
+  joinFamilySubmitLabel: string;
+  joinFamilySubmittingLabel: string;
+  joinFamilySuccessTitle: string;
+  joinFamilySuccessMessage: (familyName: string) => string;
   memberActionHint: string;
   accessTargetHint: string;
   accessInlineHint: string;
@@ -526,6 +536,78 @@ export function buildFamilyScreenContent(
         : isPl
           ? "Kod jest gotowy do użycia"
           : "Code is ready to use",
+    joinFamilyTitle: isRu
+      ? "Есть код семьи?"
+      : isDe
+        ? "Haben Sie einen Familiencode?"
+        : isPl
+          ? "Masz kod rodziny?"
+          : "Have a family code?",
+    joinFamilyDescription: isRu
+      ? "Введите код приглашения, чтобы присоединиться к семье с Plus."
+      : isDe
+        ? "Geben Sie den Einladungscode ein, um einer Plus-Familie beizutreten."
+        : isPl
+          ? "Wpisz kod zaproszenia, aby dołączyć do rodziny Plus."
+          : "Enter an invite code to join a Plus family.",
+    joinFamilyPlaceholder: isRu
+      ? "Например: ABC12345"
+      : isDe
+        ? "Zum Beispiel: ABC12345"
+        : isPl
+          ? "Na przykład: ABC12345"
+          : "Example: ABC12345",
+    joinFamilyPreviewLabel: (familyName: string) =>
+      isRu
+        ? `Код ведёт в семью «${familyName}».`
+        : isDe
+          ? `Der Code führt zur Familie „${familyName}“.`
+          : isPl
+            ? `Kod prowadzi do rodziny „${familyName}”.`
+            : `This code joins “${familyName}”.`,
+    joinFamilyVerifyLabel: isRu
+      ? "Проверить код"
+      : isDe
+        ? "Code prüfen"
+        : isPl
+          ? "Sprawdź kod"
+          : "Verify code",
+    joinFamilyVerifyingLabel: isRu
+      ? "Проверяем..."
+      : isDe
+        ? "Prüfen..."
+        : isPl
+          ? "Sprawdzanie..."
+          : "Verifying...",
+    joinFamilySubmitLabel: isRu
+      ? "Присоединиться"
+      : isDe
+        ? "Beitreten"
+        : isPl
+          ? "Dołącz"
+          : "Join",
+    joinFamilySubmittingLabel: isRu
+      ? "Вступаем..."
+      : isDe
+        ? "Beitritt..."
+        : isPl
+          ? "Dołączanie..."
+          : "Joining...",
+    joinFamilySuccessTitle: isRu
+      ? "Вы присоединились"
+      : isDe
+        ? "Sie sind beigetreten"
+        : isPl
+          ? "Dołączono"
+          : "Joined",
+    joinFamilySuccessMessage: (familyName: string) =>
+      isRu
+        ? `Теперь вы участник семьи «${familyName}».`
+        : isDe
+          ? `Sie sind jetzt Mitglied der Familie „${familyName}“.`
+          : isPl
+            ? `Jesteś teraz członkiem rodziny „${familyName}”.`
+            : `You are now a member of “${familyName}”.`,
     memberActionHint: isRu
       ? "Выберите, что хотите изменить для участника."
       : isDe

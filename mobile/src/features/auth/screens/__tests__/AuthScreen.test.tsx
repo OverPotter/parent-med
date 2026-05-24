@@ -110,7 +110,6 @@ describe("AuthScreen", () => {
     fireEvent.changeText(screen.getByPlaceholderText("Повторите пароль"), "password-123");
     fireEvent.press(screen.getByText("Есть код семьи?"));
     fireEvent.changeText(screen.getByPlaceholderText("Например: ABC12345"), "ABC12345");
-    fireEvent.press(screen.getByText("Проверить код"));
 
     await waitFor(() => {
       expect(mockedFetchFamilyInvitePreview).toHaveBeenCalledWith("ABC12345");

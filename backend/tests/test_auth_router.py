@@ -83,6 +83,17 @@ class StubAuthService:
     async def delete_family(self, account_id) -> None:  # noqa: ANN001
         self.delete_family_calls.append(account_id)
 
+    async def leave_family(self, account_id) -> AuthStateResponseDto:  # noqa: ANN001
+        raise NotImplementedError
+
+    async def accept_family_invite(
+        self,
+        account_id,  # noqa: ANN001
+        invite_token: str,
+        remember_me: bool = True,
+    ) -> AuthResponseDto:
+        return _make_auth_response()
+
     async def change_password(self, account_id, dto) -> None:  # noqa: ANN001
         raise NotImplementedError
 

@@ -1,14 +1,17 @@
 """Роуты: приглашения в семью."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 
-from src.api.deps import get_current_account, get_family_invite_service
+from src.api.deps import get_auth_service, get_current_account, get_family_invite_service
+from src.api.utils.auth_response import build_auth_response
 from src.application.dto.auth import AuthenticatedAccount
+from src.application.dto.auth import AuthResponseDto
 from src.application.dto.family_invite import (
     FamilyInviteCreateDto,
     FamilyInvitePreviewResponseDto,
     FamilyInviteResponseDto,
 )
+from src.application.services.base_auth_service import BaseAuthService
 from src.application.services.family_invite_service import FamilyInviteService
 
 router = APIRouter(prefix="/family-invites", tags=["family-invites"])
@@ -35,3 +38,20 @@ async def get_family_invite_preview(
 ) -> FamilyInvitePreviewResponseDto:
     """Показать, в какую семью ведёт приглашение."""
     return await service.get_preview(token)
+
+
+@router.post("/{token}/accept", response_model=AuthResponseDto)
+async def accept_family_invite(
+    token: str,
+    response: Response,
+    current_account: AuthenticatedAccount = Depends(get_current_account),
+    service: BaseAuthService = Depends(get_auth_service),
+) -> AuthResponseDto:
+    """Присоединить текущий аккаунт к семье по invite-коду."""
+    auth = await service.accept_family_invite(current_account.id, token, remember_me=True)
+    return build_auth_response(
+        response,
+        auth,
+        include_tokens=True,
+        include_cookies=False,
+    )

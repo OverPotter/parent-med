@@ -91,24 +91,34 @@ export function useShellAuthSessionController({
   }, [authSession, setAuthSession]);
 
   const handleSessionDeleted = useCallback(async () => {
-    if (authSession) {
+    const deletedSession = authSession;
+    setAuthSession(null);
+
+    void (async () => {
+      try {
+        await clearStoredAuthSession();
+      } catch {
+        // The account was already deleted server-side; keep the mobile client signed out.
+      }
+
+      if (!deletedSession) {
+        return;
+      }
+
       try {
         await deleteStoredNativePushSubscription({
-          accessToken: authSession.accessToken,
+          accessToken: deletedSession.accessToken,
         });
       } catch {
         // Local account cleanup still continues if push cleanup fails.
       }
-    }
 
-    try {
-      await syncRevenueCatSessionState(null);
-    } catch {
-      // Local cleanup still completes if RevenueCat logout fails.
-    }
-
-    await clearStoredAuthSession();
-    setAuthSession(null);
+      try {
+        await syncRevenueCatSessionState(null);
+      } catch {
+        // Local cleanup still completes if RevenueCat logout fails.
+      }
+    })();
   }, [authSession, setAuthSession]);
 
   const handleUpdateAuthSession = useCallback(

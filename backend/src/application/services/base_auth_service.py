@@ -118,6 +118,15 @@ class BaseAuthService(ABC):
         """Покинуть текущую семью и создать для аккаунта новую пустую семью."""
 
     @abstractmethod
+    async def accept_family_invite(
+        self,
+        account_id: UUID,
+        invite_token: str,
+        remember_me: bool = True,
+    ) -> AuthResponseDto:
+        """Присоединить текущий аккаунт к семье по invite-коду и выдать новую сессию."""
+
+    @abstractmethod
     async def change_password(
         self, account_id: UUID, dto: ChangePasswordDto, refresh_token: str | None = None
     ) -> None:

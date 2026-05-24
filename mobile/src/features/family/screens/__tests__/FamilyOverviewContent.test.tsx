@@ -35,12 +35,22 @@ function renderOverview(
         inviteCopied={false}
         inviteExpanded={false}
         inviteLocked
+        joinFamilyCode=""
+        joinFamilyError={null}
+        joinFamilyPreviewName={null}
+        joinFamilySuccessMessage={null}
+        joinFamilySubmitting={false}
+        joinFamilyVerifying={false}
         showInviteCard
+        showJoinFamilyCard={false}
         memberRows={<View />}
+        onAcceptJoinFamilyCode={jest.fn()}
+        onChangeJoinFamilyCode={jest.fn()}
         onCopyInvite={jest.fn()}
         onPressFamilyStat={jest.fn()}
         onRefreshInviteCode={jest.fn()}
         onShareInvite={jest.fn()}
+        onVerifyJoinFamilyCode={jest.fn()}
         onToggleInviteExpanded={jest.fn()}
         ownerTone={getRoleBadgeTone("owner")}
         palette={palette}

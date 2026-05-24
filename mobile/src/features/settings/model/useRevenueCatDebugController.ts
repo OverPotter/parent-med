@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { MobileAuthSession } from "../../auth/api/authApi";
 import {
+  activateBillingDebugPlus,
   resetBillingDebugToFree,
   type MobileBillingDebugResult,
 } from "../api/settingsApi";
@@ -64,6 +65,7 @@ export function useRevenueCatDebugController({
   onBillingChanged,
 }: UseRevenueCatDebugControllerArgs) {
   const [isPending, setIsPending] = useState(false);
+  const [isBackendPending, setIsBackendPending] = useState(false);
   const [result, setResult] = useState<RevenueCatDebugResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const apiKey = getRevenueCatIosApiKey();
@@ -116,6 +118,26 @@ export function useRevenueCatDebugController({
     }
   };
 
+  const runBackendAction = async (
+    label: string,
+    action: () => Promise<MobileBillingDebugResult>,
+  ) => {
+    setIsBackendPending(true);
+    setError(null);
+
+    try {
+      const details = await action();
+      setResult({
+        label,
+        details,
+      });
+    } catch (nextError) {
+      setError(formatError(nextError));
+    } finally {
+      setIsBackendPending(false);
+    }
+  };
+
   const purchasePlan = async (plan: "monthly" | "annual") => {
     await ensureConfigured();
     const offering = await getNativeRevenueCatCurrentOffering();
@@ -157,12 +179,24 @@ export function useRevenueCatDebugController({
     entitlementCode,
     backendSyncEnabled,
     error,
+    isBackendPending,
     isPending,
     result,
     runAction,
+    runBackendAction,
     ensureConfigured,
     refreshBillingState,
     purchasePlan,
+    activatePlusOnBackend: async () => {
+      if (!session?.accessToken) {
+        throw new Error(copy.accountMissing);
+      }
+      const response = await activateBillingDebugPlus({
+        accessToken: session.accessToken,
+      });
+      await onBillingChanged?.();
+      return response;
+    },
     resetToFree: async () => {
       if (!session?.accessToken) {
         throw new Error(copy.accountMissing);

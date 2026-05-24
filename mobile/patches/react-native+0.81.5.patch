@@ -17,6 +17,105 @@ index 0000000..8f2780a
 +} // namespace inspector_modern
 +} // namespace hermes
 +} // namespace facebook
+diff --git a/node_modules/react-native/ReactCommon/hermes/inspector-modern/chrome/CDPHandler.cpp b/node_modules/react-native/ReactCommon/hermes/inspector-modern/chrome/CDPHandler.cpp
+new file mode 100644
+index 0000000..e3b8d24
+--- /dev/null
++++ b/node_modules/react-native/ReactCommon/hermes/inspector-modern/chrome/CDPHandler.cpp
+@@ -0,0 +1,85 @@
++#include <hermes/inspector/chrome/CDPHandler.h>
++
++namespace facebook::hermes::inspector_modern::chrome {
++
++CDPHandler::CDPHandler(
++    std::unique_ptr<RuntimeAdapter> adapter,
++    const std::string &title,
++    bool waitForDebugger,
++    bool processConsoleAPI,
++    std::shared_ptr<State> state,
++    const CDPHandlerSessionConfig &sessionConfig,
++    std::optional<CDPHandlerExecutionContextDescription>
++        executionContextDescription)
++    : impl_(nullptr), title_(title) {
++  (void)adapter;
++  (void)waitForDebugger;
++  (void)processConsoleAPI;
++  (void)state;
++  (void)sessionConfig;
++  (void)executionContextDescription;
++}
++
++std::shared_ptr<CDPHandler> CDPHandler::create(
++    std::unique_ptr<RuntimeAdapter> adapter,
++    bool waitForDebugger,
++    bool processConsoleAPI,
++    std::shared_ptr<State> state,
++    const CDPHandlerSessionConfig &sessionConfig,
++    std::optional<CDPHandlerExecutionContextDescription>
++        executionContextDescription) {
++  return create(
++      std::move(adapter),
++      "Hermes",
++      waitForDebugger,
++      processConsoleAPI,
++      std::move(state),
++      sessionConfig,
++      std::move(executionContextDescription));
++}
++
++std::shared_ptr<CDPHandler> CDPHandler::create(
++    std::unique_ptr<RuntimeAdapter> adapter,
++    const std::string &title,
++    bool waitForDebugger,
++    bool processConsoleAPI,
++    std::shared_ptr<State> state,
++    const CDPHandlerSessionConfig &sessionConfig,
++    std::optional<CDPHandlerExecutionContextDescription>
++        executionContextDescription) {
++  return std::shared_ptr<CDPHandler>(new CDPHandler(
++      std::move(adapter),
++      title,
++      waitForDebugger,
++      processConsoleAPI,
++      std::move(state),
++      sessionConfig,
++      std::move(executionContextDescription)));
++}
++
++CDPHandler::~CDPHandler() = default;
++
++std::string CDPHandler::getTitle() const {
++  return title_;
++}
++
++bool CDPHandler::registerCallbacks(
++    CDPMessageCallbackFunction msgCallback,
++    OnUnregisterFunction onUnregister) {
++  (void)msgCallback;
++  (void)onUnregister;
++  return true;
++}
++
++bool CDPHandler::unregisterCallbacks() {
++  return true;
++}
++
++void CDPHandler::handle(std::string str) {
++  (void)str;
++}
++
++std::unique_ptr<State> CDPHandler::getState() {
++  return nullptr;
++}
++
++State::State(std::unique_ptr<Private> privateState)
++    : privateState_(std::move(privateState)) {}
++
++struct State::Private {};
++
++State::~State() = default;
++
++} // namespace facebook::hermes::inspector_modern::chrome
 diff --git a/node_modules/react-native/scripts/react-native-xcode.sh b/node_modules/react-native/scripts/react-native-xcode.sh
 index 55d8d8b..378d50c 100755
 --- a/node_modules/react-native/scripts/react-native-xcode.sh

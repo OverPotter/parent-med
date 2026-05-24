@@ -23,6 +23,4 @@ def register_http_logging(app: FastAPI) -> None:
             logger.error(message)
         elif response.status_code >= 400:
             logger.warning(message)
-        else:
-            logger.debug(message)
         return response

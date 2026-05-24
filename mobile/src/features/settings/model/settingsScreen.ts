@@ -80,6 +80,7 @@ export type SettingsScreenContent = {
   debugRevenueCatOfferingsLabel: string;
   debugRevenueCatBuyMonthlyLabel: string;
   debugRevenueCatBuyAnnualLabel: string;
+  debugRevenueCatActivateBackendPlusLabel: string;
   debugRevenueCatRestoreLabel: string;
   debugRevenueCatSnapshotLabel: string;
   debugRevenueCatResetToFreeLabel: string;
@@ -411,6 +412,13 @@ export function buildSettingsScreenContent(
     debugRevenueCatOfferingsLabel: isRu ? "Offerings" : "Offerings",
     debugRevenueCatBuyMonthlyLabel: isRu ? "Buy monthly" : "Buy monthly",
     debugRevenueCatBuyAnnualLabel: isRu ? "Buy annual" : "Buy annual",
+    debugRevenueCatActivateBackendPlusLabel: isRu
+      ? "Backend Plus"
+      : isDe
+        ? "Backend Plus"
+        : isPl
+          ? "Backend Plus"
+          : "Backend Plus",
     debugRevenueCatRestoreLabel: isRu ? "Restore" : "Restore",
     debugRevenueCatSnapshotLabel: isRu ? "Snapshot" : "Snapshot",
     debugRevenueCatResetToFreeLabel: isRu ? "Reset to free" : "Reset to free",

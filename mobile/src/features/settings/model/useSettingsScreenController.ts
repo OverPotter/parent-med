@@ -99,6 +99,7 @@ export function useSettingsScreenController({
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingRecoveryCode, setIsSavingRecoveryCode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   const [devicePushPermissionStatus, setDevicePushPermissionStatus] =
     useState<NativePushPermissionStatus>("undetermined");
   const [passwordExpanded, setPasswordExpanded] = useState(false);
@@ -496,19 +497,26 @@ export function useSettingsScreenController({
   };
 
   const handleDelete = async () => {
+    if (!session) {
+      return;
+    }
+
+    const activeSession = session;
+    const usesFamilyDeleteEndpoint = ownershipPolicy.usesFamilyDeleteEndpoint;
     setIsDeleting(true);
+    setDeleteConfirmVisible(false);
     resetTransientMessages();
 
-    try {
-      await executeSettingsDeletion({
-        session,
-        usesFamilyDeleteEndpoint: ownershipPolicy.usesFamilyDeleteEndpoint,
-      });
-      await onSessionDeleted();
-    } catch {
-      setError(content.saveErrorLabel);
-      setIsDeleting(false);
-    }
+    const deletion = executeSettingsDeletion({
+      session: activeSession,
+      usesFamilyDeleteEndpoint,
+    });
+
+    await onSessionDeleted();
+
+    void deletion.catch(() => {
+      // The user is already signed out locally; server-side failure will surface on next login.
+    });
   };
 
   const confirmDelete = () => {
@@ -525,20 +533,7 @@ export function useSettingsScreenController({
       return;
     }
 
-    Alert.alert(
-      ownershipPolicy.confirmDeleteTitle,
-      ownershipPolicy.confirmDeleteMessage,
-      [
-        { text: content.cancelActionLabel, style: "cancel" },
-        {
-          text: content.confirmDeleteAction,
-          style: "destructive",
-          onPress: () => {
-            void handleDelete();
-          },
-        },
-      ],
-    );
+    setDeleteConfirmVisible(true);
   };
 
   const subscriptionExpiresAtLabel = formatSubscriptionExpiresAt(
@@ -597,17 +592,10 @@ export function useSettingsScreenController({
     setSuccess(content.debugTestPushSending);
 
     try {
-      console.log("[PushTest] starting", {
-        accountId: session.account.id,
-        hasAccessToken: Boolean(session.accessToken),
-      });
-
       const pushSyncResult = await syncNativePushSubscription({
         accessToken: session.accessToken,
         promptIfNeeded: true,
       });
-
-      console.log("[PushTest] sync result", pushSyncResult);
 
       setDevicePushPermissionStatus(
         "permissionStatus" in pushSyncResult
@@ -643,8 +631,6 @@ export function useSettingsScreenController({
         accessToken: session.accessToken,
       });
 
-      console.log("[PushTest] backend result", result);
-
       if (!result.sent && result.subscriptionCount === 0) {
         setSuccess(content.debugTestPushNoSubscriptions);
         Alert.alert(
@@ -676,6 +662,7 @@ export function useSettingsScreenController({
 
   return {
     error,
+    deleteConfirmVisible,
     familyAccess,
     hasRecoveryCode,
     isDeleting,
@@ -700,6 +687,7 @@ export function useSettingsScreenController({
     success,
     liveActivitiesLocked,
     confirmDelete,
+    handleDelete,
     handleCabinetReminderDaysSelect,
     handleLanguageSelect,
     handleManageSubscription,
@@ -712,6 +700,7 @@ export function useSettingsScreenController({
     refreshSettingsAfterBilling,
     resetTransientMessages,
     setError,
+    setDeleteConfirmVisible,
     setLanguageExpanded,
     setMedicationIntervalExpanded,
     setPasswordExpanded,

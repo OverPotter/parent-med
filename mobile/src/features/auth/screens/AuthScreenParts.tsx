@@ -192,11 +192,11 @@ export function FamilyCodeCard({
   familyCodeValue,
   verifiedFamilyCode,
   familyCodeError,
+  isVerifying,
   onToggleOpen,
   onChangeFamilyCode,
   onFocusFamilyCode,
   onBlurFamilyCode,
-  onResetVerifiedFamilyCode,
   fieldRef,
   onLayout,
 }: {
@@ -205,14 +205,24 @@ export function FamilyCodeCard({
   familyCodeValue: string;
   verifiedFamilyCode: VerifiedFamilyCode | null;
   familyCodeError: string | null;
+  isVerifying: boolean;
   onToggleOpen: () => void;
   onChangeFamilyCode: (next: string) => void;
   onFocusFamilyCode: () => void;
   onBlurFamilyCode: () => void;
-  onResetVerifiedFamilyCode: () => void;
   fieldRef: (node: View | null) => void;
   onLayout: (event: LayoutChangeEvent) => void;
 }) {
+  const normalizedFamilyCode = familyCodeValue.replace(/\s+/g, "").trim();
+  const hasFamilyCode = normalizedFamilyCode.length > 0;
+  const familyCodeInputStateStyle = verifiedFamilyCode
+    ? styles.fieldShellSuccess
+    : familyCodeError
+      ? styles.fieldShellError
+      : isVerifying
+        ? styles.fieldShellPending
+        : null;
+
   return (
     <View style={styles.familyCodeCard}>
       <Pressable
@@ -226,8 +236,8 @@ export function FamilyCodeCard({
           <Text style={styles.familyCodeToggleTitle}>
             {content.familyCodeToggleLabel}
           </Text>
-          {familyCodeValue ? (
-            <Text style={styles.familyCodeToggleMeta}>{familyCodeValue}</Text>
+          {hasFamilyCode ? (
+            <Text style={styles.familyCodeToggleMeta}>{normalizedFamilyCode}</Text>
           ) : null}
         </View>
         <MaterialCommunityIcons
@@ -243,47 +253,25 @@ export function FamilyCodeCard({
           ref={fieldRef}
           onLayout={onLayout}
         >
-          {verifiedFamilyCode ? (
-            <View style={styles.familyCodeVerifiedCard}>
-              <Text style={styles.familyCodeVerifiedLabel}>
-                {content.familyCodeVerifiedLabel}
-              </Text>
-              <Text style={styles.familyCodeVerifiedName}>
-                {verifiedFamilyCode.familyName}
-              </Text>
-              <Pressable
-                onPress={onResetVerifiedFamilyCode}
-                style={styles.familyCodeActionButton}
-              >
-                <Text style={styles.familyCodeActionLabel}>
-                  {content.familyCodeChangeLabel}
-                </Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={[styles.fieldShell, styles.fieldSingle]}>
-              <MaterialCommunityIcons
-                name={"account-group-outline" as never}
-                size={20}
-                color="#9A8F89"
-                style={styles.fieldIcon}
-              />
-              <TextInput
-                value={familyCodeValue}
-                onChangeText={onChangeFamilyCode}
-                placeholder={content.familyCodePlaceholder}
-                placeholderTextColor="#B4A7A1"
-                autoCapitalize="characters"
-                autoCorrect={false}
-                onFocus={onFocusFamilyCode}
-                onBlur={onBlurFamilyCode}
-                style={styles.input}
-              />
-            </View>
-          )}
-          {familyCodeError ? (
-            <Text style={styles.fieldError}>{familyCodeError}</Text>
-          ) : null}
+          <View style={[styles.fieldShell, styles.fieldSingle, familyCodeInputStateStyle]}>
+            <MaterialCommunityIcons
+              name={"account-group-outline" as never}
+              size={20}
+              color="#9A8F89"
+              style={styles.fieldIcon}
+            />
+            <TextInput
+              value={familyCodeValue}
+              onChangeText={onChangeFamilyCode}
+              placeholder={content.familyCodePlaceholder}
+              placeholderTextColor="#B4A7A1"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              onFocus={onFocusFamilyCode}
+              onBlur={onBlurFamilyCode}
+              style={styles.input}
+            />
+          </View>
         </View>
       ) : null}
     </View>
@@ -295,19 +283,11 @@ export function AuthBottomArea({
   supportLabel,
   termsLabel,
   privacyLabel,
-  showVerifyAction,
-  verifyLabel,
-  isVerifying,
-  onVerify,
 }: {
   showLegal: boolean;
   supportLabel: string;
   termsLabel: string;
   privacyLabel: string;
-  showVerifyAction: boolean;
-  verifyLabel: string;
-  isVerifying: boolean;
-  onVerify: () => void;
 }) {
   return (
     <>
@@ -328,21 +308,6 @@ export function AuthBottomArea({
         </View>
       ) : null}
 
-      {showVerifyAction ? (
-        <View style={styles.bottomSecondaryActionWrap}>
-          <Pressable
-            onPress={onVerify}
-            disabled={isVerifying}
-            style={({ pressed }) => [
-              styles.bottomSecondaryActionButton,
-              isVerifying ? styles.familyCodeActionButtonDisabled : null,
-              pressed ? styles.familyCodeActionButtonPressed : null,
-            ]}
-          >
-            <Text style={styles.bottomSecondaryActionLabel}>{verifyLabel}</Text>
-          </Pressable>
-        </View>
-      ) : null}
     </>
   );
 }

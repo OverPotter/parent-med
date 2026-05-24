@@ -356,6 +356,62 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
     }
   };
 
+  useEffect(() => {
+    if (!isRegisterMode || !familyCodeOpen) {
+      return;
+    }
+    if (!shouldAutoVerifyFamilyCode(trimmedFamilyCode)) {
+      return;
+    }
+    if (verifiedFamilyCode?.token === trimmedFamilyCode || isVerifyingFamilyCode) {
+      return;
+    }
+
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      setFamilyCodeError(null);
+      setIsVerifyingFamilyCode(true);
+
+      fetchFamilyInvitePreview(trimmedFamilyCode)
+        .then((preview) => {
+          if (cancelled) {
+            return;
+          }
+          setVerifiedFamilyCode(buildVerifiedFamilyCode(trimmedFamilyCode, preview));
+        })
+        .catch((error) => {
+          if (cancelled) {
+            return;
+          }
+          setVerifiedFamilyCode(null);
+          setFamilyCodeError(
+            getAuthErrorMessage(
+              error,
+              locale,
+              content.familyCodeVerifyFailedError,
+            ),
+          );
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsVerifyingFamilyCode(false);
+          }
+        });
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [
+    content.familyCodeVerifyFailedError,
+    familyCodeOpen,
+    isRegisterMode,
+    locale,
+    trimmedFamilyCode,
+    verifiedFamilyCode?.token,
+  ]);
+
   const handleSubmit = async () => {
     setSubmitted(true);
     if (!isFormValid) {
@@ -587,6 +643,7 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
                   familyCodeOpen={familyCodeOpen}
                   verifiedFamilyCode={verifiedFamilyCode}
                   familyCodeError={familyCodeError}
+                  isVerifyingFamilyCode={isVerifyingFamilyCode}
                   isRegisterMode={isRegisterMode}
                   isFormValid={isFormValid}
                   isSubmitting={isSubmitting}
@@ -611,10 +668,6 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
                     }))
                   }
                   onToggleFamilyCodeOpen={() => setFamilyCodeOpen((current) => !current)}
-                  onResetVerifiedFamilyCode={() => {
-                    setVerifiedFamilyCode(null);
-                    setFamilyCodeError(null);
-                  }}
                   onSubmit={handleSubmit}
                   onOpenForgotPassword={openForgotPassword}
                   getFieldRef={handleFieldRef}
@@ -622,20 +675,10 @@ export function AuthScreen({ onAuthenticated = noop }: AuthScreenProps) {
                 />
 
                 <AuthBottomArea
-                  showLegal={!(isRegisterMode && familyCodeOpen && !verifiedFamilyCode)}
+                  showLegal
                   supportLabel={content.supportLabel}
                   termsLabel={content.legalConsentTermsLabel}
                   privacyLabel={content.legalConsentPrivacyLabel}
-                  showVerifyAction={isRegisterMode && familyCodeOpen && !verifiedFamilyCode}
-                  verifyLabel={
-                    isVerifyingFamilyCode
-                      ? content.familyCodeVerifyingLabel
-                      : content.familyCodeVerifyLabel
-                  }
-                  isVerifying={isVerifyingFamilyCode}
-                  onVerify={() => {
-                    void verifyFamilyCode();
-                  }}
                 />
               </View>
             </View>

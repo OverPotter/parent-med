@@ -15,6 +15,7 @@ type RevenueCatDebugCopy = {
   offerings: string;
   buyMonthly: string;
   buyAnnual: string;
+  activateBackendPlus: string;
   restore: string;
   snapshot: string;
   resetToFree: string;
@@ -56,12 +57,15 @@ export function SettingsRevenueCatDebugCard({
     entitlementCode,
     backendSyncEnabled,
     error,
+    isBackendPending,
     isPending,
     result,
     runAction,
+    runBackendAction,
     ensureConfigured,
     loadOfferings,
     purchasePlan,
+    activatePlusOnBackend,
     restore,
     resetToFree,
     snapshot,
@@ -184,6 +188,23 @@ export function SettingsRevenueCatDebugCard({
 
         <Pressable
           onPress={() =>
+            void runBackendAction(copy.activateBackendPlus, activatePlusOnBackend)
+          }
+          disabled={isBackendPending || !session}
+          style={({ pressed }) => [
+            styles.debugActionChip,
+            styles.debugActionChipPrimary,
+            pressed ? styles.chipPressed : null,
+            isBackendPending || !session ? styles.chipDisabled : null,
+          ]}
+        >
+          <Text style={styles.debugActionChipPrimaryText}>
+            {copy.activateBackendPlus}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() =>
             void runAction(copy.restore, restore)
           }
           disabled={isPending || !session}
@@ -214,14 +235,14 @@ export function SettingsRevenueCatDebugCard({
 
         <Pressable
           onPress={() =>
-            void runAction(copy.resetToFree, resetToFree)
+            void runBackendAction(copy.resetToFree, resetToFree)
           }
-          disabled={isPending || !session}
+          disabled={isBackendPending || !session}
           style={({ pressed }) => [
             styles.debugActionChip,
             styles.debugActionChipSecondary,
             pressed ? styles.chipPressed : null,
-            isPending || !session ? styles.chipDisabled : null,
+            isBackendPending || !session ? styles.chipDisabled : null,
           ]}
         >
           <Text style={styles.debugActionChipSecondaryText}>{copy.resetToFree}</Text>
@@ -230,7 +251,7 @@ export function SettingsRevenueCatDebugCard({
 
       <View style={styles.debugConsole}>
         <Text style={styles.debugConsoleStatus}>
-          {isPending ? copy.working : copy.ready}
+          {isPending || isBackendPending ? copy.working : copy.ready}
           {result ? ` · ${result.label}` : ""}
         </Text>
         {error ? <Text style={styles.debugConsoleError}>{error}</Text> : null}

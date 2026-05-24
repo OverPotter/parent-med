@@ -227,6 +227,21 @@ export async function fetchFamilyInvitePreview(token: string) {
   };
 }
 
+export async function acceptFamilyInvite(payload: {
+  accessToken: string | null;
+  inviteToken: string;
+}) {
+  const response = await requestAuthedJson<RawAuthResponse>(
+    `/family-invites/${payload.inviteToken}/accept`,
+    {
+      method: "POST",
+    },
+    payload.accessToken,
+  );
+
+  return toSession(response);
+}
+
 export async function refreshMobileSession(refreshToken: string) {
   const response = await requestJson<RawAuthResponse>("/auth/native/refresh", {
     method: "POST",

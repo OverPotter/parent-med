@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { childrenScreenAssets } from "../../../redesign/screens/children/manifest";
 import { mobileTabAssets } from "../../../shared/assets/mobileTabAssets";
 import { useEdgeSwipeBack } from "../../../shared/hooks/useEdgeSwipeBack";
@@ -42,6 +43,7 @@ import { styles } from "./settingsScreenStyles";
 import type { MedicationIntervalUnit } from "../session/mobileSettingsPreferencesStorage";
 import { useStoredMedicationIntervalUnit } from "../session/useStoredMedicationIntervalUnit";
 import { useSettingsScreenController } from "../model/useSettingsScreenController";
+import { FormBottomSheet } from "../../../shared/components/FormBottomSheet";
 
 type SettingsScreenProps = {
   visible: boolean;
@@ -70,6 +72,78 @@ const settingsModuleAccentColors = {
   pillbox: "#8C7AE6",
   cabinet: "#E59A63",
 } as const;
+
+function DeleteConfirmSheet({
+  cancelLabel,
+  confirmLabel,
+  isDeleting,
+  message,
+  onCancel,
+  onConfirm,
+  title,
+  visible,
+}: {
+  cancelLabel: string;
+  confirmLabel: string;
+  isDeleting: boolean;
+  message: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+  title: string;
+  visible: boolean;
+}) {
+  return (
+    <FormBottomSheet
+      visible={visible}
+      onClose={onCancel}
+      sheetStyle={styles.deleteConfirmSheet}
+      backdropStyle={styles.deleteConfirmBackdrop}
+    >
+      {({ panHandlers, requestClose }) => (
+        <View>
+          <View style={styles.sheetGrabberWrap} {...panHandlers}>
+            <View style={styles.sheetGrabber} />
+          </View>
+          <View style={styles.deleteConfirmHeader}>
+            <View style={styles.deleteConfirmIcon}>
+              <Feather name="trash-2" size={22} color="#D55C56" />
+            </View>
+            <View style={styles.deleteConfirmCopy}>
+              <Text style={styles.deleteConfirmTitle}>{title}</Text>
+              <Text style={styles.deleteConfirmMessage}>{message}</Text>
+            </View>
+          </View>
+          <View style={styles.deleteConfirmActions}>
+            <Pressable
+              onPress={() => requestClose()}
+              disabled={isDeleting}
+              style={({ pressed }) => [
+                styles.deleteConfirmButton,
+                styles.deleteConfirmCancelButton,
+                pressed ? styles.deleteConfirmButtonPressed : null,
+                isDeleting ? styles.deleteConfirmButtonDisabled : null,
+              ]}
+            >
+              <Text style={styles.deleteConfirmCancelText}>{cancelLabel}</Text>
+            </Pressable>
+            <Pressable
+              onPress={onConfirm}
+              disabled={isDeleting}
+              style={({ pressed }) => [
+                styles.deleteConfirmButton,
+                styles.deleteConfirmDeleteButton,
+                pressed ? styles.deleteConfirmButtonPressed : null,
+                isDeleting ? styles.deleteConfirmButtonDisabled : null,
+              ]}
+            >
+              <Text style={styles.deleteConfirmDeleteText}>{confirmLabel}</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </FormBottomSheet>
+  );
+}
 
 export function SettingsScreen({
   visible,
@@ -133,6 +207,8 @@ export function SettingsScreen({
     success,
     liveActivitiesLocked,
     confirmDelete,
+    deleteConfirmVisible,
+    handleDelete,
     handleCabinetReminderDaysSelect,
     handleLanguageSelect,
     handleManageSubscription,
@@ -145,6 +221,7 @@ export function SettingsScreen({
     refreshSettingsAfterBilling,
     resetTransientMessages,
     setError,
+    setDeleteConfirmVisible,
     setLanguageExpanded,
     setMedicationIntervalExpanded,
     setPasswordExpanded,
@@ -594,6 +671,8 @@ export function SettingsScreen({
                     offerings: content.debugRevenueCatOfferingsLabel,
                     buyMonthly: content.debugRevenueCatBuyMonthlyLabel,
                     buyAnnual: content.debugRevenueCatBuyAnnualLabel,
+                    activateBackendPlus:
+                      content.debugRevenueCatActivateBackendPlusLabel,
                     restore: content.debugRevenueCatRestoreLabel,
                     snapshot: content.debugRevenueCatSnapshotLabel,
                     resetToFree: content.debugRevenueCatResetToFreeLabel,
@@ -714,6 +793,18 @@ export function SettingsScreen({
         onError={(message) => setError(message)}
         onOpenTermsOfUse={onOpenTermsOfUse}
         onOpenPrivacyPolicy={onOpenPrivacyPolicy}
+      />
+      <DeleteConfirmSheet
+        visible={visible && deleteConfirmVisible}
+        title={ownershipPolicy.confirmDeleteTitle}
+        message={ownershipPolicy.confirmDeleteMessage}
+        cancelLabel={content.cancelActionLabel}
+        confirmLabel={content.confirmDeleteAction}
+        isDeleting={isDeleting}
+        onCancel={() => setDeleteConfirmVisible(false)}
+        onConfirm={() => {
+          void handleDelete();
+        }}
       />
     </Animated.View>
   );

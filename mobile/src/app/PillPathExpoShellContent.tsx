@@ -248,6 +248,7 @@ type UtilityFlowProps = {
     relationshipLabel?: string | null;
     phone?: string | null;
   }) => Promise<void>;
+  onFamilyInviteAccepted: (session: MobileAuthSession) => Promise<void> | void;
   onSessionDeleted: () => Promise<void>;
   onUpdatePreferredLanguage: (locale: MobileLocale) => Promise<void>;
   onPushPreferencesChanged: (preferences: MobilePushPreferences) => void;
@@ -747,10 +748,32 @@ type UtilityOverlayProps = {
   childrenCards: ChildCard[];
   familyCanSeeInviteCard: boolean;
   familyInviteLocked: boolean;
+  familyPremiumActive: boolean;
   familyMembers: MobileFamilyMember[];
   familyRoutinesCount: number;
   utilityFlow: OverlayScreensProps["utilityFlow"];
 };
+
+function canShowJoinFamilyCard({
+  authSession,
+  familyMembers,
+  familyPremiumActive,
+}: {
+  authSession: MobileAuthSession;
+  familyMembers: MobileFamilyMember[];
+  familyPremiumActive: boolean;
+}) {
+  if (familyPremiumActive) {
+    return false;
+  }
+
+  const isCurrentFamilyOwner =
+    authSession.family.ownerAccountId === authSession.account.id;
+  const hasOnlyCurrentAccountAsMember =
+    familyMembers.length === 1 && familyMembers[0]?.id === authSession.account.id;
+
+  return isCurrentFamilyOwner && hasOnlyCurrentAccountAsMember;
+}
 
 function UtilityOverlays({
   activeScreen,
@@ -758,6 +781,7 @@ function UtilityOverlays({
   childrenCards,
   familyCanSeeInviteCard,
   familyInviteLocked,
+  familyPremiumActive,
   familyMembers,
   familyRoutinesCount,
   utilityFlow,
@@ -779,6 +803,12 @@ function UtilityOverlays({
         showInviteCard={familyCanSeeInviteCard}
         inviteLocked={familyInviteLocked}
         onOpenLockedInvite={utilityFlow.onOpenLockedFamilyInvite}
+        showJoinFamilyCard={canShowJoinFamilyCard({
+          authSession,
+          familyMembers,
+          familyPremiumActive,
+        })}
+        onFamilyInviteAccepted={utilityFlow.onFamilyInviteAccepted}
         familyMembers={familyMembers}
         routinesCount={familyRoutinesCount}
         childrenCards={childrenCards}
@@ -887,6 +917,7 @@ export function OverlayScreens({
         childrenCards={childrenCards}
         familyCanSeeInviteCard={familyCanSeeInviteCard}
         familyInviteLocked={familyInviteLocked}
+        familyPremiumActive={familyPremiumActive}
         familyMembers={familyMembers}
         familyRoutinesCount={familyRoutinesCount}
         utilityFlow={utilityFlow}
